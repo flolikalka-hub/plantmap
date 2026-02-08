@@ -1,0 +1,28 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <attr name="toolbarColor" format="color"/>
+    <attr name="toolbarBorder" format="color"/>
+    <!-- Base application theme. -->
+    <style name="Base.Theme.PlantMap" parent="Theme.Material3.DayNight.NoActionBar">
+        <!--главный цвет -->
+        <item name="colorPrimary">#000000</item>
+        <!-- цвета элементов -->
+        <!-- тулбар, боковое меню, текст кнопок -->
+        <item name="toolbarColor">#FFFFFF</item>
+        <item name="toolbarBorder">#999999</item>
+        <!-- выделение -->
+        <item name="colorOnPrimary">#4CAF50</item>
+        <!-- кнопки, выделение в меню - умолчание -->
+        <item name="colorOnSecondary">#000000</item>
+        <!-- кнопки, выделение в меню - зажато -->
+        <item name="colorOnTertiary">#333333</item>
+        <!-- фон активити -->
+        <item name="android:windowBackground">#999999</item>
+        <!-- цвета текстов -->
+        <item name="android:textColorPrimary">#000000</item>
+        <item name="android:textColorSecondary">#000000</item>
+        <!-- прозрачность 50% -->
+        <item name="android:textColorHint">#80000000</item>
+    </style>
+
+    <style name="Theme.PlantMap" parent="Base.Theme.PlantMap" />
+</resources>

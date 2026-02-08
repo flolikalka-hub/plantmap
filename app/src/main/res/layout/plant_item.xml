@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:card_view="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    card_view:cardCornerRadius="12dp"
+    card_view:cardElevation="4dp"
+    card_view:cardBackgroundColor="?attr/toolbarColor">
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical">
+
+        <!-- Цвет цветка -->
+        <View
+            android:id="@+id/flowerColorView"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_marginEnd="12dp"
+            android:background="@android:color/transparent"
+            />
+
+        <!-- Подписи -->
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
+
+            <TextView
+                android:id="@+id/plantName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Название растения"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="?android:attr/textColorPrimary"
+                android:ellipsize="none"
+                android:singleLine="false"/>
+
+            <TextView
+                android:id="@+id/plantType"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Тип растения"
+                android:textSize="14sp"
+                android:textColor="?android:attr/textColorHint"
+                android:ellipsize="none"
+                android:singleLine="false"
+                android:lineSpacingExtra="2dp"/>
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/editBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/btn_edit_db"
+            android:background="?android:attr/selectableItemBackgroundBorderless"/>
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:card_view="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    card_view:cardCornerRadius="12dp"
+    card_view:cardElevation="4dp">
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical">
+
+        <!-- Подпись -->
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
+
+            <TextView
+                android:id="@+id/colorName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Название цвета"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:ellipsize="none"
+                android:singleLine="false"/>
+        </LinearLayout>
+        <!-- Кнопка редактирования -->
+        <!--
+        <ImageButton
+            android:id="@+id/editBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/btn_edit_db"
+            android:background="?android:attr/selectableItemBackgroundBorderless"/>
+         -->
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

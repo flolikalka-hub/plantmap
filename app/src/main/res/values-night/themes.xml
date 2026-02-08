@@ -1,0 +1,24 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Base.Theme.PlantMap" parent="Theme.Material3.DayNight.NoActionBar">
+        <!--главный цвет -->
+        <item name="colorPrimary">#95FF7D</item>
+        <!-- цвета элементов -->
+        <!-- тулбар, боковое меню, текст кнопок, фон карточки растения -->
+        <item name="toolbarColor">#000000</item>
+        <item name="toolbarBorder">#000000</item>
+        <!-- боквое меню -->
+        <item name="colorOnPrimary">#000000</item>
+        <!-- кнопки, выделение в меню - умолчание -->
+        <item name="colorOnSecondary">#95FF7D</item>
+        <!-- кнопки, выделение в меню - зажато -->
+        <item name="colorOnTertiary">#DAFF7D</item>
+        <!-- фон активити -->
+        <item name="android:windowBackground">#333333</item>
+        <!-- цвета текстов -->
+        <item name="android:textColorPrimary">#FFFFFF</item>
+        <item name="android:textColorSecondary">#95FF7D</item>
+        <!-- прозрачность 50% -->
+        <item name="android:textColorHint">#80FFFFFF</item>
+    </style>
+</resources>

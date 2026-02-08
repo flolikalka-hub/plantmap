@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_plan"
+            android:title="План территории"/>
+        <item
+            android:id="@+id/nav_db"
+            android:title="Растения"/>
+        <item
+            android:id="@+id/nav_colors"
+            android:title="Цвета"/>
+        <item
+            android:id="@+id/nav_stats"
+            android:title="Статистика"/>
+    </group>
+</menu>

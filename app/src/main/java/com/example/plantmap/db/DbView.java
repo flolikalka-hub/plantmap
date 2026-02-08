@@ -1,0 +1,284 @@
+package com.example.plantmap.db;
+
+import android.app.AlertDialog;
+import android.content.Context;
+import android.text.InputType;
+import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.LinearLayout;
+
+import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.example.plantmap.R;
+import com.example.plantmap.model.Plant;
+import com.example.plantmap.view.PlanView;
+
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+
+public class DbView {
+    private Context context;
+    private DatabaseHelper dbHelper;
+    private PlanView planView;
+    private ColorResolver colorResolver;
+    private RecyclerView recyclerView;
+
+    public interface SearchStateListener {
+        void onSearchApplied();
+    }
+    private SearchStateListener searchListener;
+
+    public DbView(Context context, PlanView planView) {
+        this.context = context;
+        this.planView = planView;
+        dbHelper = new DatabaseHelper(context);
+        colorResolver = new ColorResolver(dbHelper);
+    }
+
+    public View createDbView() {
+        // корневой контейнер с вертикальной ориентацией
+        LinearLayout rootLayout = new LinearLayout(context);
+        rootLayout.setOrientation(LinearLayout.VERTICAL);
+
+        // кнопка добавления нового растения
+        Button addButton = new Button(context);
+        addButton.setText("Добавить новое растение");
+        addButton.setBackground(ContextCompat.getDrawable(context, R.drawable.btn_add_plant));
+        addButton.setTextColor(ContextCompat.getColorStateList(context, R.color.btn_add_plant_txt));
+        addButton.setPadding(20, 20, 20, 20);    // внутренние отступы
+
+        // список растений
+        recyclerView = new RecyclerView(context);
+        recyclerView.setLayoutManager(new LinearLayoutManager(context));
+
+        // пусть кнопка будет внизу
+        LinearLayout.LayoutParams recyclerParams =
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        0,
+                        1f
+                );
+        recyclerView.setLayoutParams(recyclerParams);
+
+        // действие на кнопку
+        addButton.setOnClickListener(v -> showPlantDialog(null, recyclerView));
+
+        // вкладываем
+        rootLayout.addView(recyclerView);
+        rootLayout.addView(addButton);
+
+
+        // первый раз заполняем список растений
+        refreshPlantList(recyclerView);
+
+        return rootLayout;
+    }
+
+    // Метод для обновления списка растений
+    private void refreshPlantList(RecyclerView recyclerView) {
+        List<Plant> plants = dbHelper.getAllPlants();
+        Collections.sort(plants, Comparator.comparing(p -> p.name));
+        PlantAdapter adapter = new PlantAdapter(
+                context,
+                plants,
+                colorResolver,
+                plant -> showPlantDialog(plant, recyclerView));
+        recyclerView.setAdapter(adapter);
+    }
+
+    // Диалог добавления/редактирования растения. Раньше было LinearLayout listLayout
+    private void showPlantDialog(Plant plant, RecyclerView recyclerView) {
+        boolean isNew = (plant == null);
+        if (isNew) plant = new Plant();
+
+        final Plant plantFinal = plant;
+
+        LinearLayout layout = new LinearLayout(context);
+        layout.setOrientation(LinearLayout.VERTICAL);
+
+        EditText nameInput = new EditText(context);
+        nameInput.setHint("Название сорта");
+        nameInput.setText(plant.name != null ? plant.name : "");
+        // пусть с заглавной будет
+        nameInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
+
+        EditText typeInput = new EditText(context);
+        typeInput.setHint("Тип растения");
+        typeInput.setText(plant.type != null ? plant.type : "");
+
+        EditText groupInput = new EditText(context);
+        groupInput.setHint("Группа растения");
+        groupInput.setText(plant.group != null ? plant.group : "");
+
+        EditText potVolumeInput = new EditText(context);
+        potVolumeInput.setHint("Литраж горшка");
+        potVolumeInput.setInputType(InputType.TYPE_CLASS_NUMBER);
+        potVolumeInput.setText(plant.potVolume != 0 ? String.valueOf(plant.potVolume) : "");
+
+        // с автозаполнением из БД
+        AutoCompleteTextView flowerColorInput = new AutoCompleteTextView(context);
+        flowerColorInput.setHint("Цвет цветка");
+        flowerColorInput.setText(plant.flowerColor != null ? plant.flowerColor : "");
+
+        EditText additionalInfoInput = new EditText(context);
+        additionalInfoInput.setHint("Дополнительная информация");
+        additionalInfoInput.setText(plant.additionalInfo != null ? plant.additionalInfo : "");
+
+        // Получаем список цветов из БД
+        List<String> colorNames = dbHelper.getAllColorNames();
+
+        ArrayAdapter<String> colorAdapter = new ArrayAdapter<>(
+                context,
+                android.R.layout.simple_dropdown_item_1line,
+                colorNames
+        );
+
+        flowerColorInput.setAdapter(colorAdapter);
+        flowerColorInput.setThreshold(1); // показывать подсказки после ввода 1 символа
+
+        layout.addView(nameInput);
+        layout.addView(typeInput);
+        layout.addView(groupInput);
+        layout.addView(potVolumeInput);
+        layout.addView(flowerColorInput);
+        layout.addView(additionalInfoInput);
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(context)
+                .setTitle(isNew ? "Новое растение" : "Редактировать растение")
+                .setView(layout)
+                .setNegativeButton("Отмена", null);
+
+        if (!isNew) {
+            final int idPlant = plant.id;
+            builder.setNeutralButton("Удалить", (d, which) -> {
+                if (!dbHelper.canDeletePlant(idPlant)) {
+                    new AlertDialog.Builder(context)
+                            .setTitle("Растение используется в точках")
+                            .setMessage("Сначала удалите точки с этим растением")
+                            .setNegativeButton("Понятно", null)
+                            .show();
+                } else {
+                    new AlertDialog.Builder(context)
+                            .setTitle("Удалить растение")
+                            .setMessage("Растение будет удалено. Вы уверены?")
+                            .setPositiveButton("Удалить", (dd, w) -> {
+                                dbHelper.deletePlant(idPlant);
+                                if (planView != null) planView.reloadPoints();
+                                refreshPlantList(recyclerView);
+                            })
+                            .setNegativeButton("Отменить", null)
+                            .show();
+                }
+            });
+        }
+        // для сохранить отдельно ибо надо контролировать ввод
+        builder.setPositiveButton("Сохранить", null);
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
+        // Кастомный обработчик кнопки "Сохранить"
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            String name = nameInput.getText().toString().trim();
+            if (name.isEmpty()) {
+                nameInput.setError("Название обязательно");
+                nameInput.requestFocus();
+                return; // не закрываем диалог
+            }
+
+            plantFinal.name = name;
+            plantFinal.type = typeInput.getText().toString().trim();
+            plantFinal.group = groupInput.getText().toString().trim();
+            plantFinal.potVolume = potVolumeInput.getText().toString().isEmpty()
+                    ? 0
+                    : Integer.parseInt(potVolumeInput.getText().toString());
+            plantFinal.flowerColor = flowerColorInput.getText().toString().trim();
+            plantFinal.additionalInfo = additionalInfoInput.getText().toString().trim();
+
+            dbHelper.addPlant(plantFinal);
+            if (planView != null) planView.reloadPoints();
+
+            refreshPlantList(recyclerView);
+            dialog.dismiss(); // закрываем диалог вручную
+        });
+    }
+
+    // диалог поиска
+    public void showSearchDialog() {
+        LinearLayout layout = new LinearLayout(context);
+        layout.setOrientation(LinearLayout.VERTICAL);
+
+        EditText nameInput = new EditText(context);
+        nameInput.setHint("Название сорта");
+
+        EditText typeInput = new EditText(context);
+        typeInput.setHint("Тип растения");
+
+        EditText groupInput = new EditText(context);
+        groupInput.setHint("Группа растения");
+
+        EditText potVolumeInput = new EditText(context);
+        potVolumeInput.setHint("Литраж горшка");
+        potVolumeInput.setInputType(InputType.TYPE_CLASS_NUMBER);
+
+        EditText flowerColorInput = new EditText(context);
+        flowerColorInput.setHint("Цвет цветка");
+
+        EditText addInput = new EditText(context);
+        addInput.setHint("Доп. информация");
+
+        layout.addView(nameInput);
+        layout.addView(typeInput);
+        layout.addView(groupInput);
+        layout.addView(potVolumeInput);
+        layout.addView(flowerColorInput);
+        layout.addView(addInput);
+
+        new AlertDialog.Builder(context)
+                .setTitle("Поиск растений")
+                .setView(layout)
+                .setPositiveButton("Найти", (d, w) -> {
+
+                    Integer potVolume = potVolumeInput.getText().toString().isEmpty()
+                            ? null
+                            : Integer.parseInt(potVolumeInput.getText().toString());
+
+                    List<Plant> result = dbHelper.searchPlants(
+                            nameInput.getText().toString().trim(),
+                            typeInput.getText().toString().trim(),
+                            groupInput.getText().toString().trim(),
+                            potVolume,
+                            flowerColorInput.getText().toString().trim(),
+                            addInput.getText().toString().trim()
+                    );
+                    if (searchListener != null) {
+                        searchListener.onSearchApplied();
+                    }
+                    PlantAdapter adapter = new PlantAdapter(
+                            context,
+                            result,
+                            colorResolver,
+                            plant -> showPlantDialog(plant, recyclerView)
+                    );
+
+                    recyclerView.setAdapter(adapter);
+                })
+                .setNegativeButton("Отменить", (d, w) -> refreshPlantList(recyclerView))
+                .show();
+    }
+
+    public void setSearchStateListener(SearchStateListener listener) {
+        this.searchListener = listener;
+    }
+
+    public void resetSearch() {
+        refreshPlantList(recyclerView);
+    }
+
+}
