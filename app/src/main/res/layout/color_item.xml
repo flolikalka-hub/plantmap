@@ -33,13 +33,19 @@
                 android:singleLine="false"/>
         </LinearLayout>
         <!-- Кнопка редактирования -->
-        <!--
         <ImageButton
             android:id="@+id/editBtn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/btn_edit_db"
             android:background="?android:attr/selectableItemBackgroundBorderless"/>
-         -->
+        <!-- Кнопка удаления -->
+        <ImageButton
+            android:id="@+id/deleteBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/btn_delete_db"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:layout_marginStart="8dp"/>
     </LinearLayout>
 </androidx.cardview.widget.CardView>

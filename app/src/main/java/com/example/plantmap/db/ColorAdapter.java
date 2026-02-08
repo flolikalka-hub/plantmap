@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -19,17 +20,18 @@ import java.util.List;
 
 public class ColorAdapter extends RecyclerView.Adapter<ColorAdapter.ColorViewHolder> {
 
-    public interface OnEditClickListener {
+    public interface OnColorActionListener {
         void onEditClick(FlowerColor color);
+        void onDeleteClick(FlowerColor color);
     }
 
     private Context context;
     private List<FlowerColor> colors;
-    private OnEditClickListener listener;
+    private OnColorActionListener listener;
 
     public ColorAdapter(Context context,
                         List<FlowerColor> colors,
-                        OnEditClickListener listener) {
+                        OnColorActionListener listener) {
         this.context = context;
         this.colors = colors;
         this.listener = listener;
@@ -51,11 +53,18 @@ public class ColorAdapter extends RecyclerView.Adapter<ColorAdapter.ColorViewHol
         holder.name.setText(color.name);
 
         // окраска всей карточки + контрастный текст
-        applyCardColor(holder.card, holder.name, color.hex);
+        int textColor = applyCardColor(holder.card, holder.name, color.hex);
 
-        // позже кнопку редактирования
-        holder.card.setOnClickListener(v -> {
+        // динамически подбираем цвет кнопок под фон
+        holder.editBtn.setColorFilter(textColor);
+        holder.deleteBtn.setColorFilter(textColor);
+
+        holder.editBtn.setOnClickListener(v -> {
             if (listener != null) listener.onEditClick(color);
+        });
+
+        holder.deleteBtn.setOnClickListener(v -> {
+            if (listener != null) listener.onDeleteClick(color);
         });
     }
 
@@ -67,33 +76,39 @@ public class ColorAdapter extends RecyclerView.Adapter<ColorAdapter.ColorViewHol
     static class ColorViewHolder extends RecyclerView.ViewHolder {
         CardView card;
         TextView name;
+        ImageButton editBtn, deleteBtn;
 
         ColorViewHolder(@NonNull View itemView) {
             super(itemView);
             card = (CardView) itemView;
             name = itemView.findViewById(R.id.colorName);
+            editBtn = itemView.findViewById(R.id.editBtn);
+            deleteBtn = itemView.findViewById(R.id.deleteBtn);
         }
     }
 
-    //Полная покраска карточки + подбор контрастного текста
-    private void applyCardColor(CardView card, TextView textView, String hex) {
+     //Полная покраска карточки + подбор контрастного текста.
+     //Возвращает цвет текста, чтобы использовать для кнопок.
+    private int applyCardColor(CardView card, TextView textView, String hex) {
         if (hex == null || hex.isEmpty()) {
             card.setCardBackgroundColor(Color.TRANSPARENT);
             textView.setTextColor(Color.BLACK);
-            return;
+            return Color.BLACK;
         }
 
         try {
             int bgColor = Color.parseColor(hex);
             card.setCardBackgroundColor(bgColor);
 
-            // вычисляем яркость цвета
             boolean isDark = ColorUtils.calculateLuminance(bgColor) < 0.5;
-            textView.setTextColor(isDark ? Color.WHITE : Color.BLACK);
+            int textColor = isDark ? Color.WHITE : Color.BLACK;
+            textView.setTextColor(textColor);
+            return textColor;
 
         } catch (IllegalArgumentException e) {
             card.setCardBackgroundColor(Color.LTGRAY);
             textView.setTextColor(Color.BLACK);
+            return Color.BLACK;
         }
     }
 }

@@ -6,6 +6,8 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
+import androidx.annotation.Nullable;
+
 import com.example.plantmap.model.ColorModifier;
 import com.example.plantmap.model.FlowerColor;
 import com.example.plantmap.model.Plant;
@@ -18,7 +20,7 @@ import java.io.*;
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DB_NAME = "PlantMap_DB.db";
-    private static final int DB_VERSION = 7;
+    private static final int DB_VERSION = 9;
 
     private final Context context;
     private String dbPath;
@@ -505,4 +507,69 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.close();
         return colors;
     }
+    // Добавление нового цвета
+    public long insertColor(String name, String root, String hex) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        cv.put("name", name.toLowerCase().trim());
+        cv.put("root", root != null ? root.toLowerCase().trim() : null);
+        cv.put("hex", hex != null ? hex.toLowerCase().trim() : null);
+        long id = db.insert("colors", null, cv); // вернет -1 если не удалось (дубликат прим)
+        db.close();
+        return id;
+    }
+
+    // Обновление существующего цвета
+    public void updateColor(int id, String name, String root, String hex) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        cv.put("name", name.toLowerCase().trim());
+        cv.put("root", root != null ? root.toLowerCase().trim() : null);
+        cv.put("hex", hex != null ? hex.toLowerCase().trim() : null);
+        db.update("colors", cv, "id=?", new String[]{String.valueOf(id)});
+        db.close();
+    }
+
+    public void deleteColor(int id) {
+        SQLiteDatabase db = getWritableDatabase();
+        db.delete("colors", "id=?", new String[]{String.valueOf(id)});
+        db.close();
+    }
+
+    public boolean colorNameExists(String name, @Nullable Integer excludeId) {
+        SQLiteDatabase db = getReadableDatabase();
+
+        String normalized = name.toLowerCase().trim();
+
+        String sql;
+        String[] args;
+
+        if (excludeId == null) {
+            sql = "SELECT 1 FROM colors WHERE LOWER(name) = ? LIMIT 1";
+            args = new String[]{ normalized };
+        } else {
+            sql = "SELECT 1 FROM colors WHERE LOWER(name) = ? AND id != ? LIMIT 1";
+            args = new String[]{ normalized, String.valueOf(excludeId) };
+        }
+
+        Cursor cursor = db.rawQuery(sql, args);
+        boolean exists = cursor.moveToFirst();
+        cursor.close();
+
+        return exists;
+    }
+
+    public boolean isColorUsed(String colorName) {
+        SQLiteDatabase db = getReadableDatabase();
+
+        String sql = "SELECT 1 FROM plants WHERE LOWER(flower_color) = ? LIMIT 1";
+        String[] args = new String[]{ colorName.toLowerCase().trim() };
+
+        Cursor cursor = db.rawQuery(sql, args);
+        boolean used = cursor.moveToFirst();
+        cursor.close();
+
+        return used;
+    }
+
 }

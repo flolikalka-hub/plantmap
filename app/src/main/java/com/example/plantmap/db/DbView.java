@@ -201,7 +201,13 @@ public class DbView {
             plantFinal.flowerColor = flowerColorInput.getText().toString().trim();
             plantFinal.additionalInfo = additionalInfoInput.getText().toString().trim();
 
-            dbHelper.addPlant(plantFinal);
+            if (isNew) {
+                // Добавляем новое растение
+                dbHelper.addPlant(plantFinal);
+            } else {
+                // Обновляем существующее
+                dbHelper.updatePlant(plantFinal);
+            }
             if (planView != null) planView.reloadPoints();
 
             refreshPlantList(recyclerView);
