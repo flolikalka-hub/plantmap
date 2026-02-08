@@ -30,7 +30,9 @@ import com.example.plantmap.model.PlantPoint;
 import com.example.plantmap.search.SearchFilter;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 //extends view - значит planview частный случай view
 public class PlanView extends View {
@@ -67,7 +69,8 @@ public class PlanView extends View {
     // поиск (не режим, а состояние отображения)
     private boolean searchActive = false;
     private String searchQuery = "";
-    private List<PlantPoint> searchResults = new ArrayList<>();
+    private final List<PlantPoint> searchResults = new ArrayList<>();
+    private final Set<PlantPoint> searchResultsSet = new HashSet<>();
     private Paint searchStrokePaint; // ободка для точек, чтобы не конфликтовать с режимными окрасами
     // а был ли поиск вообще
     public interface SearchStateListener {
@@ -80,10 +83,10 @@ public class PlanView extends View {
 
     // ИНФОРМАТИВНОЕ
     // отступы устройства
-    int pl = getPaddingLeft();
-    int pr = getPaddingRight();
-    int pt = getPaddingTop();
-    int pb = getPaddingBottom();
+    private int pl;
+    private int pr;
+    private int pt;
+    private int pb;
 
 
     //                                  КОНСТРУКТОР, вызывается в момент создания view
@@ -122,6 +125,8 @@ public class PlanView extends View {
         points = new ArrayList<>(); // инициализируем
         points.clear();
         points.addAll(dbHelper.getAllPoints());
+
+        updatePlanGeometry();
     }
 
 
@@ -135,12 +140,30 @@ public class PlanView extends View {
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
+        updatePlanGeometry();
+    }
+
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+        if (changed) {
+            updatePlanGeometry();
+        }
+    }
+
+    private void updatePlanGeometry() {
+        pl = getPaddingLeft();
+        pr = getPaddingRight();
+        pt = getPaddingTop();
+        pb = getPaddingBottom();
         // ПЛАН
         // ширина под экран
-        planWidth = getWidth() - pl - pr;
-        // сохраняем пропорции
-        planScale = planWidth / planOriginalWidth;
-        planHeight = planOriginalHeight * planScale;
+        planWidth = Math.max(0f,getWidth()-pl-pr);
+        if (planOriginalWidth > 0f) {
+            // сохраняем пропорции
+            planScale = planWidth / planOriginalWidth;
+            planHeight = planOriginalHeight * planScale;
+        }
     }
 
     // переводим экранные координаты в плановые
@@ -197,7 +220,7 @@ public class PlanView extends View {
                 textPaint.setColor(Color.WHITE);
             }
 
-            boolean isFound = searchActive && searchResults.contains(p);
+            boolean isFound = searchActive && searchResultsSet.contains(p);
 
             // обводка найденных
             if (isFound) {
@@ -230,6 +253,7 @@ public class PlanView extends View {
 
             canvas.drawText(text, textX, textY, textPaint);
         }
+        canvas.restore();
     }
 
 
@@ -978,6 +1002,7 @@ public class PlanView extends View {
                 .setNegativeButton("Отменить", (d, w) -> {
                     searchActive = false;
                     searchResults.clear();
+                    searchResultsSet.clear();
                     if (searchStateListener != null) {
                         searchStateListener.onSearchCleared();
                     }
@@ -996,6 +1021,7 @@ public class PlanView extends View {
 
     private void applyFilter(SearchFilter filter) {
         searchResults.clear();
+        searchResultsSet.clear();
 
         for (PlantPoint p : points) {
             if (matchesFilter(p, filter)) {
@@ -1045,6 +1071,7 @@ public class PlanView extends View {
     public void clearSearch() {
         searchActive = false;
         searchResults.clear();
+        searchResultsSet.clear();
         if (searchStateListener != null) {
             searchStateListener.onSearchCleared();
         }

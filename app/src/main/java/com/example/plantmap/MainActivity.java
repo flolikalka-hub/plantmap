@@ -59,11 +59,6 @@ public class MainActivity extends AppCompatActivity {
 
         // визуализируем наличие меню
         Toolbar toolbar = findViewById(R.id.toolbar);
-        ViewCompat.setOnApplyWindowInsetsListener(toolbar, (v, insets) -> {
-            int statusBarHeight = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top;
-            v.setPadding(v.getPaddingLeft(), statusBarHeight, v.getPaddingRight(), v.getPaddingBottom());
-            return insets;
-        });
         toolbar.setTitle("План территории");
         setSupportActionBar(toolbar);
 
@@ -208,13 +203,17 @@ public class MainActivity extends AppCompatActivity {
         contentContainer.addView(btnCont, contParams);
 
         // отступы тулбар (гамбургер)
+        final int toolbarBaseLeft = toolbar.getPaddingLeft();
+        final int toolbarBaseTop = toolbar.getPaddingTop();
+        final int toolbarBaseRight = toolbar.getPaddingRight();
+        final int toolbarBaseBottom = toolbar.getPaddingBottom();
         ViewCompat.setOnApplyWindowInsetsListener(toolbar, (v, insets) -> {
             Insets curr = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(
-                    curr.left,
-                    curr.top,
-                    v.getPaddingRight(),
-                    v.getPaddingBottom()
+                    toolbarBaseLeft + curr.left,
+                    toolbarBaseTop + curr.top,
+                    toolbarBaseRight + curr.right,
+                    toolbarBaseBottom
             );
             return insets;
         });

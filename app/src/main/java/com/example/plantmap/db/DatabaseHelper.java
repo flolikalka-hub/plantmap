@@ -13,7 +13,6 @@ import com.example.plantmap.model.PlantPoint;
 import java.util.ArrayList;
 import java.util.List;
 
-import android.database.sqlite.SQLiteDatabase;
 import java.io.*;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
@@ -55,15 +54,62 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        // БД уже готовая так что пока что точно ничего создавать не планируется
+        createSchemaIfNeeded(db);
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        // пока что старая версия. но надопродумать !!!!!!!!!!!!!!!!!!
-        db.execSQL("DROP TABLE IF EXISTS points");
-        db.execSQL("DROP TABLE IF EXISTS plants");
-        onCreate(db);
+        db.beginTransaction();
+        try {
+            createSchemaIfNeeded(db);
+            if (!columnExists(db,"plants","is_builtin")){
+                db.execSQL("ALTER TABLE plants ADD COLUMN is_builtin INTEGER NOT NULL DEFAULT 0");
+            }
+
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
+    }
+
+    private void createSchemaIfNeeded(SQLiteDatabase db) {
+        db.execSQL(
+                "CREATE TABLE IF NOT EXISTS plants (" +
+                        "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                        "name TEXT NOT NULL, " +
+                        "type TEXT, " +
+                        "plant_group TEXT, " +
+                        "pot_volume INTEGER, " +
+                        "flower_color TEXT, " +
+                        "additional_info TEXT, " +
+                        "is_builtin INTEGER NOT NULL DEFAULT 0" +
+                        ")"
+        );
+
+        db.execSQL(
+                "CREATE TABLE IF NOT EXISTS points (" +
+                        "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                        "x REAL NOT NULL, " +
+                        "y REAL NOT NULL, " +
+                        "count INTEGER NOT NULL DEFAULT 1, " +
+                        "plant_id INTEGER NOT NULL, " +
+                        "FOREIGN KEY (plant_id) REFERENCES plants(id) ON DELETE CASCADE" +
+                        ")"
+        );
+
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_points_plant_id ON points(plant_id)");
+    }
+
+    private boolean columnExists(SQLiteDatabase db, String tableName, String columnName) {
+        try (Cursor cursor = db.rawQuery("PRAGMA table_info(" + tableName + ")", null)) {
+            int nameIndex = cursor.getColumnIndex("name");
+            while (cursor.moveToNext()) {
+                if (columnName.equals(cursor.getString(nameIndex))) {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 
     @Override
@@ -174,6 +220,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             canDelete = c.getInt(0) == 0;
         }
         c.close();
+        db.close();
         return canDelete;
     }
 
@@ -292,6 +339,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
 
         cursor.close();
+        db.close();
         return result;
     }
 
@@ -458,4 +506,3 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return colors;
     }
 }
-
