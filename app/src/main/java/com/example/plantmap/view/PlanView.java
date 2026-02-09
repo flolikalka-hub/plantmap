@@ -69,7 +69,6 @@ public class PlanView extends View {
     // поиск (не режим, а состояние отображения)
     private boolean searchActive = false;
     private String searchQuery = "";
-    private final List<PlantPoint> searchResults = new ArrayList<>();
     private final Set<PlantPoint> searchResultsSet = new HashSet<>();
     private Paint searchStrokePaint; // ободка для точек, чтобы не конфликтовать с режимными окрасами
     // а был ли поиск вообще
@@ -614,24 +613,11 @@ public class PlanView extends View {
                     return;
                 }
 
-                if (countText.isEmpty()) {
-                    countInput.setError("Количество обязательно");
-                    return;
-                }
+                //int count;
+                Integer count = validatePositiveCount(countInput);
+                if (count == null) return;
 
-                int count;
-                try {
-                    count = Integer.parseInt(countText);
-                    if (count <= 0) {
-                        countInput.setError("Количество должно быть больше 0");
-                        return;
-                    }
-                } catch (NumberFormatException e) {
-                    countInput.setError("Неверное число");
-                    return;
-                }
-
-                // создаем временный объект растения для поиска полного совпадения
+                    // создаем временный объект растения для поиска полного совпадения
                 Plant tempPlant = new Plant();
                 tempPlant.name = name;
                 tempPlant.type = typeInput.getText().toString().trim();
@@ -654,12 +640,7 @@ public class PlanView extends View {
                 }
 
                 point.plant = plant;
-                try {
-                    point.count = Integer.parseInt(countText);
-                } catch (NumberFormatException e) {
-                    countInput.setError("Неверное число");
-                    return;
-                }
+                point.count = count;
 
                 long newId = dbHelper.addPoint(point);  // сохраням в БД с запоминанием id
                 point.id = (int) newId;                 // присваиваем
@@ -716,6 +697,9 @@ public class PlanView extends View {
         // поле количества
         EditText countInput = new EditText(context);
         countInput.setInputType(InputType.TYPE_CLASS_NUMBER);
+        countInput.setText(String.valueOf(point.count));
+        countInput.setSelection(countInput.getText().length());
+        countInput.setHint("Количество");
 
         // контейнер
         LinearLayout layout = new LinearLayout(context);
@@ -733,19 +717,7 @@ public class PlanView extends View {
                 .setTitle(point.plant.name)
                 .setMessage("Изменить количество или удалить точку")
                 .setView(layout)
-                .setPositiveButton("Сохранить", (dialog, which) -> {
-                    String text = countInput.getText().toString().trim();
-                    if (!text.isEmpty()) {
-                        try {
-                            point.count = Integer.parseInt(text);
-                        } catch (NumberFormatException e) {
-                            countInput.setError("Неверное число");
-                            return;
-                        }
-                        dbHelper.updatePoint(point.id, point);
-                        invalidate();
-                    }
-                })
+                .setPositiveButton("Сохранить", null)
                 .setNegativeButton("Удалить", (dialog, which) -> {
                     dbHelper.deletePoint(point.id);
 
@@ -760,6 +732,19 @@ public class PlanView extends View {
                 .setNeutralButton("Отмена", null)
                 // только создаем, но не показываем ибо мб переход в редактирование растения
                 .create();
+        editDialog.setOnShowListener(d -> {
+            Button saveButton = editDialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            saveButton.setOnClickListener(v -> {
+
+                Integer count = validatePositiveCount(countInput);
+                if (count == null) return;
+
+                point.count = count;
+                dbHelper.updatePoint(point.id, point);
+                invalidate();
+                editDialog.dismiss();
+            });
+        });
 
         changePlantBtn.setOnClickListener(v -> {
             // закрываем текущий диалог редактирования
@@ -1001,7 +986,6 @@ public class PlanView extends View {
                 })
                 .setNegativeButton("Отменить", (d, w) -> {
                     searchActive = false;
-                    searchResults.clear();
                     searchResultsSet.clear();
                     if (searchStateListener != null) {
                         searchStateListener.onSearchCleared();
@@ -1019,17 +1003,41 @@ public class PlanView extends View {
         }
     }
 
+    private Integer validatePositiveCount(EditText input) {
+        String text = input.getText().toString().trim();
+
+        if (text.isEmpty()) {
+            input.setError("Количество обязательно");
+            return null;
+        }
+
+        int value;
+        try {
+            value = Integer.parseInt(text);
+        } catch (NumberFormatException e) {
+            input.setError("Неверное число");
+            return null;
+        }
+
+        if (value <= 0) {
+            input.setError("Количество должно быть больше 0");
+            return null;
+        }
+
+        return value;
+    }
+
+
     private void applyFilter(SearchFilter filter) {
-        searchResults.clear();
         searchResultsSet.clear();
 
         for (PlantPoint p : points) {
             if (matchesFilter(p, filter)) {
-                searchResults.add(p);
+                searchResultsSet.add(p);
             }
         }
 
-        if (!searchResults.isEmpty()) {
+        if (!searchResultsSet.isEmpty()) {
             searchActive = true;
             if (searchStateListener != null) {
                 searchStateListener.onSearchApplied();
@@ -1070,7 +1078,6 @@ public class PlanView extends View {
 
     public void clearSearch() {
         searchActive = false;
-        searchResults.clear();
         searchResultsSet.clear();
         if (searchStateListener != null) {
             searchStateListener.onSearchCleared();

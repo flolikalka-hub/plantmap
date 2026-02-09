@@ -555,6 +555,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         Cursor cursor = db.rawQuery(sql, args);
         boolean exists = cursor.moveToFirst();
         cursor.close();
+        db.close();
 
         return exists;
     }
@@ -568,6 +569,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         Cursor cursor = db.rawQuery(sql, args);
         boolean used = cursor.moveToFirst();
         cursor.close();
+        db.close();
 
         return used;
     }
