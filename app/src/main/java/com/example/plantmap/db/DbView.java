@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.plantmap.R;
 import com.example.plantmap.model.Plant;
+import com.example.plantmap.util.InputValidators;
 import com.example.plantmap.view.PlanView;
 
 import java.util.Collections;
@@ -192,12 +193,19 @@ public class DbView {
                 return; // не закрываем диалог
             }
 
+            Integer potVolume = InputValidators.validatePositiveOptionalInt(potVolumeInput);
+
+            if (potVolume == null && !potVolumeInput.getText().toString().trim().isEmpty()) {
+                potVolumeInput.requestFocus();
+                return; // НЕ закрываем диалог
+            }
+
             plantFinal.name = name;
             plantFinal.type = typeInput.getText().toString().trim();
             plantFinal.group = groupInput.getText().toString().trim();
-            plantFinal.potVolume = potVolumeInput.getText().toString().isEmpty()
+            plantFinal.potVolume = potVolume == null
                     ? 0
-                    : Integer.parseInt(potVolumeInput.getText().toString());
+                    : potVolume;
             plantFinal.flowerColor = flowerColorInput.getText().toString().trim();
             plantFinal.additionalInfo = additionalInfoInput.getText().toString().trim();
 

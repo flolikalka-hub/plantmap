@@ -28,6 +28,7 @@ import com.example.plantmap.db.DatabaseHelper;
 import com.example.plantmap.model.Plant;
 import com.example.plantmap.model.PlantPoint;
 import com.example.plantmap.search.SearchFilter;
+import com.example.plantmap.util.InputValidators;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -606,26 +607,27 @@ public class PlanView extends View {
             saveButton.setOnClickListener(v -> {
 
                 String name = nameInput.getText().toString().trim();
-                String countText = countInput.getText().toString().trim();
 
                 if (name.isEmpty()) {
                     nameInput.setError("Название обязательно");
                     return;
                 }
 
-                //int count;
                 Integer count = validatePositiveCount(countInput);
                 if (count == null) return;
 
-                    // создаем временный объект растения для поиска полного совпадения
+                Integer potVolume = InputValidators.validatePositiveOptionalInt(potVolumeInput);
+                if (potVolumeInput.getError() != null) return;
+
+                // создаем временный объект растения для поиска полного совпадения
                 Plant tempPlant = new Plant();
                 tempPlant.name = name;
                 tempPlant.type = typeInput.getText().toString().trim();
                 tempPlant.group = groupInput.getText().toString().trim();
                 tempPlant.flowerColor = flowerColorInput.getText().toString().trim();
-                tempPlant.potVolume = potVolumeInput.getText().toString().isEmpty()
+                tempPlant.potVolume = potVolume == null
                         ? 0
-                        : Integer.parseInt(potVolumeInput.getText().toString());
+                        : potVolume;
                 tempPlant.additionalInfo = addInput.getText().toString().trim();
 
                 // ищем точное совпадение всех полей
@@ -854,14 +856,17 @@ public class PlanView extends View {
                     return;
                 }
 
+                Integer potVolume = InputValidators.validatePositiveOptionalInt(potVolumeInput);
+                if (potVolumeInput.getError() != null) return;
+
                 Plant tempPlant = new Plant();
                 tempPlant.name = name;
                 tempPlant.type = typeInput.getText().toString().trim();
                 tempPlant.group = groupInput.getText().toString().trim();
                 tempPlant.flowerColor = flowerColorInput.getText().toString().trim();
-                tempPlant.potVolume = potVolumeInput.getText().toString().isEmpty()
+                tempPlant.potVolume = potVolume == null
                         ? 0
-                        : Integer.parseInt(potVolumeInput.getText().toString());
+                        : potVolume;
                 tempPlant.additionalInfo = addInput.getText().toString().trim();
 
                 Plant plant = dbHelper.findPlantByAllFields(tempPlant);
@@ -1027,9 +1032,28 @@ public class PlanView extends View {
         return value;
     }
 
+    private boolean isFilterEmpty(SearchFilter f) {
+        return (f.name == null || f.name.isEmpty())
+                && (f.type == null || f.type.isEmpty())
+                && (f.group == null || f.group.isEmpty())
+                && (f.flowerColor == null || f.flowerColor.isEmpty())
+                && (f.additionalInfo == null || f.additionalInfo.isEmpty())
+                && f.potVolume == null
+                && f.count == null;
+    }
+
 
     private void applyFilter(SearchFilter filter) {
         searchResultsSet.clear();
+
+        if (isFilterEmpty(filter)) {
+            searchActive = false;
+            if (searchStateListener != null) {
+                searchStateListener.onSearchCleared();
+            }
+            invalidate();
+            return;
+        }
 
         for (PlantPoint p : points) {
             if (matchesFilter(p, filter)) {
