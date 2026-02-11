@@ -63,7 +63,7 @@ public class PlantDialogs {
 
                 Integer potVolume = InputValidators.validatePositiveOptionalInt(form.potVolumeInput);
                 if (form.potVolumeInput.getError() != null) return;
-                modifiedPlant.potVolume = potVolume == null ? 0 : potVolume;
+                modifiedPlant.potVolume = potVolume;
 
                 // поиск полного совпадения
                 Plant plant;
@@ -218,9 +218,7 @@ public class PlantDialogs {
                 Integer potVolume = InputValidators.validatePositiveOptionalInt(form.potVolumeInput);
                 if (form.potVolumeInput.getError() != null) return;
 
-                tempPlant.potVolume = potVolume == null
-                        ? 0
-                        : potVolume;
+                tempPlant.potVolume = potVolume;
 
                 // поиск полного совпадения
                 Plant plant = repository.findPlantByAllFields(tempPlant);

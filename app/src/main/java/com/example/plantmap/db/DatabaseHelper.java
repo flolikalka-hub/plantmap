@@ -169,7 +169,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             plant.name = c.getString(c.getColumnIndexOrThrow("name"));
             plant.type = c.getString(c.getColumnIndexOrThrow("type"));
             plant.group = c.getString(c.getColumnIndexOrThrow("plant_group"));
-            plant.potVolume = c.getInt(c.getColumnIndexOrThrow("pot_volume"));
+
+            int pvIndex = c.getColumnIndexOrThrow("pot_volume");
+            plant.potVolume = c.isNull(pvIndex) ? null : c.getInt(pvIndex);
+
+
             plant.flowerColor = c.getString(c.getColumnIndexOrThrow("flower_color"));
             plant.additionalInfo = c.getString(c.getColumnIndexOrThrow("additional_info"));
         }
@@ -192,7 +196,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             p.name = c.getString(c.getColumnIndexOrThrow("name"));
             p.type = c.getString(c.getColumnIndexOrThrow("type"));
             p.group = c.getString(c.getColumnIndexOrThrow("plant_group"));
-            p.potVolume = c.getInt(c.getColumnIndexOrThrow("pot_volume"));
+
+            int pvIndex = c.getColumnIndexOrThrow("pot_volume");
+            p.potVolume = c.isNull(pvIndex) ? null : c.getInt(pvIndex);
+
             p.flowerColor = c.getString(c.getColumnIndexOrThrow("flower_color"));
             p.additionalInfo = c.getString(c.getColumnIndexOrThrow("additional_info"));
             plants.add(p);
@@ -288,7 +295,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             plant.name = c.getString(c.getColumnIndexOrThrow("name"));
             plant.type = c.getString(c.getColumnIndexOrThrow("type"));
             plant.group = c.getString(c.getColumnIndexOrThrow("plant_group"));
-            plant.potVolume = c.getInt(c.getColumnIndexOrThrow("pot_volume"));
+
+            int pvIndex = c.getColumnIndexOrThrow("pot_volume");
+            plant.potVolume = c.isNull(pvIndex) ? null : c.getInt(pvIndex);
+
+
             plant.flowerColor = c.getString(c.getColumnIndexOrThrow("flower_color"));
             plant.additionalInfo = c.getString(c.getColumnIndexOrThrow("additional_info"));
 
@@ -335,7 +346,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             result.name = cursor.getString(cursor.getColumnIndexOrThrow("name"));
             result.type = cursor.getString(cursor.getColumnIndexOrThrow("type"));
             result.group = cursor.getString(cursor.getColumnIndexOrThrow("plant_group"));
-            result.potVolume = cursor.getInt(cursor.getColumnIndexOrThrow("pot_volume"));
+
+            int pvIndex = cursor.getColumnIndexOrThrow("pot_volume");
+            result.potVolume = cursor.isNull(pvIndex) ? null : cursor.getInt(pvIndex);
+
+
             result.flowerColor = cursor.getString(cursor.getColumnIndexOrThrow("flower_color"));
             result.additionalInfo = cursor.getString(cursor.getColumnIndexOrThrow("additional_info"));
         }
@@ -468,7 +483,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             p.name = c.getString(c.getColumnIndexOrThrow("name"));
             p.type = c.getString(c.getColumnIndexOrThrow("type"));
             p.group = c.getString(c.getColumnIndexOrThrow("plant_group"));
-            p.potVolume = c.getInt(c.getColumnIndexOrThrow("pot_volume"));
+
+            int pvIndex = c.getColumnIndexOrThrow("pot_volume");
+            p.potVolume = c.isNull(pvIndex) ? null : c.getInt(pvIndex);
+
+
             p.flowerColor = c.getString(c.getColumnIndexOrThrow("flower_color"));
             p.additionalInfo = c.getString(c.getColumnIndexOrThrow("additional_info"));
             plants.add(p);

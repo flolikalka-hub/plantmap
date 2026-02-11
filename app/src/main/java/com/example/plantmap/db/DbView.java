@@ -122,7 +122,7 @@ public class DbView {
         EditText potVolumeInput = new EditText(context);
         potVolumeInput.setHint("Литраж горшка");
         potVolumeInput.setInputType(InputType.TYPE_CLASS_NUMBER);
-        potVolumeInput.setText(plant.potVolume != 0 ? String.valueOf(plant.potVolume) : "");
+        potVolumeInput.setText(plant.potVolume != null ? String.valueOf(plant.potVolume) : "");
 
         // с автозаполнением из БД
         AutoCompleteTextView flowerColorInput = new AutoCompleteTextView(context);
@@ -205,9 +205,7 @@ public class DbView {
             plantFinal.name = name;
             plantFinal.type = typeInput.getText().toString().trim();
             plantFinal.group = groupInput.getText().toString().trim();
-            plantFinal.potVolume = potVolume == null
-                    ? 0
-                    : potVolume;
+            plantFinal.potVolume = potVolume;
             plantFinal.flowerColor = flowerColorInput.getText().toString().trim();
             plantFinal.additionalInfo = additionalInfoInput.getText().toString().trim();
 

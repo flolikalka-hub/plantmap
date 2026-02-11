@@ -54,7 +54,7 @@ public class PlantRepository {
         return !original.name.equals(modified.name) ||
                 !safeEquals(original.type, modified.type) ||
                 !safeEquals(original.group, modified.group) ||
-                original.potVolume != modified.potVolume ||
+                !java.util.Objects.equals(original.potVolume, modified.potVolume) ||
                 !safeEquals(original.flowerColor, modified.flowerColor) ||
                 !safeEquals(original.additionalInfo, modified.additionalInfo);
     }

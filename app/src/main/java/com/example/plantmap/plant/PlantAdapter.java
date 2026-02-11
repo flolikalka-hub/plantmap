@@ -51,11 +51,14 @@ public class PlantAdapter extends RecyclerView.Adapter<PlantAdapter.PlantViewHol
 
         // подпись карточки
         // название сорта + цвет цветка и литраж горшка
-        if (plant.potVolume != 0 && plant.flowerColor != null && !plant.flowerColor.isEmpty()) {
+        boolean hasPotVolume = plant.potVolume != null;
+        boolean hasFlowerColor = plant.flowerColor != null && !plant.flowerColor.isEmpty();
+
+        if (hasPotVolume && hasFlowerColor) {
             holder.name.setText(plant.name + " (" + plant.flowerColor + ", " + plant.potVolume + "л)");
-        } else if (plant.flowerColor != null && !plant.flowerColor.isEmpty()) {
+        } else if (hasFlowerColor) {
             holder.name.setText(plant.name + " (" + plant.flowerColor + ")");
-        } else if (plant.potVolume != 0) {
+        } else if (hasPotVolume) {
             holder.name.setText(plant.name + " (" + plant.potVolume + "л)");
         } else {
             holder.name.setText(plant.name);

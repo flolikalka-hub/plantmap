@@ -4,7 +4,7 @@ public class Plant {
     public int id = 0;
     public String name;
     public String type;
-    public int potVolume;
+    public Integer potVolume;
     public String flowerColor;
     public String group;            // plant_group
     public String additionalInfo;   // additional_info
@@ -16,7 +16,7 @@ public class Plant {
     }
     public Plant(String name,
                  String type,
-                 int potVolume,
+                 Integer potVolume,
                  String flowerColor,
                  String group,
                  String additionalInfo) {

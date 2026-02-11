@@ -166,7 +166,9 @@ public class PlantUniversalForm {
         nameInput.setText(plant.name != null ? plant.name : "");
         typeInput.setText(plant.type != null ? plant.type : "");
         groupInput.setText(plant.group != null ? plant.group : "");
-        potVolumeInput.setText(String.valueOf(plant.potVolume));
+        potVolumeInput.setText(plant.potVolume != null && plant.potVolume > 0
+                ? String.valueOf(plant.potVolume)
+                : "");
         flowerColorInput.setText(plant.flowerColor != null ? plant.flowerColor : "");
         additionalInfoInput.setText(plant.additionalInfo != null ? plant.additionalInfo : "");
     }
@@ -178,9 +180,16 @@ public class PlantUniversalForm {
         p.type = typeInput.getText().toString().trim();
         p.group = groupInput.getText().toString().trim();
 
-        p.potVolume = potVolumeInput.getText().toString().trim().isEmpty()
-                ? 0
-                : Integer.parseInt(potVolumeInput.getText().toString().trim());
+        String potVolumeStr = potVolumeInput.getText().toString().trim();
+        if (potVolumeStr.isEmpty()) {
+            p.potVolume = null;
+        } else {
+            try {
+                p.potVolume = Integer.parseInt(potVolumeStr);
+            } catch (NumberFormatException e) {
+                p.potVolume = null;
+            }
+        }
 
         p.flowerColor = flowerColorInput.getText().toString().trim();
         p.additionalInfo = additionalInfoInput.getText().toString().trim();
