@@ -560,11 +560,21 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return exists;
     }
 
-    public boolean isColorUsed(String colorName) {
+    public boolean isColorUsed(String colorName, String root) {
         SQLiteDatabase db = getReadableDatabase();
 
-        String sql = "SELECT 1 FROM plants WHERE LOWER(flower_color) = ? LIMIT 1";
-        String[] args = new String[]{ colorName.toLowerCase().trim() };
+        String sql = "SELECT 1 FROM plants WHERE " +
+                "LOWER(flower_color) = ? " +
+                "OR LOWER(flower_color) LIKE ? " +
+                "LIMIT 1";
+
+        String lowerName = colorName.toLowerCase().trim();
+        String lowerRoot = root == null ? "" : root.toLowerCase().trim();
+
+        String[] args = new String[]{
+                "%" + lowerName + "%",
+                "%" + lowerRoot + "%"
+        };
 
         Cursor cursor = db.rawQuery(sql, args);
         boolean used = cursor.moveToFirst();

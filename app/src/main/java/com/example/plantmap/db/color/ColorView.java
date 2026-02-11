@@ -90,7 +90,7 @@ public class ColorView {
                     @Override
                     public void onDeleteClick(FlowerColor color) {
 
-                        if (dbHelper.isColorUsed(color.name)) {
+                        if (dbHelper.isColorUsed(color.name, color.root)) {
                             new AlertDialog.Builder(context)
                                     .setTitle("Нельзя удалить цвет")
                                     .setMessage(
