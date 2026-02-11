@@ -26,7 +26,7 @@ public class PlantUniversalForm {
 
     private LinearLayout rootLayout;
 
-    private View lastFocusedView = null;
+    //private View lastFocusedView = null;
 
     private Plant selectedPlantFromAutocomplete;
 
@@ -196,7 +196,7 @@ public class PlantUniversalForm {
 
         return p;
     }
-
+    /*
     // сохранение состояния
     public void saveState(Bundle outState) {
         outState.putString("name", nameInput.getText().toString());
@@ -239,4 +239,5 @@ public class PlantUniversalForm {
             }
         }
     }
+     */
 }

@@ -47,7 +47,6 @@ public class PlantDialogs {
             Button saveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
             saveButton.setOnClickListener(v -> {
 
-                //Plant tempPlant = form.buildPlantFromInputs();
                 Plant modifiedPlant = form.buildPlantFromInputs();
                 Plant originalPlant = form.getSelectedPlant();
 
