@@ -17,19 +17,26 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 
-import com.example.plantmap.db.ColorView;
+import com.example.plantmap.db.color.ColorView;
 import com.example.plantmap.db.DbView;
+import com.example.plantmap.model.PlantPoint;
+import com.example.plantmap.plant.PlantRepository;
+import com.example.plantmap.search.PlantSearchDialog;
+import com.example.plantmap.search.PlantSearchEngine;
 import com.example.plantmap.stats.StatisticsView;
 import com.example.plantmap.view.EditMode;
 import com.example.plantmap.view.PlanView;
 import com.google.android.material.navigation.NavigationView;
+
+import java.util.List;
+import java.util.Set;
 
 public class MainActivity extends AppCompatActivity {
 
     // флаги для отслеживания текущего состояния
     final boolean[] addActive = {false};
     final boolean[] editActive = {false};
-    final boolean[] searchActive = {false};
+    //final boolean[] searchActive = {false};
     // разнообразные контейнеры
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
@@ -47,11 +54,16 @@ public class MainActivity extends AppCompatActivity {
     private Screen currentScreen = Screen.PLAN;
     // для сброса фильтра
     private boolean dbSearchActive = false;
+    private PlantSearchEngine searchEngine = new PlantSearchEngine();
+    private PlantRepository repository;
+
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        repository = new PlantRepository(this);
 
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 
@@ -183,20 +195,19 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onSearchApplied() {
                 btnSearch.setImageResource(R.drawable.btn_find_active);
-                searchActive[0] = true;
             }
 
             @Override
             public void onSearchCleared() {
                 btnSearch.setImageResource(R.drawable.btn_find);
-                searchActive[0] = false;
             }
         });
+
         btnSearch.setOnClickListener(v -> {
-            if (searchActive[0]) {
+            if (planView.isSearchActive()) {
                 planView.clearSearch();
             } else {
-                planView.showAdvancedSearchDialog();
+                planView.showSearchDialog();
             }
         });
 

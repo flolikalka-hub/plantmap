@@ -1,4 +1,4 @@
-package com.example.plantmap.db;
+package com.example.plantmap.db.color;
 
 import android.app.AlertDialog;
 import android.content.Context;
@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.plantmap.R;
+import com.example.plantmap.db.DatabaseHelper;
 import com.example.plantmap.model.FlowerColor;
 
 import java.util.Collections;

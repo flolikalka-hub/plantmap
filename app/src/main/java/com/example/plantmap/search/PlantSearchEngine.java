@@ -1,0 +1,62 @@
+package com.example.plantmap.search;
+
+import com.example.plantmap.model.Plant;
+import com.example.plantmap.model.PlantPoint;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+public class PlantSearchEngine {
+
+    public Set<PlantPoint> applyFilter(List<PlantPoint> points, SearchFilter filter) {
+        Set<PlantPoint> result = new HashSet<>();
+
+        if (isFilterEmpty(filter)) {
+            return result;
+        }
+
+        for (PlantPoint p : points) {
+            if (matchesFilter(p, filter)) {
+                result.add(p);
+            }
+        }
+
+        return result;
+    }
+
+    private boolean isFilterEmpty(SearchFilter f) {
+        return (f.name == null || f.name.isEmpty())
+                && (f.type == null || f.type.isEmpty())
+                && (f.group == null || f.group.isEmpty())
+                && (f.flowerColor == null || f.flowerColor.isEmpty())
+                && (f.additionalInfo == null || f.additionalInfo.isEmpty())
+                && f.potVolume == null
+                && f.count == null;
+    }
+
+    private boolean matchesFilter(PlantPoint p, SearchFilter f) {
+        if (p.plant == null) return false;
+        Plant plant = p.plant;
+
+        // фильтр по точке
+        if (f.count != null && !f.count.equals(p.count)) return false;
+
+        // фильтры по растению
+        if (!matchesText(plant.name, f.name)) return false;
+        if (!matchesText(plant.type, f.type)) return false;
+        if (!matchesText(plant.group, f.group)) return false;
+        if (!matchesText(plant.flowerColor, f.flowerColor)) return false;
+        if (!matchesText(plant.additionalInfo, f.additionalInfo)) return false;
+
+        if (f.potVolume != null && plant.potVolume != f.potVolume) return false;
+
+        return true;
+    }
+
+    private boolean matchesText(String field, String filter) {
+        if (filter == null || filter.isEmpty()) return true;
+        if (field == null) return false;
+        return field.toLowerCase().contains(filter.toLowerCase());
+    }
+}

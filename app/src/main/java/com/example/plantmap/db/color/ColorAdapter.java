@@ -1,4 +1,4 @@
-package com.example.plantmap.db;
+package com.example.plantmap.db.color;
 
 import android.content.Context;
 import android.graphics.Color;
