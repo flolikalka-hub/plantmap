@@ -28,6 +28,12 @@ public class PlantUniversalForm {
 
     private View lastFocusedView = null;
 
+    private Plant selectedPlantFromAutocomplete;
+
+    public Plant getSelectedPlant() {
+        return selectedPlantFromAutocomplete;
+    }
+
     public PlantUniversalForm(Context context, PlantRepository repository) {
 
         rootLayout = new LinearLayout(context);
@@ -81,6 +87,7 @@ public class PlantUniversalForm {
         nameInput.setOnItemClickListener((parent, view, position, id) -> {
             Plant selectedPlant = (Plant) parent.getItemAtPosition(position);
             fillFromPlant(selectedPlant);
+            selectedPlantFromAutocomplete = selectedPlant;
         });
 
         // перевод фокусов полей

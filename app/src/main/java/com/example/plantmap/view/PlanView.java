@@ -7,13 +7,9 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
-import android.text.InputType;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View; //базовый визуальный элемент
-import android.widget.AutoCompleteTextView;
-import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.view.ViewConfiguration;
 
 import androidx.core.content.ContextCompat;
@@ -23,7 +19,6 @@ import com.example.plantmap.plant.PlantRepository;
 import com.example.plantmap.model.PlantPoint;
 import com.example.plantmap.search.PlantSearchDialog;
 import com.example.plantmap.search.PlantSearchEngine;
-import com.example.plantmap.search.SearchFilter;
 import com.example.plantmap.plant.PlantDialogs;
 
 import java.util.ArrayList;

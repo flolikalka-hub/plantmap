@@ -47,7 +47,8 @@ public class PlantRepository {
         return dbHelper.getAllColorNames();
     }
 
-    private boolean isPlantModified(Plant original, Plant modified) {
+    // для избегания дубликатов (был ли изменен автокомплит)
+    public boolean isPlantModified(Plant original, Plant modified) {
         if (original == null || modified == null) return true;
 
         return !original.name.equals(modified.name) ||

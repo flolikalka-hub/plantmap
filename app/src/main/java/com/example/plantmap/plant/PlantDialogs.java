@@ -47,9 +47,12 @@ public class PlantDialogs {
             Button saveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
             saveButton.setOnClickListener(v -> {
 
-                Plant tempPlant = form.buildPlantFromInputs();
+                //Plant tempPlant = form.buildPlantFromInputs();
+                Plant modifiedPlant = form.buildPlantFromInputs();
+                Plant originalPlant = form.getSelectedPlant();
 
-                if (tempPlant.name.isEmpty()) {
+
+                if (modifiedPlant.name.isEmpty()) {
                     form.nameInput.setError("Название обязательно");
                     return;
                 }
@@ -60,15 +63,30 @@ public class PlantDialogs {
 
                 Integer potVolume = InputValidators.validatePositiveOptionalInt(form.potVolumeInput);
                 if (form.potVolumeInput.getError() != null) return;
-                tempPlant.potVolume = potVolume == null ? 0 : potVolume;
+                modifiedPlant.potVolume = potVolume == null ? 0 : potVolume;
 
                 // поиск полного совпадения
-                Plant plant = repository.findPlantByAllFields(tempPlant);
-                if (plant == null) {
-                    long plantId = repository.addPlant(tempPlant);
-                    tempPlant.id = (int) plantId;
-                    plant = tempPlant;
+                Plant plant;
+
+                if (originalPlant != null &&
+                        !repository.isPlantModified(originalPlant, modifiedPlant)) {
+
+                    // выбрали существующее и ничего не изменили
+                    plant = originalPlant;
+
+                } else {
+
+                    Plant existing = repository.findPlantByAllFields(modifiedPlant);
+
+                    if (existing != null) {
+                        plant = existing;
+                    } else {
+                        long plantId = repository.addPlant(modifiedPlant);
+                        modifiedPlant.id = (int) plantId;
+                        plant = modifiedPlant;
+                    }
                 }
+
 
                 point.plant = plant;
                 point.count = count;
