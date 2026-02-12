@@ -270,31 +270,31 @@ public class PlanView extends View {
         } else if (currentMode == EditMode.EDIT_POINT) {
             // выбрать точку, открыть меню редактирования
             if (pressedPoint != null && !isDragging) {
+                // фиксируем точку в локальную переменную,
+                // чтобы коллбеки не зависели от обнуления поля pressedPoint в ACTION_UP
+                PlantPoint tappedPoint = pressedPoint;
                 // contains дает true только если это тот же объект, а не просто совпадение id
-                if (!points.contains(pressedPoint)) {
+                if (!points.contains(tappedPoint)) {
                     pressedPoint = null;
                     return;
                 }
-                // это был ТАП, отсекаем зомби
-                if (pressedPoint != null && points.contains(pressedPoint)) {
-                    // изменить количество / удалить
-                    PlantDialogs.showEditPointDialog(
-                            getContext(),
-                            pressedPoint,
-                            repository,
-                            () -> {
-                                points.remove(pressedPoint); // удаляем точку
+                // изменить количество / удалить
+                PlantDialogs.showEditPointDialog(
+                        getContext(),
+                        pressedPoint,
+                        repository,
+                        () -> {
+                            points.remove(tappedPoint); // удаляем точку
 
-                                if (selectedPoint == pressedPoint) selectedPoint = null;
-                                if (draggedPoint == pressedPoint) draggedPoint = null;
+                            if (selectedPoint == tappedPoint) selectedPoint = null;
+                            if (draggedPoint == tappedPoint) draggedPoint = null;
 
-                                invalidate();// перерисовываем экран
-                            },
-                            () -> {
-                                invalidate();// перерисовываем экран
-                            }
-                    );
-                }
+                            invalidate();// перерисовываем экран
+                        },
+                        () -> {
+                            invalidate();// перерисовываем экран
+                        }
+                );
             }
             // если isDragging == true — значит, это было перемещение
         }
