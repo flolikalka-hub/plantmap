@@ -17,26 +17,21 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 
+import com.example.plantmap.db.DatabaseHelper;
 import com.example.plantmap.db.color.ColorView;
 import com.example.plantmap.db.DbView;
-import com.example.plantmap.model.PlantPoint;
 import com.example.plantmap.plant.PlantRepository;
-import com.example.plantmap.search.PlantSearchDialog;
 import com.example.plantmap.search.PlantSearchEngine;
 import com.example.plantmap.stats.StatisticsView;
 import com.example.plantmap.view.EditMode;
 import com.example.plantmap.view.PlanView;
 import com.google.android.material.navigation.NavigationView;
 
-import java.util.List;
-import java.util.Set;
-
 public class MainActivity extends AppCompatActivity {
 
     // флаги для отслеживания текущего состояния
     final boolean[] addActive = {false};
     final boolean[] editActive = {false};
-    //final boolean[] searchActive = {false};
     // разнообразные контейнеры
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
@@ -55,7 +50,9 @@ public class MainActivity extends AppCompatActivity {
     // для сброса фильтра
     private boolean dbSearchActive = false;
     private PlantSearchEngine searchEngine = new PlantSearchEngine();
+    private DatabaseHelper dbHelper;
     private PlantRepository repository;
+
 
 
 
@@ -63,7 +60,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        repository = new PlantRepository(this);
+        dbHelper = new DatabaseHelper(this);
+        repository = new PlantRepository(dbHelper);
 
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 
@@ -95,7 +93,7 @@ public class MainActivity extends AppCompatActivity {
         navigationView.setCheckedItem(R.id.nav_plan);
 
         //                          ЭКРАН ПЛАН
-        planView = new PlanView(this);
+        planView = new PlanView(this, repository);
         contentContainer.addView(
                 planView,
                 new FrameLayout.LayoutParams(
@@ -277,7 +275,7 @@ public class MainActivity extends AppCompatActivity {
                 btnAdd.setImageResource(R.drawable.btn_add_point);
                 btnEdit.setImageResource(R.drawable.btn_edit_point);
                 // Загружаем экран с БД
-                dbView = new DbView(this, planView);
+                dbView = new DbView(this, planView, repository);
                 dbView.setSearchStateListener(() -> {
                     dbSearchActive = true;
                     invalidateOptionsMenu();
@@ -296,8 +294,7 @@ public class MainActivity extends AppCompatActivity {
                 btnAdd.setImageResource(R.drawable.btn_add_point);
                 btnEdit.setImageResource(R.drawable.btn_edit_point);
                 // загружаем экран с цветами
-                // тут будет загрузка
-                ColorView colorView = new ColorView(this);
+                ColorView colorView = new ColorView(this, repository.getColorDataAccess());
                 contentContainer.addView(colorView.createColorView());
                 toolbar.setTitle("Цвета");
             } else if (item.getItemId() == R.id.nav_stats) {

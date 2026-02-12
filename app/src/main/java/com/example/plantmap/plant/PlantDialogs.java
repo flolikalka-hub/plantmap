@@ -112,8 +112,8 @@ public class PlantDialogs {
             Context context,
             PlantPoint point,
             PlantRepository repository,
-            Runnable onUpdated,
-            Runnable onDeleted) {
+            Runnable onDeleted,
+            Runnable onUpdated) {
 
         if (point.plant == null) {
             return;

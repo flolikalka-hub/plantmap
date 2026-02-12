@@ -18,6 +18,7 @@ import com.example.plantmap.R;
 import com.example.plantmap.db.color.ColorResolver;
 import com.example.plantmap.plant.PlantAdapter;
 import com.example.plantmap.model.Plant;
+import com.example.plantmap.plant.PlantRepository;
 import com.example.plantmap.util.InputValidators;
 import com.example.plantmap.view.PlanView;
 
@@ -27,9 +28,7 @@ import java.util.List;
 
 public class DbView {
     private Context context;
-    private DatabaseHelper dbHelper;
     private PlanView planView;
-    private ColorResolver colorResolver;
     private RecyclerView recyclerView;
 
     public interface SearchStateListener {
@@ -37,11 +36,18 @@ public class DbView {
     }
     private SearchStateListener searchListener;
 
-    public DbView(Context context, PlanView planView) {
+    private PlantRepository repository;
+    private ColorResolver colorResolver;
+
+    public DbView(Context context,
+                  PlanView planView,
+                  PlantRepository repository) {
         this.context = context;
         this.planView = planView;
-        dbHelper = new DatabaseHelper(context);
-        colorResolver = new ColorResolver(dbHelper);
+        this.repository = repository;
+
+        ColorDataAccess colorDa = repository.getColorDataAccess();
+        colorResolver = new ColorResolver(colorDa);
     }
 
     public View createDbView() {
@@ -85,7 +91,7 @@ public class DbView {
 
     // Метод для обновления списка растений
     private void refreshPlantList(RecyclerView recyclerView) {
-        List<Plant> plants = dbHelper.getAllPlants();
+        List<Plant> plants = repository.getAllPlants();
         Collections.sort(plants, Comparator.comparing(p -> p.name));
         PlantAdapter adapter = new PlantAdapter(
                 context,
@@ -134,7 +140,7 @@ public class DbView {
         additionalInfoInput.setText(plant.additionalInfo != null ? plant.additionalInfo : "");
 
         // Получаем список цветов из БД
-        List<String> colorNames = dbHelper.getAllColorNames();
+        List<String> colorNames = repository.getAllColorNames();
 
         ArrayAdapter<String> colorAdapter = new ArrayAdapter<>(
                 context,
@@ -160,7 +166,7 @@ public class DbView {
         if (!isNew) {
             final int idPlant = plant.id;
             builder.setNeutralButton("Удалить", (d, which) -> {
-                if (!dbHelper.canDeletePlant(idPlant)) {
+                if (!repository.canDeletePlant(idPlant)) {
                     new AlertDialog.Builder(context)
                             .setTitle("Растение используется в точках")
                             .setMessage("Сначала удалите точки с этим растением")
@@ -171,7 +177,7 @@ public class DbView {
                             .setTitle("Удалить растение")
                             .setMessage("Растение будет удалено. Вы уверены?")
                             .setPositiveButton("Удалить", (dd, w) -> {
-                                dbHelper.deletePlant(idPlant);
+                                repository.deletePlant(idPlant);
                                 if (planView != null) planView.reloadPoints();
                                 refreshPlantList(recyclerView);
                             })
@@ -211,10 +217,10 @@ public class DbView {
 
             if (isNew) {
                 // Добавляем новое растение
-                dbHelper.addPlant(plantFinal);
+                repository.addPlant(plantFinal);
             } else {
                 // Обновляем существующее
-                dbHelper.updatePlant(plantFinal);
+                repository.updatePlant(plantFinal);
             }
             if (planView != null) planView.reloadPoints();
 
@@ -263,7 +269,7 @@ public class DbView {
                             ? null
                             : Integer.parseInt(potVolumeInput.getText().toString());
 
-                    List<Plant> result = dbHelper.searchPlants(
+                    List<Plant> result = repository.searchPlants(
                             nameInput.getText().toString().trim(),
                             typeInput.getText().toString().trim(),
                             groupInput.getText().toString().trim(),

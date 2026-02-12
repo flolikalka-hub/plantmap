@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.plantmap.R;
+import com.example.plantmap.db.ColorDataAccess;
 import com.example.plantmap.db.DatabaseHelper;
 import com.example.plantmap.model.FlowerColor;
 
@@ -29,12 +30,12 @@ import com.skydoves.colorpickerview.listeners.ColorEnvelopeListener;
 public class ColorView {
 
     private Context context;
-    private DatabaseHelper dbHelper;
+    private ColorDataAccess cdb;
     private RecyclerView recyclerView;
 
-    public ColorView(Context context) {
+    public ColorView(Context context, ColorDataAccess cdb) {
         this.context = context;
-        dbHelper = new DatabaseHelper(context);
+        this.cdb = cdb;
     }
 
     public View createColorView() {
@@ -75,7 +76,7 @@ public class ColorView {
     }
 
     private void refreshColorList() {
-        List<FlowerColor> colors = dbHelper.getAllColors();
+        List<FlowerColor> colors = cdb.getAllColors();
         Collections.sort(colors, Comparator.comparing(c -> c.name));
 
         ColorAdapter adapter = new ColorAdapter(
@@ -90,7 +91,7 @@ public class ColorView {
                     @Override
                     public void onDeleteClick(FlowerColor color) {
 
-                        if (dbHelper.isColorUsed(color.name, color.root)) {
+                        if (cdb.isColorUsed(color.name, color.root)) {
                             new AlertDialog.Builder(context)
                                     .setTitle("Нельзя удалить цвет")
                                     .setMessage(
@@ -106,7 +107,7 @@ public class ColorView {
                                 .setTitle("Удалить цвет")
                                 .setMessage("Вы уверены, что хотите удалить этот цвет?")
                                 .setPositiveButton("Да", (d, w) -> {
-                                    dbHelper.deleteColor(color.id);
+                                    cdb.deleteColor(color.id);
                                     refreshColorList();
                                 })
                                 .setNegativeButton("Отмена", null)
@@ -187,7 +188,7 @@ public class ColorView {
                 return;
             }
 
-            if (dbHelper.colorNameExists(
+            if (cdb.colorNameExists(
                     name,
                     existingColor == null ? null : existingColor.id
             )) {
@@ -198,9 +199,9 @@ public class ColorView {
             String hex = String.format("#%06X", 0xFFFFFF & selectedColor[0]);
 
             if (existingColor == null) {
-                dbHelper.insertColor(name, root, hex);
+                cdb.insertColor(name, root, hex);
             } else {
-                dbHelper.updateColor(existingColor.id, name, root, hex);
+                cdb.updateColor(existingColor.id, name, root, hex);
             }
 
             refreshColorList();

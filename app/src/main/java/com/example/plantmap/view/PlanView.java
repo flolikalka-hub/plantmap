@@ -83,13 +83,13 @@ public class PlanView extends View {
 
 
     //                                  КОНСТРУКТОР, вызывается в момент создания view
-    public PlanView(Context context) {
+    public PlanView(Context context, PlantRepository repository) {
         // контекст - дступ к ресурсам, экрану, системе, БД ("где я живу")
         super(context);
 
-        scaleDetector = new ScaleGestureDetector(getContext(), new ScaleListener());
+        this.repository = repository;
 
-        repository = new PlantRepository(context);
+        scaleDetector = new ScaleGestureDetector(getContext(), new ScaleListener());
 
         touchSlop = ViewConfiguration
                 .get(context)
@@ -286,14 +286,14 @@ public class PlanView extends View {
                                 points.remove(pressedPoint); // удаляем точку
 
                                 if (selectedPoint == pressedPoint) selectedPoint = null;
-                                if (pressedPoint == pressedPoint) pressedPoint = null;
                                 if (draggedPoint == pressedPoint) draggedPoint = null;
 
                                 invalidate();// перерисовываем экран
                             },
                             () -> {
                                 invalidate();// перерисовываем экран
-                            });
+                            }
+                    );
                 }
             }
             // если isDragging == true — значит, это было перемещение

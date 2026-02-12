@@ -4,6 +4,7 @@ import android.graphics.Color;
 
 import androidx.core.graphics.ColorUtils;
 
+import com.example.plantmap.db.ColorDataAccess;
 import com.example.plantmap.db.DatabaseHelper;
 import com.example.plantmap.model.ColorModifier;
 import com.example.plantmap.model.FlowerColor;
@@ -12,11 +13,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ColorResolver {
+    private final ColorDataAccess cdb;
 
-    private final DatabaseHelper db;
-
-    public ColorResolver(DatabaseHelper db) {
-        this.db = db;
+    public ColorResolver(ColorDataAccess cdb) {
+        this.cdb = cdb;
     }
 
     public List<Integer> resolveColors(String rawColor) {
@@ -28,12 +28,12 @@ public class ColorResolver {
         List<ColorModifier> modifiers = new ArrayList<>();
 
         for (String part : parts) {
-            ColorModifier m = db.findModifierByRoot(part);
+            ColorModifier m = cdb.findModifierByRoot(part);
             if (m != null) modifiers.add(m);
         }
 
         for (String part : parts) {
-            FlowerColor c = db.findColorByRoot(part);
+            FlowerColor c = cdb.findColorByRoot(part);
             if (c != null) {
                 int base = Color.parseColor(c.hex);
                 result.add(applyModifiers(base, modifiers));

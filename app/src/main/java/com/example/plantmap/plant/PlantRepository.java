@@ -1,50 +1,87 @@
 package com.example.plantmap.plant;
 
-import android.content.Context;
-
+import com.example.plantmap.db.ColorDataAccess;
 import com.example.plantmap.db.DatabaseHelper;
+import com.example.plantmap.db.PlantDataAccess;
+import com.example.plantmap.db.PointDataAccess;
 import com.example.plantmap.model.Plant;
 import com.example.plantmap.model.PlantPoint;
 
 import java.util.List;
 
 public class PlantRepository {
-    private final DatabaseHelper dbHelper;
+    private final PlantDataAccess plantDa;
+    private final PointDataAccess pointDa;
+    private final ColorDataAccess colorDa;
 
-    public PlantRepository(Context context) {
-        dbHelper = new DatabaseHelper(context);
+    public PlantRepository(DatabaseHelper dbHelper) {
+        plantDa = new PlantDataAccess(dbHelper);
+        pointDa = new PointDataAccess(dbHelper);
+        colorDa = new ColorDataAccess(dbHelper);
+    }
+
+    public ColorDataAccess getColorDataAccess() {
+        return colorDa;
     }
 
     public List<PlantPoint> getAllPoints() {
-        return dbHelper.getAllPoints();
+        return pointDa.getAllPoints();
     }
 
     public long addPoint(PlantPoint point) {
-        return dbHelper.addPoint(point);
+        return pointDa.addPoint(point);
     }
 
     public void updatePoint(int id, PlantPoint point) {
-        dbHelper.updatePoint(id, point);
+        pointDa.updatePoint(id, point);
     }
 
     public void deletePoint(int id) {
-        dbHelper.deletePoint(id);
+        pointDa.deletePoint(id);
     }
 
     public List<Plant> getAllPlants() {
-        return dbHelper.getAllPlants();
+        return plantDa.getAllPlants();
     }
 
     public Plant findPlantByAllFields(Plant plant) {
-        return dbHelper.findPlantByAllFields(plant);
+        return plantDa.findPlantByAllFields(plant);
     }
 
     public long addPlant(Plant plant) {
-        return dbHelper.addPlant(plant);
+        return plantDa.addPlant(plant);
+    }
+
+    public void updatePlant(Plant plant) {
+        plantDa.updatePlant(plant);
+    }
+
+    public boolean canDeletePlant(int id) {
+        return plantDa.canDeletePlant(id);
+    }
+
+    public void deletePlant(int id) {
+        plantDa.deletePlant(id);
+    }
+
+    public List<Plant> searchPlants(
+            String plName,
+            String plType,
+            String plGroup,
+            Integer potVolume,
+            String flowerColorInput,
+            String addInput) {
+        return plantDa.searchPlants(
+                plName,
+                plType,
+                plGroup,
+                potVolume,
+                flowerColorInput,
+                addInput);
     }
 
     public List<String> getAllColorNames() {
-        return dbHelper.getAllColorNames();
+        return colorDa.getAllColorNames();
     }
 
     // для избегания дубликатов (был ли изменен автокомплит)
