@@ -4,11 +4,15 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.text.InputType;
 import android.view.View;
+import android.view.WindowManager;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -151,6 +155,56 @@ public class DbView {
         flowerColorInput.setAdapter(colorAdapter);
         flowerColorInput.setThreshold(1); // показывать подсказки после ввода 1 символа
 
+        nameInput.setImeOptions(EditorInfo.IME_ACTION_NEXT);
+        typeInput.setImeOptions(EditorInfo.IME_ACTION_NEXT);
+        groupInput.setImeOptions(EditorInfo.IME_ACTION_NEXT);
+        potVolumeInput.setImeOptions(EditorInfo.IME_ACTION_NEXT);
+        flowerColorInput.setImeOptions(EditorInfo.IME_ACTION_NEXT);
+        additionalInfoInput.setImeOptions(EditorInfo.IME_ACTION_DONE);
+
+        nameInput.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_NEXT) {
+                typeInput.requestFocus();
+                return true;
+            }
+            return false;
+        });
+        typeInput.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_NEXT) {
+                groupInput.requestFocus();
+                return true;
+            }
+            return false;
+        });
+        groupInput.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_NEXT) {
+                potVolumeInput.requestFocus();
+                return true;
+            }
+            return false;
+        });
+        potVolumeInput.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_NEXT) {
+                flowerColorInput.requestFocus();
+                return true;
+            }
+            return false;
+        });
+        flowerColorInput.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_NEXT) {
+                additionalInfoInput.requestFocus();
+                return true;
+            }
+            return false;
+        });
+        additionalInfoInput.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                hideKeyboardAndClearFocus(v);
+                return true;
+            }
+            return false;
+        });
+
         layout.addView(nameInput);
         layout.addView(typeInput);
         layout.addView(groupInput);
@@ -158,9 +212,13 @@ public class DbView {
         layout.addView(flowerColorInput);
         layout.addView(additionalInfoInput);
 
+        ScrollView scrollView = new ScrollView(context);
+        scrollView.setFillViewport(true);
+        scrollView.addView(layout);
+
         AlertDialog.Builder builder = new AlertDialog.Builder(context)
                 .setTitle(isNew ? "Новое растение" : "Редактировать растение")
-                .setView(layout)
+                .setView(scrollView)
                 .setNegativeButton("Отмена", null);
 
         if (!isNew) {
@@ -191,6 +249,13 @@ public class DbView {
 
         AlertDialog dialog = builder.create();
         dialog.show();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setSoftInputMode(
+                    WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
+                            | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
+            );
+        }
+        focusAndShowKeyboard(nameInput);
 
         // Кастомный обработчик кнопки "Сохранить"
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
@@ -227,6 +292,26 @@ public class DbView {
             refreshPlantList(recyclerView);
             dialog.dismiss(); // закрываем диалог вручную
         });
+    }
+
+    // открытие клавиатуры для ввода автоматически
+    private void focusAndShowKeyboard(View view) {
+        view.requestFocus();
+        view.post(() -> {
+            InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm != null) {
+                imm.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT);
+            }
+        });
+    }
+
+    // для закрытия клавиатуры при завершенном действии
+    private void hideKeyboardAndClearFocus(View view) {
+        InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null) {
+            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        }
+        view.clearFocus();
     }
 
     // диалог поиска

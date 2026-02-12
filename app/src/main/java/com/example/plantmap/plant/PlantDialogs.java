@@ -68,6 +68,8 @@ public class PlantDialogs {
                 .create();
 
         dialog.setOnShowListener(d -> {
+            focusAndShowKeyboard(form.nameInput);
+
             Button saveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
             saveButton.setOnClickListener(v -> {
 
@@ -123,10 +125,18 @@ public class PlantDialogs {
                 dialog.dismiss();
             });
         });
-
+/*
         dialog.getWindow().setSoftInputMode(
                 WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
         );
+
+ */
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setSoftInputMode(
+                    WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE |
+                            WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
+            );
+        }
 
         dialog.show();
     }
@@ -186,6 +196,8 @@ public class PlantDialogs {
                 // только создаем, но не показываем ибо мб переход в редактирование растения
                 .create();
         editDialog.setOnShowListener(d -> {
+            focusAndShowKeyboard(countInput);
+
             Button saveButton = editDialog.getButton(AlertDialog.BUTTON_POSITIVE);
             saveButton.setOnClickListener(v -> {
 
@@ -238,6 +250,8 @@ public class PlantDialogs {
 
         // логика сохранения, но без создания точки
         dialog.setOnShowListener(d -> {
+            focusAndShowKeyboard(form.nameInput);
+
             Button saveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
             saveButton.setOnClickListener(v -> {
 
@@ -283,5 +297,23 @@ public class PlantDialogs {
         });
 
         dialog.show();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setSoftInputMode(
+                    WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE |
+                            WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
+            );
+        }
+    }
+
+    private static void focusAndShowKeyboard(android.view.View view) {
+        view.requestFocus();
+        view.post(() -> {
+            Context context = view.getContext();
+            InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm != null) {
+                imm.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT);
+            }
+        });
     }
 }
