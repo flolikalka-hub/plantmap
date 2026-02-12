@@ -95,24 +95,6 @@ public class PlantDataAccess {
     public Plant findPlantByAllFields(Plant plant) {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
         Plant result = null;
-/*
-        String query = "SELECT * FROM plants WHERE " +
-                "name=? AND " +
-                "type=? AND " +
-                "plant_group=? AND " +
-                "pot_volume=? AND " +
-                "flower_color=? AND " +
-                "additional_info=?";
-        Cursor cursor = db.rawQuery(query, new String[]{
-                plant.name,
-                plant.type,
-                plant.group,
-                String.valueOf(plant.potVolume),
-                plant.flowerColor,
-                plant.additionalInfo
-        });
-
- */
         // для исключения null добавлено COALESCE, вернет null ток если кроме null ничего нет
         StringBuilder query = new StringBuilder(
                 "SELECT * FROM plants WHERE " +

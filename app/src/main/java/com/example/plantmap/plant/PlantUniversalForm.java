@@ -8,6 +8,7 @@ import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 
 import com.example.plantmap.model.Plant;
 
@@ -25,6 +26,7 @@ public class PlantUniversalForm {
     public EditText additionalInfoInput;
 
     private LinearLayout rootLayout;
+    private ScrollView scrollContainer;
 
     //private View lastFocusedView = null;
 
@@ -38,6 +40,10 @@ public class PlantUniversalForm {
 
         rootLayout = new LinearLayout(context);
         rootLayout.setOrientation(LinearLayout.VERTICAL);
+
+        scrollContainer = new ScrollView(context);
+        scrollContainer.setFillViewport(true);
+        scrollContainer.addView(rootLayout);
 
         // поля
         nameInput = new AutoCompleteTextView(context);
@@ -156,8 +162,8 @@ public class PlantUniversalForm {
         rootLayout.addView(additionalInfoInput);
     }
 
-    public LinearLayout getView() {
-        return rootLayout;
+    public View getView() {
+        return scrollContainer;
     }
 
     public void fillFromPlant(Plant plant) {

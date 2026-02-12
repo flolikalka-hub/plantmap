@@ -5,9 +5,11 @@ import android.content.Context;
 import android.text.InputType;
 import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 
 import com.example.plantmap.model.Plant;
 import com.example.plantmap.model.PlantPoint;
@@ -28,6 +30,23 @@ public class PlantDialogs {
         countInput.setInputType(InputType.TYPE_CLASS_NUMBER);
         countInput.setImeOptions(EditorInfo.IME_ACTION_DONE);
 
+        form.additionalInfoInput.setImeOptions(EditorInfo.IME_ACTION_NEXT);
+        form.additionalInfoInput.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_NEXT) {
+                countInput.requestFocus();
+                return true;
+            }
+            return false;
+        });
+
+        countInput.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                hideKeyboardAndClearFocus(v);
+                return true;
+            }
+            return false;
+        });
+
         // сборка
         LinearLayout layout = new LinearLayout(context);
         layout.setOrientation(LinearLayout.VERTICAL);
@@ -35,10 +54,15 @@ public class PlantDialogs {
         layout.addView(form.getView());
         layout.addView(countInput);
 
+        // оборачиваем в скролл, чтобы в альбомной поля можно было посмотреть
+        ScrollView scrollView = new ScrollView(context);
+        scrollView.setFillViewport(true);
+        scrollView.addView(layout);
+
         // стандартное диалоговое окно, не xml
         AlertDialog dialog = new AlertDialog.Builder(context)
                 .setTitle("Новое растение")
-                .setView(layout)
+                .setView(scrollView)
                 .setPositiveButton("Сохранить", null)
                 .setNegativeButton("Отмена", null)
                 .create();
@@ -105,6 +129,16 @@ public class PlantDialogs {
         );
 
         dialog.show();
+    }
+
+    // для закрытия клавиатуры при завершенном действии
+    private static void hideKeyboardAndClearFocus(android.view.View view) {
+        Context context = view.getContext();
+        InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null) {
+            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        }
+        view.clearFocus();
     }
 
     // работа с СУЩЕСТВУЮЩЕЙ ТОЧКОЙ + изменение растения
