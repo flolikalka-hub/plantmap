@@ -218,13 +218,23 @@ public class PlantDialogs {
                 if (form.potVolumeInput.getError() != null) return;
 
                 tempPlant.potVolume = potVolume;
+                Plant selectedPlant = form.getSelectedPlant();
+                Plant plant;
 
-                // поиск полного совпадения
-                Plant plant = repository.findPlantByAllFields(tempPlant);
-                if (plant == null) {
-                    long plantId = repository.addPlant(tempPlant);
-                    tempPlant.id = (int) plantId;
-                    plant = tempPlant;
+                if (selectedPlant != null
+                        && !repository.isPlantModified(selectedPlant, tempPlant)) {
+                    // выбрали из автокомплита и ничего не меняли в автозаполненных полях
+                    plant = selectedPlant;
+                } else {
+                    // поиск полного совпадения
+                    Plant existingPlant = repository.findPlantByAllFields(tempPlant);
+                    if (existingPlant == null) {
+                        long plantId = repository.addPlant(tempPlant);
+                        tempPlant.id = (int) plantId;
+                        plant = tempPlant;
+                    } else {
+                        plant = existingPlant;
+                    }
                 }
 
                 // смена растения в точке непосредственная

@@ -95,7 +95,7 @@ public class PlantDataAccess {
     public Plant findPlantByAllFields(Plant plant) {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
         Plant result = null;
-
+/*
         String query = "SELECT * FROM plants WHERE " +
                 "name=? AND " +
                 "type=? AND " +
@@ -111,6 +111,33 @@ public class PlantDataAccess {
                 plant.flowerColor,
                 plant.additionalInfo
         });
+
+ */
+        // для исключения null добавлено COALESCE, вернет null ток если кроме null ничего нет
+        StringBuilder query = new StringBuilder(
+                "SELECT * FROM plants WHERE " +
+                        "COALESCE(name, '')=? AND " +
+                        "COALESCE(type, '')=? AND " +
+                        "COALESCE(plant_group, '')=? AND " +
+                        "COALESCE(flower_color, '')=? AND " +
+                        "COALESCE(additional_info, '')=?"
+        );
+
+        List<String> args = new ArrayList<>();
+        args.add(plant.name != null ? plant.name : "");
+        args.add(plant.type != null ? plant.type : "");
+        args.add(plant.group != null ? plant.group : "");
+        args.add(plant.flowerColor != null ? plant.flowerColor : "");
+        args.add(plant.additionalInfo != null ? plant.additionalInfo : "");
+
+        if (plant.potVolume == null) {
+            query.append(" AND pot_volume IS NULL");
+        } else {
+            query.append(" AND pot_volume=?");
+            args.add(String.valueOf(plant.potVolume));
+        }
+
+        Cursor cursor = db.rawQuery(query.toString(), args.toArray(new String[0]));
 
         if (cursor.moveToFirst()) {
             result = new Plant();
