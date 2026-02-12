@@ -18,7 +18,7 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 
 import com.example.plantmap.db.DatabaseHelper;
-import com.example.plantmap.db.color.ColorView;
+import com.example.plantmap.colors.ColorView;
 import com.example.plantmap.db.DbView;
 import com.example.plantmap.plant.PlantRepository;
 import com.example.plantmap.search.PlantSearchEngine;

@@ -12,7 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.plantmap.R;
-import com.example.plantmap.db.color.ColorResolver;
+import com.example.plantmap.colors.ColorResolver;
 import com.example.plantmap.model.Plant;
 
 import java.util.List;

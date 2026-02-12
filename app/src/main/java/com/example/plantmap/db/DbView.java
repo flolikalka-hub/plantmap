@@ -15,7 +15,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.plantmap.R;
-import com.example.plantmap.db.color.ColorResolver;
+import com.example.plantmap.colors.ColorResolver;
 import com.example.plantmap.plant.PlantAdapter;
 import com.example.plantmap.model.Plant;
 import com.example.plantmap.plant.PlantRepository;

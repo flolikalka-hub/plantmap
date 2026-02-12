@@ -1,11 +1,10 @@
-package com.example.plantmap.db.color;
+package com.example.plantmap.colors;
 
 import android.graphics.Color;
 
 import androidx.core.graphics.ColorUtils;
 
 import com.example.plantmap.db.ColorDataAccess;
-import com.example.plantmap.db.DatabaseHelper;
 import com.example.plantmap.model.ColorModifier;
 import com.example.plantmap.model.FlowerColor;
 
