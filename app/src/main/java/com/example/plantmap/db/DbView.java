@@ -248,7 +248,7 @@ public class DbView {
         builder.setPositiveButton("Сохранить", null);
 
         AlertDialog dialog = builder.create();
-        dialog.show();
+
         if (dialog.getWindow() != null) {
             dialog.getWindow().setSoftInputMode(
                     WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
@@ -256,6 +256,8 @@ public class DbView {
             );
         }
         focusAndShowKeyboard(nameInput);
+
+        dialog.show();
 
         // Кастомный обработчик кнопки "Сохранить"
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
@@ -297,6 +299,7 @@ public class DbView {
     // открытие клавиатуры для ввода автоматически
     private void focusAndShowKeyboard(View view) {
         view.requestFocus();
+        view.requestFocusFromTouch();
         view.post(() -> {
             InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
             if (imm != null) {
@@ -395,7 +398,7 @@ public class DbView {
         layout.addView(flowerColorInput);
         layout.addView(addInput);
 
-        AlertDialog dialog = new AlertDialog.Builder(context)
+        AlertDialog searchDialog = new AlertDialog.Builder(context)
                 .setTitle("Поиск растений")
                 .setView(layout)
                 .setPositiveButton("Найти", (d, w) -> {
@@ -427,15 +430,15 @@ public class DbView {
                 .setNegativeButton("Отменить", (d, w) -> refreshPlantList(recyclerView))
                 .create();
 
-        dialog.show();
-
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setSoftInputMode(
+        if (searchDialog.getWindow() != null) {
+            searchDialog.getWindow().setSoftInputMode(
                     WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
                             | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
             );
         }
         focusAndShowKeyboard(nameInput);
+
+        searchDialog.show();
     }
 
     public void setSearchStateListener(SearchStateListener listener) {

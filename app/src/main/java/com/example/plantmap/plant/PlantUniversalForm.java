@@ -9,6 +9,7 @@ import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+import android.view.inputmethod.InputMethodManager;
 
 import com.example.plantmap.model.Plant;
 
@@ -147,6 +148,7 @@ public class PlantUniversalForm {
         // дополнительнаяInfo — последняя, закрывает клавиатуру
         additionalInfoInput.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_DONE) {
+                hideKeyboard(v);
                 v.clearFocus();
                 return true;
             }
@@ -201,6 +203,14 @@ public class PlantUniversalForm {
         p.additionalInfo = additionalInfoInput.getText().toString().trim();
 
         return p;
+    }
+
+    private void hideKeyboard(View view) {
+        Context context = view.getContext();
+        InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null) {
+            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        }
     }
     /*
     // сохранение состояния

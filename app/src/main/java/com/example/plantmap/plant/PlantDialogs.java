@@ -241,7 +241,7 @@ public class PlantDialogs {
         form.fillFromPlant(point.plant);
 
         // диалог
-        AlertDialog dialog = new AlertDialog.Builder(context)
+        AlertDialog changeDialog = new AlertDialog.Builder(context)
                 .setTitle("Сменить растение")
                 .setView(form.getView())
                 .setPositiveButton("Сохранить", null)
@@ -249,10 +249,10 @@ public class PlantDialogs {
                 .create();
 
         // логика сохранения, но без создания точки
-        dialog.setOnShowListener(d -> {
+        changeDialog.setOnShowListener(d -> {
             focusAndShowKeyboard(form.nameInput);
 
-            Button saveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            Button saveButton = changeDialog.getButton(AlertDialog.BUTTON_POSITIVE);
             saveButton.setOnClickListener(v -> {
 
                 Plant tempPlant = form.buildPlantFromInputs();
@@ -292,22 +292,23 @@ public class PlantDialogs {
                 // callback обновления
                 if (onChanged != null) onChanged.run();
 
-                dialog.dismiss();
+                changeDialog.dismiss();
             });
         });
 
-        dialog.show();
-
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setSoftInputMode(
+        if (changeDialog.getWindow() != null) {
+            changeDialog.getWindow().setSoftInputMode(
                     WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE |
                             WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
             );
         }
+
+        changeDialog.show();
     }
 
     private static void focusAndShowKeyboard(android.view.View view) {
         view.requestFocus();
+        view.requestFocusFromTouch();
         view.post(() -> {
             Context context = view.getContext();
             InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
