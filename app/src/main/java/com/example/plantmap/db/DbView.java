@@ -155,12 +155,12 @@ public class DbView {
         flowerColorInput.setAdapter(colorAdapter);
         flowerColorInput.setThreshold(1); // показывать подсказки после ввода 1 символа
 
-        nameInput.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-        typeInput.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-        groupInput.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-        potVolumeInput.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-        flowerColorInput.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-        additionalInfoInput.setImeOptions(EditorInfo.IME_ACTION_DONE | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+        nameInput.setImeOptions(EditorInfo.IME_ACTION_NEXT );
+        typeInput.setImeOptions(EditorInfo.IME_ACTION_NEXT);
+        groupInput.setImeOptions(EditorInfo.IME_ACTION_NEXT);
+        potVolumeInput.setImeOptions(EditorInfo.IME_ACTION_NEXT);
+        flowerColorInput.setImeOptions(EditorInfo.IME_ACTION_NEXT);
+        additionalInfoInput.setImeOptions(EditorInfo.IME_ACTION_DONE);
 
         nameInput.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_NEXT) {
@@ -337,6 +337,56 @@ public class DbView {
 
         EditText addInput = new EditText(context);
         addInput.setHint("Доп. информация");
+
+        nameInput.setImeOptions(EditorInfo.IME_ACTION_NEXT );
+        typeInput.setImeOptions(EditorInfo.IME_ACTION_NEXT);
+        groupInput.setImeOptions(EditorInfo.IME_ACTION_NEXT);
+        potVolumeInput.setImeOptions(EditorInfo.IME_ACTION_NEXT);
+        flowerColorInput.setImeOptions(EditorInfo.IME_ACTION_NEXT);
+        addInput.setImeOptions(EditorInfo.IME_ACTION_DONE);
+
+        nameInput.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_NEXT) {
+                typeInput.requestFocus();
+                return true;
+            }
+            return false;
+        });
+        typeInput.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_NEXT) {
+                groupInput.requestFocus();
+                return true;
+            }
+            return false;
+        });
+        groupInput.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_NEXT) {
+                potVolumeInput.requestFocus();
+                return true;
+            }
+            return false;
+        });
+        potVolumeInput.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_NEXT) {
+                flowerColorInput.requestFocus();
+                return true;
+            }
+            return false;
+        });
+        flowerColorInput.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_NEXT) {
+                addInput.requestFocus();
+                return true;
+            }
+            return false;
+        });
+        addInput.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                hideKeyboardAndClearFocus(v);
+                return true;
+            }
+            return false;
+        });
 
         layout.addView(nameInput);
         layout.addView(typeInput);
