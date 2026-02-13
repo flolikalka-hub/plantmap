@@ -80,7 +80,6 @@ public class PointDataAccess {
             int pvIndex = c.getColumnIndexOrThrow("pot_volume");
             plant.potVolume = c.isNull(pvIndex) ? null : c.getInt(pvIndex);
 
-
             plant.flowerColor = c.getString(c.getColumnIndexOrThrow("flower_color"));
             plant.additionalInfo = c.getString(c.getColumnIndexOrThrow("additional_info"));
 
@@ -90,7 +89,7 @@ public class PointDataAccess {
             );
             point.id = c.getInt(c.getColumnIndexOrThrow("id"));
             point.count = c.getInt(c.getColumnIndexOrThrow("count"));
-            point.processingDate = c.getInt(c.getColumnIndexOrThrow("processing_date"));
+            point.processingDate = c.getLong(c.getColumnIndexOrThrow("processing_date"));
             point.plant = plant;
 
             points.add(point);

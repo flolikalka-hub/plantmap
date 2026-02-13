@@ -21,8 +21,11 @@ import com.example.plantmap.search.PlantSearchDialog;
 import com.example.plantmap.search.PlantSearchEngine;
 import com.example.plantmap.plant.PlantDialogs;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 
 //extends view - значит planview частный случай view
@@ -439,14 +442,35 @@ public class PlanView extends View {
             return;
         }
 
+        // для даты (отсекаем секунды часы минуты)
+        SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
+        String dateStr = (point.processingDate != 0)
+                ? sdf.format(new Date(point.processingDate))
+                : ""; // пустое значение, если дата не задана
+
+        // для литража (убираем null)
+        String potVolumeStr = (point.plant.potVolume != null)
+                ? point.plant.potVolume.toString()
+                : "";
+
+        // для цвета (убираем null)
+        String colorStr = (point.plant.flowerColor != null)
+                ? point.plant.flowerColor.toString()
+                : "";
+
+        // для доп инфы (убираем null)
+        String addInfoStr = (point.plant.additionalInfo != null)
+                ? point.plant.additionalInfo.toString()
+                : "";
+
         String message = "Название сорта: " + point.plant.name + "\n" +
                 "Тип растения: " + point.plant.type + "\n" +
                 "Группа: " + point.plant.group + "\n" +
-                "Литраж горшка: " + point.plant.potVolume + "\n" +
-                "Цвет цветка: " + point.plant.flowerColor + "\n" +
+                "Литраж горшка: " + potVolumeStr  + "\n" +
+                "Цвет цветка: " + colorStr + "\n" +
                 "Количество в точке: " + point.count + "\n" +
-                "Дата обработки: " + point.processingDate + "\n" +
-                "Дополнительно: " + point.plant.additionalInfo;
+                "Дата обработки: " + dateStr + "\n" +
+                "Дополнительно: " + addInfoStr;
 
         new AlertDialog.Builder(context)
                 .setTitle("Информация о растении")

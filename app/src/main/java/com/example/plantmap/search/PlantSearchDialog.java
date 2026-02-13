@@ -1,16 +1,21 @@
 package com.example.plantmap.search;
 
 import android.app.AlertDialog;
+import android.app.DatePickerDialog;
 import android.content.Context;
 import android.text.InputType;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 
 import com.example.plantmap.model.PlantPoint;
 
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 public class PlantSearchDialog {
@@ -24,17 +29,63 @@ public class PlantSearchDialog {
             List<PlantPoint> allPoints,
             PlantSearchEngine engine,
             OnSearchListener listener) {
+        ScrollView scrollView = new ScrollView(context);
+
         LinearLayout layout = new LinearLayout(context);
         layout.setOrientation(LinearLayout.VERTICAL);
 
         AutoCompleteTextView nameInput = new AutoCompleteTextView(context);
         nameInput.setHint("Название сорта");
-        EditText typeInput = new EditText(context); typeInput.setHint("Тип растения");
-        EditText groupInput = new EditText(context); groupInput.setHint("Группа растения");
-        EditText potVolumeInput = new EditText(context); potVolumeInput.setHint("Литраж горшка"); potVolumeInput.setInputType(InputType.TYPE_CLASS_NUMBER);
-        AutoCompleteTextView flowerColorInput = new AutoCompleteTextView(context); flowerColorInput.setHint("Цвет цветка");
-        EditText countInput = new EditText(context); countInput.setHint("Количество"); countInput.setInputType(InputType.TYPE_CLASS_NUMBER);
+
+        EditText typeInput = new EditText(context);
+        typeInput.setHint("Тип растения");
+
+        EditText groupInput = new EditText(context);
+        groupInput.setHint("Группа растения");
+
+        EditText potVolumeInput = new EditText(context);
+        potVolumeInput.setHint("Литраж горшка");
+        potVolumeInput.setInputType(InputType.TYPE_CLASS_NUMBER);
+
+        AutoCompleteTextView flowerColorInput = new AutoCompleteTextView(context);
+        flowerColorInput.setHint("Цвет цветка");
+
+        EditText countInput = new EditText(context);
+        countInput.setHint("Количество");
+        countInput.setInputType(InputType.TYPE_CLASS_NUMBER);
+
+        EditText dateInput = new EditText(context);
+        dateInput.setHint("Дата обработки");
+        dateInput.setFocusable(false); // чтобы не открывалась клавиатура
+
         EditText addInput = new EditText(context); addInput.setHint("Дополнительная информация");
+
+        final long[] selectedDateMillis = {0}; // 0 = дата не выбрана
+        SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
+
+        dateInput.setOnClickListener(v -> {
+
+            Calendar calendar = Calendar.getInstance();
+
+            DatePickerDialog picker = new DatePickerDialog(
+                    context,
+                    (view, year, month, dayOfMonth) -> {
+
+                        Calendar selected = Calendar.getInstance();
+                        selected.set(year, month, dayOfMonth, 0, 0, 0);
+                        selected.set(Calendar.MILLISECOND, 0);
+
+                        selectedDateMillis[0] = selected.getTimeInMillis();
+
+                        dateInput.setText(sdf.format(selected.getTime()));
+                    },
+                    calendar.get(Calendar.YEAR),
+                    calendar.get(Calendar.MONTH),
+                    calendar.get(Calendar.DAY_OF_MONTH)
+            );
+
+            picker.show();
+        });
 
         layout.addView(nameInput);
         layout.addView(typeInput);
@@ -42,11 +93,14 @@ public class PlantSearchDialog {
         layout.addView(potVolumeInput);
         layout.addView(flowerColorInput);
         layout.addView(countInput);
+        layout.addView(dateInput);
         layout.addView(addInput);
+
+        scrollView.addView(layout);
 
         AlertDialog dialog = new AlertDialog.Builder(context)
                 .setTitle("Поиск")
-                .setView(layout)
+                .setView(scrollView)
                 .setPositiveButton("Найти", null)
                 .setNegativeButton("Отменить", null)
                 .create();
@@ -62,6 +116,12 @@ public class PlantSearchDialog {
                 filter.additionalInfo = addInput.getText().toString().trim();
                 filter.potVolume = parseIntOrNull(potVolumeInput.getText().toString().trim());
                 filter.count = parseIntOrNull(countInput.getText().toString().trim());
+
+                if (selectedDateMillis[0] != 0) {
+                    filter.processingDate = selectedDateMillis[0];
+                } else {
+                    filter.processingDate = null;
+                }
 
                 Set<PlantPoint> result = engine.applyFilter(allPoints, filter);
                 if (listener != null) listener.onSearchApplied(result);

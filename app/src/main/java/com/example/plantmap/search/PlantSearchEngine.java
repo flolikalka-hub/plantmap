@@ -3,6 +3,7 @@ package com.example.plantmap.search;
 import com.example.plantmap.model.Plant;
 import com.example.plantmap.model.PlantPoint;
 
+import java.util.Calendar;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -32,8 +33,22 @@ public class PlantSearchEngine {
                 && (f.flowerColor == null || f.flowerColor.isEmpty())
                 && (f.additionalInfo == null || f.additionalInfo.isEmpty())
                 && f.potVolume == null
-                && f.count == null;
+                && f.count == null
+                && f.processingDate == null;
     }
+
+    // Помощник для поиска, обнуляем секунды часы минуты
+    private boolean isSameDay(long ts1, long ts2) {
+        Calendar c1 = Calendar.getInstance();
+        Calendar c2 = Calendar.getInstance();
+        c1.setTimeInMillis(ts1);
+        c2.setTimeInMillis(ts2);
+
+        return c1.get(Calendar.YEAR) == c2.get(Calendar.YEAR)
+                && c1.get(Calendar.MONTH) == c2.get(Calendar.MONTH)
+                && c1.get(Calendar.DAY_OF_MONTH) == c2.get(Calendar.DAY_OF_MONTH);
+    }
+
 
     private boolean matchesFilter(PlantPoint p, SearchFilter f) {
         if (p.plant == null) return false;
@@ -41,6 +56,10 @@ public class PlantSearchEngine {
 
         // фильтр по точке
         if (f.count != null && !f.count.equals(p.count)) return false;
+        if (f.processingDate != null && !isSameDay(f.processingDate, p.processingDate)) {
+            return false;
+        }
+
 
         // фильтры по растению
         if (!matchesText(plant.name, f.name)) return false;

@@ -9,4 +9,5 @@ public class SearchFilter {
 
     public Integer potVolume; // литраж горшка
     public Integer count;     // количество в точке
+    public Long processingDate;     // дата обработки
 }
