@@ -1,6 +1,7 @@
 package com.example.plantmap.plant;
 
 import android.app.AlertDialog;
+import android.app.DatePickerDialog;
 import android.content.Context;
 import android.text.InputType;
 import android.view.WindowManager;
@@ -14,6 +15,11 @@ import android.widget.ScrollView;
 import com.example.plantmap.model.Plant;
 import com.example.plantmap.model.PlantPoint;
 import com.example.plantmap.util.InputValidators;
+
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
 
 public class PlantDialogs {
     // ввод данных о растении, когда НОВАЯ ТОЧКА
@@ -29,6 +35,11 @@ public class PlantDialogs {
         countInput.setHint("Количество");
         countInput.setInputType(InputType.TYPE_CLASS_NUMBER);
         countInput.setImeOptions(EditorInfo.IME_ACTION_DONE);
+
+        // дата без прямого ввода
+        EditText dateInput = new EditText(context);
+        dateInput.setHint("Дата обработки");
+        dateInput.setFocusable(false); // чтобы по умолчанию не лезла клавиатура
 
         form.additionalInfoInput.setImeOptions(EditorInfo.IME_ACTION_NEXT);
         form.additionalInfoInput.setOnEditorActionListener((v, actionId, event) -> {
@@ -47,12 +58,40 @@ public class PlantDialogs {
             return false;
         });
 
+        // форматирование даты и открытие календаря
+        SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
+        dateInput.setText(sdf.format(new Date(point.processingDate)));
+
+        dateInput.setOnClickListener(v -> {
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTimeInMillis(point.processingDate);
+
+            DatePickerDialog picker = new DatePickerDialog(
+                    context,
+                    (view, year, month, dayOfMonth) -> {
+                        Calendar selected = Calendar.getInstance();
+                        selected.set(year, month, dayOfMonth);
+
+                        long time = selected.getTimeInMillis();
+                        point.processingDate = time;
+
+                        dateInput.setText(sdf.format(selected.getTime()));
+                    },
+                    calendar.get(Calendar.YEAR),
+                    calendar.get(Calendar.MONTH),
+                    calendar.get(Calendar.DAY_OF_MONTH)
+            );
+
+            picker.show();
+        });
+
         // сборка
         LinearLayout layout = new LinearLayout(context);
         layout.setOrientation(LinearLayout.VERTICAL);
 
         layout.addView(form.getView());
         layout.addView(countInput);
+        layout.addView(dateInput);
 
         // оборачиваем в скролл, чтобы в альбомной поля можно было посмотреть
         ScrollView scrollView = new ScrollView(context);
@@ -125,12 +164,7 @@ public class PlantDialogs {
                 dialog.dismiss();
             });
         });
-/*
-        dialog.getWindow().setSoftInputMode(
-                WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
-        );
 
- */
         if (dialog.getWindow() != null) {
             dialog.getWindow().setSoftInputMode(
                     WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE |
@@ -167,13 +201,58 @@ public class PlantDialogs {
         EditText countInput = new EditText(context);
         countInput.setInputType(InputType.TYPE_CLASS_NUMBER);
         countInput.setText(String.valueOf(point.count));
+        // курсор в конец
         countInput.setSelection(countInput.getText().length());
         countInput.setHint("Количество");
+
+        // поле даты
+        EditText dateInput = new EditText(context);
+        dateInput.setHint("Дата обработки");
+        dateInput.setFocusable(false); // чтобы по умолчанию не лезла клавиатура
+
+        SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
+
+        // если дата вдруг 0 (на всякий случай)
+        if (point.processingDate == 0) {
+            point.processingDate = System.currentTimeMillis();
+        }
+
+        // подставляем текущую дату точки
+        dateInput.setText(sdf.format(new Date(point.processingDate)));
+
+        dateInput.setOnClickListener(v -> {
+
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTimeInMillis(point.processingDate);
+
+            DatePickerDialog picker = new DatePickerDialog(
+                    context,
+                    (view, year, month, dayOfMonth) -> {
+
+                        Calendar selected = Calendar.getInstance();
+                        selected.set(year, month, dayOfMonth);
+
+                        long time = selected.getTimeInMillis();
+
+                        // обновляем дату в точке
+                        point.processingDate = time;
+
+                        // отображаем
+                        dateInput.setText(sdf.format(selected.getTime()));
+                    },
+                    calendar.get(Calendar.YEAR),
+                    calendar.get(Calendar.MONTH),
+                    calendar.get(Calendar.DAY_OF_MONTH)
+            );
+
+            picker.show();
+        });
 
         // контейнер
         LinearLayout layout = new LinearLayout(context);
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.addView(countInput);
+        layout.addView(dateInput);
 
         // кнопка смены растения
         Button changePlantBtn = new Button(context);

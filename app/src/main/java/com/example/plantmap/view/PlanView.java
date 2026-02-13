@@ -445,6 +445,7 @@ public class PlanView extends View {
                 "Литраж горшка: " + point.plant.potVolume + "\n" +
                 "Цвет цветка: " + point.plant.flowerColor + "\n" +
                 "Количество в точке: " + point.count + "\n" +
+                "Дата обработки: " + point.processingDate + "\n" +
                 "Дополнительно: " + point.plant.additionalInfo;
 
         new AlertDialog.Builder(context)

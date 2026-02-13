@@ -24,6 +24,7 @@ public class PointDataAccess {
         cv.put("x", point.x);
         cv.put("y", point.y);
         cv.put("count", point.count);
+        cv.put("processing_date", point.processingDate);
         cv.put("plant_id", point.plant.id);
 
         long id = db.insert("points", null, cv); // insert возвращает id новой записи
@@ -38,6 +39,7 @@ public class PointDataAccess {
         cv.put("x", point.x);
         cv.put("y", point.y);
         cv.put("count", point.count);
+        cv.put("processing_date", point.processingDate);
         cv.put("plant_id", point.plant.id);
 
         db.update("points", cv, "id=?", new String[]{String.valueOf(id)});
@@ -55,7 +57,7 @@ public class PointDataAccess {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
         String sql =
-                "SELECT p.id, p.x, p.y, p.count, " +
+                "SELECT p.id, p.x, p.y, p.count, p.processing_date, " +
                         "pl.id AS plant_id, " +
                         "pl.name, " +
                         "pl.type, " +
@@ -88,6 +90,7 @@ public class PointDataAccess {
             );
             point.id = c.getInt(c.getColumnIndexOrThrow("id"));
             point.count = c.getInt(c.getColumnIndexOrThrow("count"));
+            point.processingDate = c.getInt(c.getColumnIndexOrThrow("processing_date"));
             point.plant = plant;
 
             points.add(point);

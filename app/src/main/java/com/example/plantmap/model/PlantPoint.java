@@ -7,11 +7,14 @@ public class PlantPoint {
     public float y;
     public Plant plant;
     public int count;
-
+    public long processingDate;
     public PlantPoint(float x, float y) {
         this.x = x;
         this.y = y;
         this.plant = new Plant();
+
+        // по умолчанию — сегодня
+        this.processingDate = System.currentTimeMillis();
     }
     public float getX() {
         return x;
@@ -27,5 +30,13 @@ public class PlantPoint {
 
     public void setY(float y) {
         this.y = y;
+    }
+
+    public long getProcessingDate() {
+        return processingDate;
+    }
+
+    public void setProcessingDate(long processingDate) {
+        this.processingDate = processingDate;
     }
 }

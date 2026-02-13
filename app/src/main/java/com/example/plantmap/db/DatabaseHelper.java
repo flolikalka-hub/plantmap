@@ -10,7 +10,7 @@ import java.io.*;
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DB_NAME = "PlantMap_DB.db";
-    private static final int DB_VERSION = 9;
+    private static final int DB_VERSION = 10;
 
     private final Context context;
     private String dbPath;
@@ -58,6 +58,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 db.execSQL("ALTER TABLE plants ADD COLUMN is_builtin INTEGER NOT NULL DEFAULT 0");
             }
 
+            if (!columnExists(db,"points","processing_date")){
+                db.execSQL("ALTER TABLE points ADD COLUMN processing_date INTEGER NOT NULL DEFAULT 0");
+            }
+
             db.setTransactionSuccessful();
         } finally {
             db.endTransaction();
@@ -85,6 +89,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                         "y REAL NOT NULL, " +
                         "count INTEGER NOT NULL DEFAULT 1, " +
                         "plant_id INTEGER NOT NULL, " +
+                        "processing_date INTEGER NOT NULL, " +
                         "FOREIGN KEY (plant_id) REFERENCES plants(id) ON DELETE CASCADE" +
                         ")"
         );
