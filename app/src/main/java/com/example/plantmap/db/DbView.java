@@ -155,12 +155,12 @@ public class DbView {
         flowerColorInput.setAdapter(colorAdapter);
         flowerColorInput.setThreshold(1); // показывать подсказки после ввода 1 символа
 
-        nameInput.setImeOptions(EditorInfo.IME_ACTION_NEXT);
-        typeInput.setImeOptions(EditorInfo.IME_ACTION_NEXT);
-        groupInput.setImeOptions(EditorInfo.IME_ACTION_NEXT);
-        potVolumeInput.setImeOptions(EditorInfo.IME_ACTION_NEXT);
-        flowerColorInput.setImeOptions(EditorInfo.IME_ACTION_NEXT);
-        additionalInfoInput.setImeOptions(EditorInfo.IME_ACTION_DONE);
+        nameInput.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+        typeInput.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+        groupInput.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+        potVolumeInput.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+        flowerColorInput.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+        additionalInfoInput.setImeOptions(EditorInfo.IME_ACTION_DONE | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
 
         nameInput.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_NEXT) {
@@ -345,7 +345,7 @@ public class DbView {
         layout.addView(flowerColorInput);
         layout.addView(addInput);
 
-        new AlertDialog.Builder(context)
+        AlertDialog dialog = new AlertDialog.Builder(context)
                 .setTitle("Поиск растений")
                 .setView(layout)
                 .setPositiveButton("Найти", (d, w) -> {
@@ -375,7 +375,17 @@ public class DbView {
                     recyclerView.setAdapter(adapter);
                 })
                 .setNegativeButton("Отменить", (d, w) -> refreshPlantList(recyclerView))
-                .show();
+                .create();
+
+        dialog.show();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setSoftInputMode(
+                    WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
+                            | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
+            );
+        }
+        focusAndShowKeyboard(nameInput);
     }
 
     public void setSearchStateListener(SearchStateListener listener) {

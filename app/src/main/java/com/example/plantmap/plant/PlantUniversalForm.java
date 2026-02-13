@@ -97,12 +97,13 @@ public class PlantUniversalForm {
         });
 
         // перевод фокусов полей
-        nameInput.setImeOptions(EditorInfo.IME_ACTION_NEXT);
-        typeInput.setImeOptions(EditorInfo.IME_ACTION_NEXT);
-        groupInput.setImeOptions(EditorInfo.IME_ACTION_NEXT);
-        potVolumeInput.setImeOptions(EditorInfo.IME_ACTION_NEXT);
-        flowerColorInput.setImeOptions(EditorInfo.IME_ACTION_NEXT);
-        additionalInfoInput.setImeOptions(EditorInfo.IME_ACTION_DONE); // последнее поле — закрывает клавиатуру
+        nameInput.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+        typeInput.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+        groupInput.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+        potVolumeInput.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+        flowerColorInput.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+        additionalInfoInput.setImeOptions(EditorInfo.IME_ACTION_DONE | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+        // последнее поле — закрывает клавиатуру ^
 
         nameInput.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_NEXT) {
