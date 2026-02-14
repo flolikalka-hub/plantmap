@@ -8,6 +8,7 @@ import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -40,6 +41,9 @@ public class PlantDialogs {
         EditText dateInput = new EditText(context);
         dateInput.setHint("Дата обработки");
         dateInput.setFocusable(false); // чтобы по умолчанию не лезла клавиатура
+        // на случай не обработки растения в принципе
+        CheckBox processedCheckBox = new CheckBox(context);
+        processedCheckBox.setText("Уже обрабатывалось");
 
         form.additionalInfoInput.setImeOptions(EditorInfo.IME_ACTION_NEXT);
         form.additionalInfoInput.setOnEditorActionListener((v, actionId, event) -> {
@@ -60,21 +64,46 @@ public class PlantDialogs {
 
         // форматирование даты и открытие календаря
         SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
-        dateInput.setText(sdf.format(new Date(point.processingDate)));
+
+        point.processingDate = null;
+        dateInput.setEnabled(false);
+        dateInput.setText("Не обрабатывалось");
+        processedCheckBox.setChecked(false);
+
+        processedCheckBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                Calendar today = Calendar.getInstance();
+                today.set(Calendar.HOUR_OF_DAY, 0);
+                today.set(Calendar.MINUTE, 0);
+                today.set(Calendar.SECOND, 0);
+                today.set(Calendar.MILLISECOND, 0);
+
+                point.processingDate = today.getTimeInMillis();
+                dateInput.setEnabled(true);
+                dateInput.setText(sdf.format(today.getTime()));
+            } else {
+                point.processingDate = null;
+                dateInput.setEnabled(false);
+                dateInput.setText("Не обрабатывалось");
+            }
+        });
 
         dateInput.setOnClickListener(v -> {
+
+            if (point.processingDate == null) return;
+
             Calendar calendar = Calendar.getInstance();
             calendar.setTimeInMillis(point.processingDate);
 
             DatePickerDialog picker = new DatePickerDialog(
                     context,
                     (view, year, month, dayOfMonth) -> {
+
                         Calendar selected = Calendar.getInstance();
-                        selected.set(year, month, dayOfMonth);
+                        selected.set(year, month, dayOfMonth, 0, 0, 0);
+                        selected.set(Calendar.MILLISECOND, 0);
 
-                        long time = selected.getTimeInMillis();
-                        point.processingDate = time;
-
+                        point.processingDate = selected.getTimeInMillis();
                         dateInput.setText(sdf.format(selected.getTime()));
                     },
                     calendar.get(Calendar.YEAR),
@@ -85,12 +114,15 @@ public class PlantDialogs {
             picker.show();
         });
 
+
         // сборка
         LinearLayout layout = new LinearLayout(context);
         layout.setOrientation(LinearLayout.VERTICAL);
 
         layout.addView(form.getView());
         layout.addView(countInput);
+
+        layout.addView(processedCheckBox);
         layout.addView(dateInput);
 
         // оборачиваем в скролл, чтобы в альбомной поля можно было посмотреть
@@ -210,17 +242,45 @@ public class PlantDialogs {
         dateInput.setHint("Дата обработки");
         dateInput.setFocusable(false); // чтобы по умолчанию не лезла клавиатура
 
+        CheckBox processedCheckBox = new CheckBox(context);
+        processedCheckBox.setText("Уже обрабатывалось");
+
         SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
 
-        // если дата вдруг 0 (на всякий случай)
-        if (point.processingDate == 0) {
-            point.processingDate = System.currentTimeMillis();
+        if (point.processingDate == null) {
+            processedCheckBox.setChecked(false);
+            dateInput.setEnabled(false);
+            dateInput.setText("Не обрабатывалось");
+        } else {
+            processedCheckBox.setChecked(true);
+            dateInput.setEnabled(true);
+            dateInput.setText(sdf.format(new Date(point.processingDate)));
         }
 
-        // подставляем текущую дату точки
-        dateInput.setText(sdf.format(new Date(point.processingDate)));
+        // логика переключения
+        processedCheckBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                Calendar today = Calendar.getInstance();
+                today.set(Calendar.HOUR_OF_DAY, 0);
+                today.set(Calendar.MINUTE, 0);
+                today.set(Calendar.SECOND, 0);
+                today.set(Calendar.MILLISECOND, 0);
 
+                point.processingDate = today.getTimeInMillis();
+                dateInput.setEnabled(true);
+                dateInput.setText(sdf.format(today.getTime()));
+            } else {
+                point.processingDate = null;
+                dateInput.setEnabled(false);
+                dateInput.setText("Не обрабатывалось");
+            }
+        });
+
+
+        // подставляем текущую дату точки (если она есть)
         dateInput.setOnClickListener(v -> {
+
+            if (point.processingDate == null) return;
 
             Calendar calendar = Calendar.getInstance();
             calendar.setTimeInMillis(point.processingDate);
@@ -230,14 +290,10 @@ public class PlantDialogs {
                     (view, year, month, dayOfMonth) -> {
 
                         Calendar selected = Calendar.getInstance();
-                        selected.set(year, month, dayOfMonth);
+                        selected.set(year, month, dayOfMonth, 0, 0, 0);
+                        selected.set(Calendar.MILLISECOND, 0);
 
-                        long time = selected.getTimeInMillis();
-
-                        // обновляем дату в точке
-                        point.processingDate = time;
-
-                        // отображаем
+                        point.processingDate = selected.getTimeInMillis();
                         dateInput.setText(sdf.format(selected.getTime()));
                     },
                     calendar.get(Calendar.YEAR),
@@ -252,6 +308,8 @@ public class PlantDialogs {
         LinearLayout layout = new LinearLayout(context);
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.addView(countInput);
+
+        layout.addView(processedCheckBox);
         layout.addView(dateInput);
 
         // кнопка смены растения

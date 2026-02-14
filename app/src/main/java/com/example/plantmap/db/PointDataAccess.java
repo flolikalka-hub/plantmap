@@ -24,7 +24,15 @@ public class PointDataAccess {
         cv.put("x", point.x);
         cv.put("y", point.y);
         cv.put("count", point.count);
-        cv.put("processing_date", point.processingDate);
+
+        //cv.put("processing_date", point.processingDate);
+        if (point.processingDate == null) {
+            cv.putNull("processing_date");
+        } else {
+            cv.put("processing_date", point.processingDate);
+        }
+
+
         cv.put("plant_id", point.plant.id);
 
         long id = db.insert("points", null, cv); // insert возвращает id новой записи
@@ -39,7 +47,14 @@ public class PointDataAccess {
         cv.put("x", point.x);
         cv.put("y", point.y);
         cv.put("count", point.count);
-        cv.put("processing_date", point.processingDate);
+
+        //cv.put("processing_date", point.processingDate);
+        if (point.processingDate == null) {
+            cv.putNull("processing_date");
+        } else {
+            cv.put("processing_date", point.processingDate);
+        }
+
         cv.put("plant_id", point.plant.id);
 
         db.update("points", cv, "id=?", new String[]{String.valueOf(id)});
@@ -89,7 +104,11 @@ public class PointDataAccess {
             );
             point.id = c.getInt(c.getColumnIndexOrThrow("id"));
             point.count = c.getInt(c.getColumnIndexOrThrow("count"));
-            point.processingDate = c.getLong(c.getColumnIndexOrThrow("processing_date"));
+
+            //point.processingDate = c.getLong(c.getColumnIndexOrThrow("processing_date"));
+            int pdIndex = c.getColumnIndexOrThrow("processing_date");
+            point.processingDate = c.isNull(pdIndex) ? null : c.getLong(pdIndex);
+
             point.plant = plant;
 
             points.add(point);

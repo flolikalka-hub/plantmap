@@ -444,7 +444,7 @@ public class PlanView extends View {
 
         // для даты (отсекаем секунды часы минуты)
         SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
-        String dateStr = (point.processingDate != 0)
+        String dateStr = (point.processingDate != null)
                 ? sdf.format(new Date(point.processingDate))
                 : ""; // пустое значение, если дата не задана
 

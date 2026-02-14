@@ -7,7 +7,7 @@ public class PlantPoint {
     public float y;
     public Plant plant;
     public int count;
-    public long processingDate;
+    public Long processingDate;
     public PlantPoint(float x, float y) {
         this.x = x;
         this.y = y;
