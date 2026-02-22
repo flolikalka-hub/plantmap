@@ -3,6 +3,7 @@ package com.example.plantmap.stats;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.text.InputType;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
@@ -17,21 +18,29 @@ import android.widget.TextView;
 import androidx.cardview.widget.CardView;
 
 import com.example.plantmap.R;
+import com.example.plantmap.model.PlantPoint;
 import com.example.plantmap.model.StatItem;
 import com.example.plantmap.plant.PlantRepository;
 import com.example.plantmap.plant.PlantUniversalForm;
+import com.example.plantmap.view.PlanView;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class StatisticsView {
-
-    private PlantRepository plantRepository;
     private Context context;
+    private PlantRepository plantRepository;
+    private PlanView planView;
+    private OnShowOnPlanListener showOnPlanListener;
 
-    public StatisticsView(Context context, PlantRepository plantRepository) {
+    public StatisticsView(Context context,
+                          PlantRepository plantRepository,
+                          OnShowOnPlanListener listener) {
         this.context = context;
         this.plantRepository = plantRepository;
+        this.showOnPlanListener = listener;
     }
 
     public View createView() {
@@ -176,18 +185,54 @@ public class StatisticsView {
     }
 
     private void showResultNeverProcDialog() {
+
+        List<PlantPoint> neverProcessed =
+                plantRepository.getNeverProcessedPoints();
+
+        if (neverProcessed.isEmpty()) {
+            new AlertDialog.Builder(context)
+                    .setTitle("Не обработанные растения")
+                    .setMessage("Таких растений нет")
+                    .setPositiveButton("Понятно", null)
+                    .show();
+            return;
+        }
+
+        StringBuilder sb = new StringBuilder();
+
+        for (PlantPoint p : neverProcessed) {
+            //Log.d("CHECK", "Stat id: " + p.id);
+            sb.append(p.plant.name)
+                    .append(" (")
+                    .append(p.count)
+                    .append(")")
+                    .append("\n");
+        }
+
         new AlertDialog.Builder(context)
-                .setTitle("")
-                .setMessage("")
-                .setPositiveButton("Ок", null)
+                .setTitle("Не обрабатывались никогда")
+                .setMessage(sb.toString())
+                .setPositiveButton("Закрыть", null)
+                .setNeutralButton("Показать на плане", (d, w) -> {
+
+                    Set<PlantPoint> resultSet =
+                            new HashSet<>(neverProcessed);
+
+                    if (showOnPlanListener != null) {
+                        showOnPlanListener.onShowOnPlan(resultSet);
+                    }
+                })
                 .show();
     }
-
     private  void  showDaysDialog() {
         new AlertDialog.Builder(context)
                 .setTitle("Дни")
                 .setMessage("Тут дни будут")
                 .setPositiveButton("Ок", null)
                 .show();
+    }
+
+    public interface OnShowOnPlanListener {
+        void onShowOnPlan(Set<PlantPoint> points);
     }
 }

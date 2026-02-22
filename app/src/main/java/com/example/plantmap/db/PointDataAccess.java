@@ -176,4 +176,54 @@ public class PointDataAccess {
 
         return total;
     }
+
+    // никогда не обрабатывались
+    public List<PlantPoint> getNeverProcessedPoints() {
+        List<PlantPoint> points = new ArrayList<>();
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        String sql =
+                "SELECT p.id, p.x, p.y, p.count, p.processing_date, " +
+                        "pl.id AS plant_id, " +
+                        "pl.name, " +
+                        "pl.type, " +
+                        "pl.plant_group, " +
+                        "pl.pot_volume, " +
+                        "pl.flower_color, " +
+                        "pl.additional_info " +
+                        "FROM points p " +
+                        "JOIN plants pl ON p.plant_id = pl.id " +
+                        "WHERE p.processing_date IS NULL";
+
+        Cursor c = db.rawQuery(sql, null);
+
+        while (c.moveToNext()) {
+            Plant plant = new Plant();
+            plant.id = c.getInt(c.getColumnIndexOrThrow("plant_id"));
+            plant.name = c.getString(c.getColumnIndexOrThrow("name"));
+            plant.type = c.getString(c.getColumnIndexOrThrow("type"));
+            plant.group = c.getString(c.getColumnIndexOrThrow("plant_group"));
+
+            int pvIndex = c.getColumnIndexOrThrow("pot_volume");
+            plant.potVolume = c.isNull(pvIndex) ? null : c.getInt(pvIndex);
+
+            plant.flowerColor = c.getString(c.getColumnIndexOrThrow("flower_color"));
+            plant.additionalInfo = c.getString(c.getColumnIndexOrThrow("additional_info"));
+
+            PlantPoint point = new PlantPoint(
+                    c.getFloat(c.getColumnIndexOrThrow("x")),
+                    c.getFloat(c.getColumnIndexOrThrow("y"))
+            );
+
+            point.id = c.getInt(c.getColumnIndexOrThrow("id"));
+            point.count = c.getInt(c.getColumnIndexOrThrow("count"));
+            point.processingDate = null;
+            point.plant = plant;
+
+            points.add(point);
+        }
+
+        c.close();
+        return points;
+    }
 }

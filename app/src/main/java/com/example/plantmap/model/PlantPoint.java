@@ -39,4 +39,20 @@ public class PlantPoint {
     public void setProcessingDate(long processingDate) {
         this.processingDate = processingDate;
     }
+
+    // для подсветки
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof PlantPoint)) return false;
+
+        PlantPoint that = (PlantPoint) o;
+
+        return this.id == that.id;
+    }
+
+    @Override
+    public int hashCode() {
+        return Integer.hashCode(id);
+    }
 }

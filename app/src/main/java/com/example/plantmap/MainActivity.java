@@ -49,7 +49,6 @@ public class MainActivity extends AppCompatActivity {
     private Screen currentScreen = Screen.PLAN;
     // для сброса фильтра
     private boolean dbSearchActive = false;
-    private PlantSearchEngine searchEngine = new PlantSearchEngine();
     private DatabaseHelper dbHelper;
     private PlantRepository repository;
 
@@ -307,7 +306,14 @@ public class MainActivity extends AppCompatActivity {
                 btnAdd.setImageResource(R.drawable.btn_add_point);
                 btnEdit.setImageResource(R.drawable.btn_edit_point);
                 // загружаем экран со статистикой
-                StatisticsView statisticsView = new StatisticsView(this, repository);
+                StatisticsView statisticsView = new StatisticsView(this,
+                        repository,
+                        points -> {
+                            planView.setSearchResults(points);
+
+                            navigationView.setCheckedItem(R.id.nav_plan);
+                            navigationView.getMenu().performIdentifierAction(R.id.nav_plan, 0);
+                        });
                 contentContainer.addView(statisticsView.createView());
                 toolbar.setTitle("Статистика");
             }

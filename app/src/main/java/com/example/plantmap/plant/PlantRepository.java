@@ -109,4 +109,8 @@ public class PlantRepository {
     public int getFilteredPlantCount(String name, String type, String group, String color, Integer potVolume) {
         return pointDa.getFilteredPlantCount(name, type, group, color, potVolume);
     }
+
+    public List<PlantPoint> getNeverProcessedPoints() {
+        return pointDa.getNeverProcessedPoints();
+    }
 }

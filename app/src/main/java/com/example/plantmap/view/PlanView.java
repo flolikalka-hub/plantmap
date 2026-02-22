@@ -7,6 +7,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View; //базовый визуальный элемент
@@ -115,7 +116,6 @@ public class PlanView extends View {
         // получаем оригинальные размеры
         planOriginalWidth = planDrawable.getIntrinsicWidth();
         planOriginalHeight = planDrawable.getIntrinsicHeight();
-
 
         // точки
         points = new ArrayList<>(); // инициализируем
@@ -248,6 +248,7 @@ public class PlanView extends View {
             float textY = screenY + bounds.height() / 2f;
 
             canvas.drawText(text, textX, textY, textPaint);
+            //Log.d("CHECK", "Plan id: " + p.id);
         }
         canvas.restore();
     }
