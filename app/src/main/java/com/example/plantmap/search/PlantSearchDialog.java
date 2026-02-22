@@ -11,6 +11,7 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 
 import com.example.plantmap.model.PlantPoint;
+import com.example.plantmap.model.SearchFilter;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -59,7 +60,7 @@ public class PlantSearchDialog {
         dateInput.setFocusable(false); // чтобы не открывалась клавиатура
 
         EditText addInput = new EditText(context); addInput.setHint("Дополнительная информация");
-
+        // для лямбды final массив, чтобы значение можно было менять
         final long[] selectedDateMillis = {0}; // 0 = дата не выбрана
         SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
 

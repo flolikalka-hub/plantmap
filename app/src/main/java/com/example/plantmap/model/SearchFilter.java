@@ -1,4 +1,4 @@
-package com.example.plantmap.search;
+package com.example.plantmap.model;
 
 public class SearchFilter {
     public String name;

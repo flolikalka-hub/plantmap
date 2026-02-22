@@ -212,48 +212,29 @@ public class PlantUniversalForm {
             imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
         }
     }
-    /*
-    // сохранение состояния
-    public void saveState(Bundle outState) {
-        outState.putString("name", nameInput.getText().toString());
-        outState.putString("type", typeInput.getText().toString());
-        outState.putString("group", groupInput.getText().toString());
-        outState.putString("potVolume", potVolumeInput.getText().toString());
-        outState.putString("flowerColor", flowerColorInput.getText().toString());
-        outState.putString("additionalInfo", additionalInfoInput.getText().toString());
 
-        View focused = rootLayout.findFocus();
-        if (focused != null) {
-            if (focused == nameInput) outState.putString("focus", "name");
-            else if (focused == typeInput) outState.putString("focus", "type");
-            else if (focused == groupInput) outState.putString("focus", "group");
-            else if (focused == potVolumeInput) outState.putString("focus", "potVolume");
-            else if (focused == flowerColorInput) outState.putString("focus", "flowerColor");
-            else if (focused == additionalInfoInput) outState.putString("focus", "additionalInfo");
-        }
+    // чтобы получать все эти поля
+    public AutoCompleteTextView getNameInput() {
+        return nameInput;
     }
 
-    public void restoreState(Bundle savedInstanceState) {
-        if (savedInstanceState == null) return;
-
-        nameInput.setText(savedInstanceState.getString("name", ""));
-        typeInput.setText(savedInstanceState.getString("type", ""));
-        groupInput.setText(savedInstanceState.getString("group", ""));
-        potVolumeInput.setText(savedInstanceState.getString("potVolume", ""));
-        flowerColorInput.setText(savedInstanceState.getString("flowerColor", ""));
-        additionalInfoInput.setText(savedInstanceState.getString("additionalInfo", ""));
-
-        String focus = savedInstanceState.getString("focus");
-        if (focus != null) {
-            switch (focus) {
-                case "name": nameInput.requestFocus(); break;
-                case "type": typeInput.requestFocus(); break;
-                case "group": groupInput.requestFocus(); break;
-                case "potVolume": potVolumeInput.requestFocus(); break;
-                case "flowerColor": flowerColorInput.requestFocus(); break;
-                case "additionalInfo": additionalInfoInput.requestFocus(); break;
-            }
-        }
+    public EditText getTypeInput() {
+        return typeInput;
     }
-     */
+
+    public EditText getGroupInput() {
+        return groupInput;
+    }
+
+    public EditText getPotVolumeInput() {
+        return potVolumeInput;
+    }
+
+    public AutoCompleteTextView getFlowerColorInput() {
+        return flowerColorInput;
+    }
+
+    public EditText getAdditionalInfoInput() {
+        return additionalInfoInput;
+    }
 }

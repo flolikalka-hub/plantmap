@@ -102,4 +102,11 @@ public class PlantRepository {
         return a.equals(b);
     }
 
+    public int getTotalPlantCount() {
+        return pointDa.getTotalPlantCount();
+    }
+
+    public int getFilteredPlantCount(String name, String type, String group, String color, Integer potVolume) {
+        return pointDa.getFilteredPlantCount(name, type, group, color, potVolume);
+    }
 }

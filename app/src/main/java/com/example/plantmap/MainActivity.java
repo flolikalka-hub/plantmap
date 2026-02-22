@@ -54,8 +54,6 @@ public class MainActivity extends AppCompatActivity {
     private PlantRepository repository;
 
 
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -309,9 +307,8 @@ public class MainActivity extends AppCompatActivity {
                 btnAdd.setImageResource(R.drawable.btn_add_point);
                 btnEdit.setImageResource(R.drawable.btn_edit_point);
                 // загружаем экран со статистикой
-                // тут будет загрузка
-                StatisticsView statisticsView = new StatisticsView(this);
-                //contentContainer.addView(statisticsView.createView());
+                StatisticsView statisticsView = new StatisticsView(this, repository);
+                contentContainer.addView(statisticsView.createView());
                 toolbar.setTitle("Статистика");
             }
 

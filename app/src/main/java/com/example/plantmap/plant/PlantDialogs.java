@@ -147,7 +147,6 @@ public class PlantDialogs {
                 Plant modifiedPlant = form.buildPlantFromInputs();
                 Plant originalPlant = form.getSelectedPlant();
 
-
                 if (modifiedPlant.name.isEmpty()) {
                     form.nameInput.setError("Название обязательно");
                     return;

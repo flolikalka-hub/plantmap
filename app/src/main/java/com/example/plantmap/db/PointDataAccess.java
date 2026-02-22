@@ -48,7 +48,6 @@ public class PointDataAccess {
         cv.put("y", point.y);
         cv.put("count", point.count);
 
-        //cv.put("processing_date", point.processingDate);
         if (point.processingDate == null) {
             cv.putNull("processing_date");
         } else {
@@ -105,7 +104,6 @@ public class PointDataAccess {
             point.id = c.getInt(c.getColumnIndexOrThrow("id"));
             point.count = c.getInt(c.getColumnIndexOrThrow("count"));
 
-            //point.processingDate = c.getLong(c.getColumnIndexOrThrow("processing_date"));
             int pdIndex = c.getColumnIndexOrThrow("processing_date");
             point.processingDate = c.isNull(pdIndex) ? null : c.getLong(pdIndex);
 
@@ -116,5 +114,66 @@ public class PointDataAccess {
 
         c.close();
         return points;
+    }
+
+    // сумма всех растений в наличии
+    public int getTotalPlantCount() {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        Cursor cursor = db.rawQuery(
+                "SELECT SUM(count) FROM points",
+                null
+        );
+
+        int total = 0;
+
+        if (cursor.moveToFirst()) {
+            total = cursor.getInt(0);
+        }
+
+        cursor.close();
+        db.close();
+
+        return total;
+    }
+
+    public int getFilteredPlantCount(String name, String type, String group, String color, Integer potVolume) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        StringBuilder sql = new StringBuilder("SELECT SUM(count) FROM points p JOIN plants pl ON p.plant_id = pl.id WHERE 1=1");
+        List<String> args = new ArrayList<>();
+
+        if (name != null && !name.isEmpty()) {
+            sql.append(" AND pl.name LIKE ?");
+            args.add("%" + name + "%");
+        }
+        if (type != null && !type.isEmpty()) {
+            sql.append(" AND pl.type LIKE ?");
+            args.add("%" + type + "%");
+        }
+        if (group != null && !group.isEmpty()) {
+            sql.append(" AND pl.plant_group = ?");
+            args.add(group);
+        }
+        if (color != null && !color.isEmpty()) {
+            sql.append(" AND pl.flower_color = ?");
+            args.add(color);
+        }
+        if (potVolume != null) {
+            sql.append(" AND pl.pot_volume = ?");
+            args.add(String.valueOf(potVolume));
+        }
+
+        Cursor cursor = db.rawQuery(sql.toString(), args.toArray(new String[0]));
+
+        int total = 0;
+        if (cursor.moveToFirst()) {
+            total = cursor.getInt(0);
+        }
+
+        cursor.close();
+        db.close();
+
+        return total;
     }
 }

@@ -2,6 +2,7 @@ package com.example.plantmap.search;
 
 import com.example.plantmap.model.Plant;
 import com.example.plantmap.model.PlantPoint;
+import com.example.plantmap.model.SearchFilter;
 
 import java.util.Calendar;
 import java.util.HashSet;
@@ -56,8 +57,13 @@ public class PlantSearchEngine {
 
         // фильтр по точке
         if (f.count != null && !f.count.equals(p.count)) return false;
-        if (f.processingDate != null && !isSameDay(f.processingDate, p.processingDate)) {
-            return false;
+        if (f.processingDate != null) {
+            if (p.processingDate == null) {
+                return false;
+            }
+            if (!isSameDay(f.processingDate, p.processingDate)) {
+                return false;
+            }
         }
 
 
