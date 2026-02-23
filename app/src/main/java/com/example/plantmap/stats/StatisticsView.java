@@ -198,9 +198,57 @@ public class StatisticsView {
             return;
         }
 
+        String dialogTitle = "Не обрабатывались никогда";
+        showResultDialog(dialogTitle, neverProcessed);
+    }
+    private  void  showDaysDialog() {
+        EditText input = new EditText(context);
+        input.setInputType(InputType.TYPE_CLASS_NUMBER);
+        input.setHint("Количество дней");
+
+        new AlertDialog.Builder(context)
+                .setTitle("Не обрабатывались более...")
+                .setView(input)
+                .setPositiveButton("Показать", (dialog, which) -> {
+
+                    String text = input.getText().toString();
+
+                    if (text.isEmpty()) return;
+
+                    int days = Integer.parseInt(text);
+
+                    showOldProcessedPoints(days);
+
+                })
+                .setNegativeButton("Отмена", null)
+                .show();
+    }
+
+    private void showOldProcessedPoints(int days) {
+
+        List<PlantPoint> oldPoints =
+                plantRepository.getNotProcessedMoreThanDays(days);
+
+        if (oldPoints.isEmpty()) {
+            new AlertDialog.Builder(context)
+                    .setTitle("Не обрабатывались более " + days + " дней")
+                    .setMessage("Таких растений нет")
+                    .setPositiveButton("Понятно", null)
+                    .show();
+            return;
+        }
+
+        String dialogTitle = "Не обрабатывались более " + days + " дней";
+        showResultDialog(dialogTitle, oldPoints);
+    }
+
+    private void showResultDialog(
+            String dialogTitle,
+            List<PlantPoint> resPoints
+    ) {
         StringBuilder sb = new StringBuilder();
 
-        for (PlantPoint p : neverProcessed) {
+        for (PlantPoint p : resPoints) {
             //Log.d("CHECK", "Stat id: " + p.id);
             sb.append(p.plant.name)
                     .append(" (")
@@ -208,27 +256,19 @@ public class StatisticsView {
                     .append(")")
                     .append("\n");
         }
-
         new AlertDialog.Builder(context)
-                .setTitle("Не обрабатывались никогда")
+                .setTitle(dialogTitle)
                 .setMessage(sb.toString())
                 .setPositiveButton("Закрыть", null)
                 .setNeutralButton("Показать на плане", (d, w) -> {
 
                     Set<PlantPoint> resultSet =
-                            new HashSet<>(neverProcessed);
+                            new HashSet<>(resPoints);
 
                     if (showOnPlanListener != null) {
                         showOnPlanListener.onShowOnPlan(resultSet);
                     }
                 })
-                .show();
-    }
-    private  void  showDaysDialog() {
-        new AlertDialog.Builder(context)
-                .setTitle("Дни")
-                .setMessage("Тут дни будут")
-                .setPositiveButton("Ок", null)
                 .show();
     }
 

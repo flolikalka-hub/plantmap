@@ -113,4 +113,8 @@ public class PlantRepository {
     public List<PlantPoint> getNeverProcessedPoints() {
         return pointDa.getNeverProcessedPoints();
     }
+
+    public List<PlantPoint> getNotProcessedMoreThanDays(int days) {
+        return pointDa.getNotProcessedMoreThanDays(days);
+    }
 }

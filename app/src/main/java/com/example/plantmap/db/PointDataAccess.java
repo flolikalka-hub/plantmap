@@ -3,10 +3,13 @@ package com.example.plantmap.db;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.util.Log;
 
 import com.example.plantmap.model.Plant;
 import com.example.plantmap.model.PlantPoint;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -65,6 +68,35 @@ public class PointDataAccess {
         db.delete("points", "id=?", new String[]{String.valueOf(id)});
     }
 
+    // убираем дублирование кода
+    private PlantPoint mapFromCursor(Cursor c) {
+        Plant plant = new Plant();
+        plant.id = c.getInt(c.getColumnIndexOrThrow("plant_id"));
+        plant.name = c.getString(c.getColumnIndexOrThrow("name"));
+        plant.type = c.getString(c.getColumnIndexOrThrow("type"));
+        plant.group = c.getString(c.getColumnIndexOrThrow("plant_group"));
+
+        int pvIndex = c.getColumnIndexOrThrow("pot_volume");
+        plant.potVolume = c.isNull(pvIndex) ? null : c.getInt(pvIndex);
+
+        plant.flowerColor = c.getString(c.getColumnIndexOrThrow("flower_color"));
+        plant.additionalInfo = c.getString(c.getColumnIndexOrThrow("additional_info"));
+
+        PlantPoint point = new PlantPoint(
+                c.getFloat(c.getColumnIndexOrThrow("x")),
+                c.getFloat(c.getColumnIndexOrThrow("y"))
+        );
+        point.id = c.getInt(c.getColumnIndexOrThrow("id"));
+        point.count = c.getInt(c.getColumnIndexOrThrow("count"));
+
+        int pdIndex = c.getColumnIndexOrThrow("processing_date");
+        point.processingDate = c.isNull(pdIndex) ? null : c.getLong(pdIndex);
+
+        point.plant = plant;
+
+        return point;
+    }
+
     // Получение всех точек с ПОДТЯГИВАНИЕМ РАСТЕНИЯ
     public List<PlantPoint> getAllPoints() {
         List<PlantPoint> points = new ArrayList<>();
@@ -85,31 +117,7 @@ public class PointDataAccess {
         Cursor c = db.rawQuery(sql, null);
 
         while (c.moveToNext()) {
-            Plant plant = new Plant();
-            plant.id = c.getInt(c.getColumnIndexOrThrow("plant_id"));
-            plant.name = c.getString(c.getColumnIndexOrThrow("name"));
-            plant.type = c.getString(c.getColumnIndexOrThrow("type"));
-            plant.group = c.getString(c.getColumnIndexOrThrow("plant_group"));
-
-            int pvIndex = c.getColumnIndexOrThrow("pot_volume");
-            plant.potVolume = c.isNull(pvIndex) ? null : c.getInt(pvIndex);
-
-            plant.flowerColor = c.getString(c.getColumnIndexOrThrow("flower_color"));
-            plant.additionalInfo = c.getString(c.getColumnIndexOrThrow("additional_info"));
-
-            PlantPoint point = new PlantPoint(
-                    c.getFloat(c.getColumnIndexOrThrow("x")),
-                    c.getFloat(c.getColumnIndexOrThrow("y"))
-            );
-            point.id = c.getInt(c.getColumnIndexOrThrow("id"));
-            point.count = c.getInt(c.getColumnIndexOrThrow("count"));
-
-            int pdIndex = c.getColumnIndexOrThrow("processing_date");
-            point.processingDate = c.isNull(pdIndex) ? null : c.getLong(pdIndex);
-
-            point.plant = plant;
-
-            points.add(point);
+            points.add(mapFromCursor(c));
         }
 
         c.close();
@@ -198,32 +206,51 @@ public class PointDataAccess {
         Cursor c = db.rawQuery(sql, null);
 
         while (c.moveToNext()) {
-            Plant plant = new Plant();
-            plant.id = c.getInt(c.getColumnIndexOrThrow("plant_id"));
-            plant.name = c.getString(c.getColumnIndexOrThrow("name"));
-            plant.type = c.getString(c.getColumnIndexOrThrow("type"));
-            plant.group = c.getString(c.getColumnIndexOrThrow("plant_group"));
-
-            int pvIndex = c.getColumnIndexOrThrow("pot_volume");
-            plant.potVolume = c.isNull(pvIndex) ? null : c.getInt(pvIndex);
-
-            plant.flowerColor = c.getString(c.getColumnIndexOrThrow("flower_color"));
-            plant.additionalInfo = c.getString(c.getColumnIndexOrThrow("additional_info"));
-
-            PlantPoint point = new PlantPoint(
-                    c.getFloat(c.getColumnIndexOrThrow("x")),
-                    c.getFloat(c.getColumnIndexOrThrow("y"))
-            );
-
-            point.id = c.getInt(c.getColumnIndexOrThrow("id"));
-            point.count = c.getInt(c.getColumnIndexOrThrow("count"));
-            point.processingDate = null;
-            point.plant = plant;
-
-            points.add(point);
+            points.add(mapFromCursor(c));
         }
 
         c.close();
         return points;
+    }
+
+    public List<PlantPoint> getNotProcessedMoreThanDays(int days) {
+
+        LocalDate today = LocalDate.now();
+        LocalDate thresholdDate = today.minusDays(days);
+
+        long threshold = thresholdDate
+                .atStartOfDay(ZoneId.systemDefault())
+                .toInstant()
+                .toEpochMilli();
+
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        String query =
+                "SELECT p.id, p.x, p.y, p.count, p.processing_date, " +
+                        "pl.id AS plant_id, " +
+                        "pl.name, " +
+                        "pl.type, " +
+                        "pl.plant_group, " +
+                        "pl.pot_volume, " +
+                        "pl.flower_color, " +
+                        "pl.additional_info " +
+                        "FROM points p " +
+                        "JOIN plants pl ON p.plant_id = pl.id " +
+                        "WHERE processing_date IS NULL " +
+                        "OR processing_date < ?";
+
+        Cursor cursor = db.rawQuery(query,
+                new String[]{ String.valueOf(threshold) });
+
+        List<PlantPoint> result = new ArrayList<>();
+
+        while (cursor.moveToNext()) {
+            PlantPoint point = mapFromCursor(cursor);
+            //Log.d("CHECK", "Point: " + point.plant.name);
+            result.add(point);
+        }
+
+        cursor.close();
+        return result;
     }
 }
