@@ -273,9 +273,18 @@ public class MainActivity extends AppCompatActivity {
                 btnEdit.setImageResource(R.drawable.btn_edit_point);
                 // Загружаем экран с БД
                 dbView = new DbView(this, planView, repository);
-                dbView.setSearchStateListener(() -> {
-                    dbSearchActive = true;
-                    invalidateOptionsMenu();
+                dbView.setSearchStateListener(new DbView.SearchStateListener() {
+                    @Override
+                    public void onSearchApplied() {
+                        dbSearchActive = true;
+                        invalidateOptionsMenu();
+                    }
+
+                    @Override
+                    public void onSearchCleared() {
+                        dbSearchActive = false;
+                        invalidateOptionsMenu();
+                    }
                 });
                 contentContainer.addView(dbView.createDbView());
                 toolbar.setTitle("Растения");

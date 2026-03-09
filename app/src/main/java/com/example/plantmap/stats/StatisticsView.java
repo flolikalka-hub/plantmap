@@ -170,6 +170,18 @@ public class StatisticsView {
                         potVolume = Integer.parseInt(potVolumeStr);
                     }
 
+                    boolean allEmpty =
+                            name.isEmpty() &&
+                                    type.isEmpty() &&
+                                    group.isEmpty() &&
+                                    color.isEmpty() &&
+                                    potVolume == null;
+
+                    if (allEmpty) {
+                        // просто ничего не делаем
+                        return;
+                    }
+
                     // вызываем метод репозитория для подсчёта
                     int count = plantRepository.getFilteredPlantCount(name, type, group, color, potVolume);
 

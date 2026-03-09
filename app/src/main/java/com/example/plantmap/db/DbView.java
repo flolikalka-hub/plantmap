@@ -37,6 +37,7 @@ public class DbView {
 
     public interface SearchStateListener {
         void onSearchApplied();
+        void onSearchCleared();
     }
     private SearchStateListener searchListener;
 
@@ -103,6 +104,9 @@ public class DbView {
                 colorResolver,
                 plant -> showPlantDialog(plant, recyclerView));
         recyclerView.setAdapter(adapter);
+        if (searchListener != null) {
+            searchListener.onSearchCleared();
+        }
     }
 
     // Диалог добавления/редактирования растения. Раньше было LinearLayout listLayout
@@ -292,6 +296,7 @@ public class DbView {
             if (planView != null) planView.reloadPoints();
 
             refreshPlantList(recyclerView);
+
             dialog.dismiss(); // закрываем диалог вручную
         });
     }
@@ -447,6 +452,9 @@ public class DbView {
 
     public void resetSearch() {
         refreshPlantList(recyclerView);
+        if (searchListener != null) {
+            searchListener.onSearchCleared();
+        }
     }
 
 }
