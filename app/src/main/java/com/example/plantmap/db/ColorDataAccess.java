@@ -164,23 +164,28 @@ public class ColorDataAccess {
     public boolean isColorUsed(String colorName, String root) {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
-        String sql = "SELECT 1 FROM plants WHERE " +
-                "LOWER(flower_color) = ? " +
-                "OR LOWER(flower_color) LIKE ? " +
-                "LIMIT 1";
-
         String lowerName = colorName.toLowerCase().trim();
         String lowerRoot = root == null ? "" : root.toLowerCase().trim();
 
-        String[] args = new String[]{
-                "%" + lowerName + "%",
-                "%" + lowerRoot + "%"
-        };
+        StringBuilder sql = new StringBuilder(
+                "SELECT 1 FROM plants WHERE LOWER(flower_color) LIKE ?"
+        );
 
-        Cursor cursor = db.rawQuery(sql, args);
+        List<String> argsList = new ArrayList<>();
+        argsList.add("%" + lowerName + "%");
+
+        if (!lowerRoot.isEmpty()) {
+            sql.append(" OR LOWER(flower_color) LIKE ?");
+            argsList.add("%" + lowerRoot + "%");
+        }
+
+        sql.append(" LIMIT 1");
+
+        String[] args = argsList.toArray(new String[0]);
+
+        Cursor cursor = db.rawQuery(sql.toString(), args);
         boolean used = cursor.moveToFirst();
         cursor.close();
-        //db.close();
 
         return used;
     }
