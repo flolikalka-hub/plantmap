@@ -449,6 +449,10 @@ public class PlanView extends View {
                 ? sdf.format(new Date(point.processingDate))
                 : ""; // пустое значение, если дата не задана
 
+        String feedingDateStr = (point.feedingDate != null)
+                ? sdf.format(new Date(point.feedingDate))
+                : "";
+
         // для литража (убираем null)
         String potVolumeStr = (point.plant.potVolume != null)
                 ? point.plant.potVolume.toString()
@@ -469,9 +473,10 @@ public class PlanView extends View {
                 "Группа: " + point.plant.group + "\n" +
                 "Литраж горшка: " + potVolumeStr  + "\n" +
                 "Цвет цветка: " + colorStr + "\n" +
+                "Дополнительно: " + addInfoStr + "\n" +
                 "Количество в точке: " + point.count + "\n" +
                 "Дата обработки: " + dateStr + "\n" +
-                "Дополнительно: " + addInfoStr;
+                "Дата подкормки: " + feedingDateStr;
 
         new AlertDialog.Builder(context)
                 .setTitle("Информация о растении")

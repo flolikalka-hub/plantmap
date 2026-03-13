@@ -51,7 +51,7 @@ public class StatisticsView {
         // Секция "Уход"
         stats.add(new StatItem(
                 "Уход",
-                "Проверка давности обработки (прополка, обрезка и т.д.) растений",
+                "Проверка давности обработки (от вредителей и болезней) и подкормки растений",
                 List.of(
                         new StatItem("Не обрабатывались более ... дней",
                                 "Введите количество дней",
@@ -60,14 +60,23 @@ public class StatisticsView {
                         new StatItem("Не обрабатывались никогда",
                                 "",
                                 false,
-                                () -> showResultNeverProcDialog())
+                                () -> showResultNeverProcDialog()),
+                        new StatItem("Не подкармливались более ... дней",
+                                "Введите количество дней",
+                                true,
+                                () -> showFeedingDaysDialog()),
+
+                        new StatItem("Не подкармливались никогда",
+                                "",
+                                false,
+                                () -> showResultNeverFeedingDialog())
                 )
         ));
 
         // Секция "Количество"
         stats.add(new StatItem(
                 "Количество",
-                "Подсчет количества растений в наличии",
+                "Подсчет количества растений в наличии на территории",
                 List.of(
                         new StatItem("Всего растений",
                                 "",
@@ -213,6 +222,25 @@ public class StatisticsView {
         String dialogTitle = "Не обрабатывались никогда";
         showResultDialog(dialogTitle, neverProcessed);
     }
+
+    private void showResultNeverFeedingDialog() {
+
+        List<PlantPoint> neverFeeding =
+                plantRepository.getNeverFeedingPoints();
+
+        if (neverFeeding.isEmpty()) {
+            new AlertDialog.Builder(context)
+                    .setTitle("Не подкармливались растения")
+                    .setMessage("Таких растений нет")
+                    .setPositiveButton("Понятно", null)
+                    .show();
+            return;
+        }
+
+        String dialogTitle = "Не подкармливались никогда";
+        showResultDialog(dialogTitle, neverFeeding);
+    }
+
     private  void  showDaysDialog() {
         EditText input = new EditText(context);
         input.setInputType(InputType.TYPE_CLASS_NUMBER);
@@ -236,6 +264,29 @@ public class StatisticsView {
                 .show();
     }
 
+    private void showFeedingDaysDialog() {
+        EditText input = new EditText(context);
+        input.setInputType(InputType.TYPE_CLASS_NUMBER);
+        input.setHint("Количество дней");
+
+        new AlertDialog.Builder(context)
+                .setTitle("Не подкармливались более...")
+                .setView(input)
+                .setPositiveButton("Показать", (dialog, which) -> {
+
+                    String text = input.getText().toString();
+
+                    if (text.isEmpty()) return;
+
+                    int days = Integer.parseInt(text);
+
+                    showOldFeedingPoints(days);
+
+                })
+                .setNegativeButton("Отмена", null)
+                .show();
+    }
+
     private void showOldProcessedPoints(int days) {
 
         List<PlantPoint> oldPoints =
@@ -251,6 +302,24 @@ public class StatisticsView {
         }
 
         String dialogTitle = "Не обрабатывались более " + days + " дней";
+        showResultDialog(dialogTitle, oldPoints);
+    }
+
+    private void showOldFeedingPoints(int days) {
+
+        List<PlantPoint> oldPoints =
+                plantRepository.getNotFeedingMoreThanDays(days);
+
+        if (oldPoints.isEmpty()) {
+            new AlertDialog.Builder(context)
+                    .setTitle("Не подкармливались более " + days + " дней")
+                    .setMessage("Таких растений нет")
+                    .setPositiveButton("Понятно", null)
+                    .show();
+            return;
+        }
+
+        String dialogTitle = "Не подкармливались более " + days + " дней";
         showResultDialog(dialogTitle, oldPoints);
     }
 

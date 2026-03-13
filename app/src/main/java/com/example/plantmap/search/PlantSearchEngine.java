@@ -35,7 +35,8 @@ public class PlantSearchEngine {
                 && (f.additionalInfo == null || f.additionalInfo.isEmpty())
                 && f.potVolume == null
                 && f.count == null
-                && f.processingDate == null;
+                && f.processingDate == null
+                && f.feedingDate == null;
     }
 
     // Помощник для поиска, обнуляем секунды часы минуты
@@ -62,6 +63,14 @@ public class PlantSearchEngine {
                 return false;
             }
             if (!isSameDay(f.processingDate, p.processingDate)) {
+                return false;
+            }
+        }
+        if (f.feedingDate != null) {
+            if (p.feedingDate == null) {
+                return false;
+            }
+            if (!isSameDay(f.feedingDate, p.feedingDate)) {
                 return false;
             }
         }

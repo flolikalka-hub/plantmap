@@ -8,6 +8,7 @@ public class PlantPoint {
     public Plant plant;
     public int count;
     public Long processingDate;
+    public Long feedingDate;
     public PlantPoint(float x, float y) {
         this.x = x;
         this.y = y;
@@ -36,8 +37,16 @@ public class PlantPoint {
         return processingDate;
     }
 
+    public long getFeedingDate() {
+        return feedingDate;
+    }
+
     public void setProcessingDate(long processingDate) {
         this.processingDate = processingDate;
+    }
+
+    public void setFeedingDate(long feedingDate) {
+        this.feedingDate = feedingDate;
     }
 
     // для подсветки

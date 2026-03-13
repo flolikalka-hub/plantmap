@@ -28,13 +28,17 @@ public class PointDataAccess {
         cv.put("y", point.y);
         cv.put("count", point.count);
 
-        //cv.put("processing_date", point.processingDate);
         if (point.processingDate == null) {
             cv.putNull("processing_date");
         } else {
             cv.put("processing_date", point.processingDate);
         }
 
+        if (point.feedingDate == null) {
+            cv.putNull("feeding_date");
+        } else {
+            cv.put("feeding_date", point.feedingDate);
+        }
 
         cv.put("plant_id", point.plant.id);
 
@@ -55,6 +59,12 @@ public class PointDataAccess {
             cv.putNull("processing_date");
         } else {
             cv.put("processing_date", point.processingDate);
+        }
+
+        if (point.feedingDate == null) {
+            cv.putNull("feeding_date");
+        } else {
+            cv.put("feeding_date", point.feedingDate);
         }
 
         cv.put("plant_id", point.plant.id);
@@ -92,6 +102,9 @@ public class PointDataAccess {
         int pdIndex = c.getColumnIndexOrThrow("processing_date");
         point.processingDate = c.isNull(pdIndex) ? null : c.getLong(pdIndex);
 
+        int fdIndex = c.getColumnIndexOrThrow("feeding_date");
+        point.feedingDate = c.isNull(fdIndex) ? null : c.getLong(fdIndex);
+
         point.plant = plant;
 
         return point;
@@ -103,7 +116,7 @@ public class PointDataAccess {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
         String sql =
-                "SELECT p.id, p.x, p.y, p.count, p.processing_date, " +
+                "SELECT p.id, p.x, p.y, p.count, p.processing_date, p.feeding_date, " +
                         "pl.id AS plant_id, " +
                         "pl.name, " +
                         "pl.type, " +
@@ -191,7 +204,7 @@ public class PointDataAccess {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
         String sql =
-                "SELECT p.id, p.x, p.y, p.count, p.processing_date, " +
+                "SELECT p.id, p.x, p.y, p.count, p.processing_date, p.feeding_date, " +
                         "pl.id AS plant_id, " +
                         "pl.name, " +
                         "pl.type, " +
@@ -226,7 +239,7 @@ public class PointDataAccess {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
         String query =
-                "SELECT p.id, p.x, p.y, p.count, p.processing_date, " +
+                "SELECT p.id, p.x, p.y, p.count, p.processing_date, p.feeding_date, " +
                         "pl.id AS plant_id, " +
                         "pl.name, " +
                         "pl.type, " +
@@ -238,6 +251,75 @@ public class PointDataAccess {
                         "JOIN plants pl ON p.plant_id = pl.id " +
                         "WHERE processing_date IS NULL " +
                         "OR processing_date < ?";
+
+        Cursor cursor = db.rawQuery(query,
+                new String[]{ String.valueOf(threshold) });
+
+        List<PlantPoint> result = new ArrayList<>();
+
+        while (cursor.moveToNext()) {
+            PlantPoint point = mapFromCursor(cursor);
+            //Log.d("CHECK", "Point: " + point.plant.name);
+            result.add(point);
+        }
+
+        cursor.close();
+        return result;
+    }
+
+    // никогда не подкармливались
+    public List<PlantPoint> getNeverFeedingPoints() {
+        List<PlantPoint> points = new ArrayList<>();
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        String sql =
+                "SELECT p.id, p.x, p.y, p.count, p.processing_date, p.feeding_date, " +
+                        "pl.id AS plant_id, " +
+                        "pl.name, " +
+                        "pl.type, " +
+                        "pl.plant_group, " +
+                        "pl.pot_volume, " +
+                        "pl.flower_color, " +
+                        "pl.additional_info " +
+                        "FROM points p " +
+                        "JOIN plants pl ON p.plant_id = pl.id " +
+                        "WHERE p.feeding_date IS NULL";
+
+        Cursor c = db.rawQuery(sql, null);
+
+        while (c.moveToNext()) {
+            points.add(mapFromCursor(c));
+        }
+
+        c.close();
+        return points;
+    }
+
+    public List<PlantPoint> getNotFeedingMoreThanDays(int days) {
+
+        LocalDate today = LocalDate.now();
+        LocalDate thresholdDate = today.minusDays(days);
+
+        long threshold = thresholdDate
+                .atStartOfDay(ZoneId.systemDefault())
+                .toInstant()
+                .toEpochMilli();
+
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        String query =
+                "SELECT p.id, p.x, p.y, p.count, p.processing_date, p.feeding_date, " +
+                        "pl.id AS plant_id, " +
+                        "pl.name, " +
+                        "pl.type, " +
+                        "pl.plant_group, " +
+                        "pl.pot_volume, " +
+                        "pl.flower_color, " +
+                        "pl.additional_info " +
+                        "FROM points p " +
+                        "JOIN plants pl ON p.plant_id = pl.id " +
+                        "WHERE feeding_date IS NULL " +
+                        "OR feeding_date < ?";
 
         Cursor cursor = db.rawQuery(query,
                 new String[]{ String.valueOf(threshold) });

@@ -10,7 +10,7 @@ import java.io.*;
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DB_NAME = "PlantMap_DB.db";
-    private static final int DB_VERSION = 10;
+    private static final int DB_VERSION = 11;
 
     private final Context context;
     private String dbPath;
@@ -59,7 +59,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             }
 
             if (!columnExists(db,"points","processing_date")){
-                db.execSQL("ALTER TABLE points ADD COLUMN processing_date INTEGER NOT NULL DEFAULT 0");
+                db.execSQL("ALTER TABLE points ADD COLUMN processing_date INTEGER");
+            }
+            if (!columnExists(db,"points","feeding_date")){
+                db.execSQL("ALTER TABLE points ADD COLUMN feeding_date INTEGER");
             }
 
             db.setTransactionSuccessful();
@@ -87,13 +90,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                         "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
                         "x REAL NOT NULL, " +
                         "y REAL NOT NULL, " +
-                        "count INTEGER NOT NULL DEFAULT 1, " +
+                        "count INTEGER NOT NULL, " +
                         "plant_id INTEGER NOT NULL, " +
-                        "processing_date INTEGER NOT NULL, " +
+                        "processing_date INTEGER, " +
+                        "feeding_date INTEGER, " +
                         "FOREIGN KEY (plant_id) REFERENCES plants(id) ON DELETE CASCADE" +
                         ")"
         );
-
+        // индекс для plant_id таблицы points, ускоряет операции для join
         db.execSQL("CREATE INDEX IF NOT EXISTS idx_points_plant_id ON points(plant_id)");
     }
 

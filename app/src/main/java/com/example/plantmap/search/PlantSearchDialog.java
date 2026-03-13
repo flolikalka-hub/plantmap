@@ -59,9 +59,14 @@ public class PlantSearchDialog {
         dateInput.setHint("Дата обработки");
         dateInput.setFocusable(false); // чтобы не открывалась клавиатура
 
+        EditText feedingDateInput = new EditText(context);
+        feedingDateInput.setHint("Дата подкормки");
+        feedingDateInput.setFocusable(false);
+
         EditText addInput = new EditText(context); addInput.setHint("Дополнительная информация");
         // для лямбды final массив, чтобы значение можно было менять
         final long[] selectedDateMillis = {0}; // 0 = дата не выбрана
+        final long[] selectedFeedingDateMillis = {0};
         SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
 
         dateInput.setOnClickListener(v -> {
@@ -88,14 +93,41 @@ public class PlantSearchDialog {
             picker.show();
         });
 
+        feedingDateInput.setOnClickListener(v -> {
+
+            Calendar calendar = Calendar.getInstance();
+
+            DatePickerDialog picker = new DatePickerDialog(
+                    context,
+                    (view, year, month, dayOfMonth) -> {
+
+                        Calendar selected = Calendar.getInstance();
+                        selected.set(year, month, dayOfMonth, 0, 0, 0);
+                        selected.set(Calendar.MILLISECOND, 0);
+
+                        selectedFeedingDateMillis[0] = selected.getTimeInMillis();
+
+                        feedingDateInput.setText(sdf.format(selected.getTime()));
+                    },
+                    calendar.get(Calendar.YEAR),
+                    calendar.get(Calendar.MONTH),
+                    calendar.get(Calendar.DAY_OF_MONTH)
+            );
+
+            picker.show();
+        });
+
         layout.addView(nameInput);
         layout.addView(typeInput);
         layout.addView(groupInput);
         layout.addView(potVolumeInput);
         layout.addView(flowerColorInput);
-        layout.addView(countInput);
-        layout.addView(dateInput);
         layout.addView(addInput);
+
+        layout.addView(countInput);
+
+        layout.addView(dateInput);
+        layout.addView(feedingDateInput);
 
         scrollView.addView(layout);
 
@@ -122,6 +154,12 @@ public class PlantSearchDialog {
                     filter.processingDate = selectedDateMillis[0];
                 } else {
                     filter.processingDate = null;
+                }
+
+                if (selectedFeedingDateMillis[0] != 0) {
+                    filter.feedingDate = selectedFeedingDateMillis[0];
+                } else {
+                    filter.feedingDate = null;
                 }
 
                 Set<PlantPoint> result = engine.applyFilter(allPoints, filter);
