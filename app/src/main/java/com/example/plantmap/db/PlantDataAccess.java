@@ -19,28 +19,32 @@ public class PlantDataAccess {
     // Добавление растения
     public long addPlant(Plant plant) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
+
+        long varietyId = getOrCreateVarietyId(db, plant.type, plant.group);
+
         ContentValues cv = new ContentValues();
         cv.put("name", plant.name);
-        cv.put("type", plant.type);
-        cv.put("plant_group", plant.group);
+        cv.put("variety_id", varietyId);
         cv.put("pot_volume", plant.potVolume);
         cv.put("flower_color", plant.flowerColor);
         cv.put("additional_info", plant.additionalInfo);
-        // поле предзагруженности (is_builtin) по умолчанию 0 само проставится
-        long id = db.insert("plants", null, cv);
-        return id;
+
+        return db.insert("plants", null, cv);
     }
 
     // Обновление растения
     public void updatePlant(Plant plant) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
+
+        long varietyId = getOrCreateVarietyId(db, plant.type, plant.group);
+
         ContentValues cv = new ContentValues();
         cv.put("name", plant.name);
-        cv.put("type", plant.type);
-        cv.put("plant_group", plant.group);
+        cv.put("variety_id", varietyId);
         cv.put("pot_volume", plant.potVolume);
         cv.put("flower_color", plant.flowerColor);
         cv.put("additional_info", plant.additionalInfo);
+
         db.update("plants", cv, "id=?", new String[]{String.valueOf(plant.id)});
     }
 
@@ -48,8 +52,13 @@ public class PlantDataAccess {
     public List<Plant> getAllPlants() {
         List<Plant> plants = new ArrayList<>();
         SQLiteDatabase db = dbHelper.getReadableDatabase();
-        Cursor c = db.query("plants", null, null,
-                null, null, null, "name");
+        Cursor c = db.rawQuery(
+                "SELECT p.*, v.type, v.plant_group " +
+                        "FROM plants p " +
+                        "LEFT JOIN variety v ON p.variety_id = v.id " +
+                        "ORDER BY p.name",
+                null
+        );
 
         while (c.moveToNext()) {
             Plant p = new Plant();
@@ -97,7 +106,8 @@ public class PlantDataAccess {
         Plant result = null;
         // для исключения null добавлено COALESCE, вернет null ток если кроме null ничего нет
         StringBuilder query = new StringBuilder(
-                "SELECT * FROM plants WHERE " +
+                "SELECT p.*, v.type, v.plant_group FROM plants p " +
+                        "LEFT JOIN variety v ON p.variety_id = v.id WHERE " +
                         "COALESCE(name, '')=? AND " +
                         "COALESCE(type, '')=? AND " +
                         "COALESCE(plant_group, '')=? AND " +
@@ -125,8 +135,8 @@ public class PlantDataAccess {
             result = new Plant();
             result.id = cursor.getInt(cursor.getColumnIndexOrThrow("id"));
             result.name = cursor.getString(cursor.getColumnIndexOrThrow("name"));
-            result.type = cursor.getString(cursor.getColumnIndexOrThrow("type"));
-            result.group = cursor.getString(cursor.getColumnIndexOrThrow("plant_group"));
+            result.type = cursor.getString(cursor.getColumnIndexOrThrow("v.type"));
+            result.group = cursor.getString(cursor.getColumnIndexOrThrow("v.plant_group"));
 
             int pvIndex = cursor.getColumnIndexOrThrow("pot_volume");
             result.potVolume = cursor.isNull(pvIndex) ? null : cursor.getInt(pvIndex);
@@ -161,12 +171,12 @@ public class PlantDataAccess {
         }
 
         if (type != null && !type.isEmpty()) {
-            where.append(" AND type LIKE ?");
+            where.append(" AND v.type LIKE ?");
             args.add("%" + type + "%");
         }
 
         if (group != null && !group.isEmpty()) {
-            where.append(" AND plant_group LIKE ?");
+            where.append(" AND v.plant_group LIKE ?");
             args.add("%" + group + "%");
         }
 
@@ -185,14 +195,14 @@ public class PlantDataAccess {
             args.add("%" + additionalInfo + "%");
         }
 
-        Cursor c = db.query(
-                "plants",
-                null,
-                where.toString(),
-                args.toArray(new String[0]),
-                null, null,
-                "name"
-        );
+        String query =
+                "SELECT p.*, v.type, v.plant_group " +
+                        "FROM plants p " +
+                        "LEFT JOIN variety v ON p.variety_id = v.id " +
+                        "WHERE " + where +
+                        " ORDER BY p.name";
+
+        Cursor c = db.rawQuery(query, args.toArray(new String[0]));
 
         while (c.moveToNext()) {
             Plant p = new Plant();
@@ -212,5 +222,29 @@ public class PlantDataAccess {
 
         c.close();
         return plants;
+    }
+
+    private long getOrCreateVarietyId(SQLiteDatabase db, String type, String group) {
+
+        Cursor c = db.rawQuery(
+                "SELECT id FROM variety WHERE COALESCE(type,'')=? AND COALESCE(plant_group,'')=?",
+                new String[]{
+                        type != null ? type : "",
+                        group != null ? group : ""
+                }
+        );
+
+        if (c.moveToFirst()) {
+            long id = c.getLong(0);
+            c.close();
+            return id;
+        }
+        c.close();
+
+        ContentValues cv = new ContentValues();
+        cv.put("type", type);
+        cv.put("plant_group", group);
+
+        return db.insert("variety", null, cv);
     }
 }

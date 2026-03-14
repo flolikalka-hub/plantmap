@@ -30,6 +30,16 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import android.os.Environment;
+import android.widget.Toast;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
 public class DbView {
     private Context context;
     private PlanView planView;
@@ -86,7 +96,6 @@ public class DbView {
         // вкладываем
         rootLayout.addView(recyclerView);
         rootLayout.addView(addButton);
-
 
         // первый раз заполняем список растений
         refreshPlantList(recyclerView);
@@ -456,5 +465,4 @@ public class DbView {
             searchListener.onSearchCleared();
         }
     }
-
 }

@@ -10,7 +10,7 @@ import java.io.*;
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DB_NAME = "PlantMap_DB.db";
-    private static final int DB_VERSION = 11;
+    private static final int DB_VERSION = 12;
 
     private final Context context;
     private String dbPath;
@@ -54,6 +54,39 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.beginTransaction();
         try {
             createSchemaIfNeeded(db);
+
+            if (columnExists(db,"plants","type")) {
+
+                db.execSQL(
+                        "INSERT INTO variety(type, plant_group) " +
+                                "SELECT DISTINCT type, plant_group FROM plants"
+                );
+
+                db.execSQL(
+                        "CREATE TABLE plants_new (" +
+                                "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                                "name TEXT NOT NULL, " +
+                                "variety_id INTEGER NOT NULL, " +
+                                "pot_volume INTEGER, " +
+                                "flower_color TEXT, " +
+                                "additional_info TEXT, " +
+                                "is_builtin INTEGER NOT NULL DEFAULT 0, " +
+                                "FOREIGN KEY (variety_id) REFERENCES variety(id) ON DELETE CASCADE" +
+                                ")"
+                );
+
+                db.execSQL(
+                        "INSERT INTO plants_new(id,name,variety_id,pot_volume,flower_color,additional_info,is_builtin) " +
+                                "SELECT p.id, p.name, v.id, p.pot_volume, p.flower_color, p.additional_info, p.is_builtin " +
+                                "FROM plants p " +
+                                "LEFT JOIN variety v " +
+                                "ON p.type = v.type AND p.plant_group = v.plant_group"
+                );
+
+                db.execSQL("DROP TABLE plants");
+                db.execSQL("ALTER TABLE plants_new RENAME TO plants");
+            }
+
             if (!columnExists(db,"plants","is_builtin")){
                 db.execSQL("ALTER TABLE plants ADD COLUMN is_builtin INTEGER NOT NULL DEFAULT 0");
             }
@@ -61,6 +94,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             if (!columnExists(db,"points","processing_date")){
                 db.execSQL("ALTER TABLE points ADD COLUMN processing_date INTEGER");
             }
+
             if (!columnExists(db,"points","feeding_date")){
                 db.execSQL("ALTER TABLE points ADD COLUMN feeding_date INTEGER");
             }
@@ -73,15 +107,23 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     private void createSchemaIfNeeded(SQLiteDatabase db) {
         db.execSQL(
+                "CREATE TABLE IF NOT EXISTS variety (" +
+                        "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                        "type TEXT, " +
+                        "plant_group TEXT" +
+                        ")"
+        );
+
+        db.execSQL(
                 "CREATE TABLE IF NOT EXISTS plants (" +
                         "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
                         "name TEXT NOT NULL, " +
-                        "type TEXT, " +
-                        "plant_group TEXT, " +
+                        "variety_id INTEGER NOT NULL, " +
                         "pot_volume INTEGER, " +
                         "flower_color TEXT, " +
                         "additional_info TEXT, " +
-                        "is_builtin INTEGER NOT NULL DEFAULT 0" +
+                        "is_builtin INTEGER NOT NULL DEFAULT 0, " +
+                        "FOREIGN KEY (variety_id) REFERENCES variety(id) ON DELETE CASCADE" +
                         ")"
         );
 

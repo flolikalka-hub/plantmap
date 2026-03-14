@@ -3,7 +3,6 @@ package com.example.plantmap.db;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.util.Log;
 
 import com.example.plantmap.model.Plant;
 import com.example.plantmap.model.PlantPoint;
@@ -119,13 +118,14 @@ public class PointDataAccess {
                 "SELECT p.id, p.x, p.y, p.count, p.processing_date, p.feeding_date, " +
                         "pl.id AS plant_id, " +
                         "pl.name, " +
-                        "pl.type, " +
-                        "pl.plant_group, " +
+                        "v.type, " +
+                        "v.plant_group, " +
                         "pl.pot_volume, " +
                         "pl.flower_color, " +
                         "pl.additional_info " +
                         "FROM points p " +
-                        "JOIN plants pl ON p.plant_id = pl.id";
+                        "JOIN plants pl ON p.plant_id = pl.id " +
+                        "LEFT JOIN variety v ON pl.variety_id = v.id";
 
         Cursor c = db.rawQuery(sql, null);
 
@@ -161,7 +161,11 @@ public class PointDataAccess {
     public int getFilteredPlantCount(String name, String type, String group, String color, Integer potVolume) {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
-        StringBuilder sql = new StringBuilder("SELECT SUM(count) FROM points p JOIN plants pl ON p.plant_id = pl.id WHERE 1=1");
+        StringBuilder sql = new StringBuilder(
+                "SELECT SUM(count) FROM points p " +
+                        "JOIN plants pl ON p.plant_id = pl.id " +
+                        "LEFT JOIN variety v ON pl.variety_id = v.id WHERE 1=1"
+        );
         List<String> args = new ArrayList<>();
 
         if (name != null && !name.isEmpty()) {
@@ -169,11 +173,11 @@ public class PointDataAccess {
             args.add("%" + name + "%");
         }
         if (type != null && !type.isEmpty()) {
-            sql.append(" AND pl.type LIKE ?");
+            sql.append(" AND v.type LIKE ?");
             args.add("%" + type + "%");
         }
         if (group != null && !group.isEmpty()) {
-            sql.append(" AND pl.plant_group = ?");
+            sql.append(" AND v.plant_group = ?");
             args.add(group);
         }
         if (color != null && !color.isEmpty()) {
@@ -207,13 +211,14 @@ public class PointDataAccess {
                 "SELECT p.id, p.x, p.y, p.count, p.processing_date, p.feeding_date, " +
                         "pl.id AS plant_id, " +
                         "pl.name, " +
-                        "pl.type, " +
-                        "pl.plant_group, " +
+                        "v.type, " +
+                        "v.plant_group, " +
                         "pl.pot_volume, " +
                         "pl.flower_color, " +
                         "pl.additional_info " +
                         "FROM points p " +
                         "JOIN plants pl ON p.plant_id = pl.id " +
+                        "LEFT JOIN variety v ON pl.variety_id = v.id " +
                         "WHERE p.processing_date IS NULL";
 
         Cursor c = db.rawQuery(sql, null);
@@ -242,15 +247,15 @@ public class PointDataAccess {
                 "SELECT p.id, p.x, p.y, p.count, p.processing_date, p.feeding_date, " +
                         "pl.id AS plant_id, " +
                         "pl.name, " +
-                        "pl.type, " +
-                        "pl.plant_group, " +
+                        "v.type, " +
+                        "v.plant_group, " +
                         "pl.pot_volume, " +
                         "pl.flower_color, " +
                         "pl.additional_info " +
                         "FROM points p " +
                         "JOIN plants pl ON p.plant_id = pl.id " +
-                        "WHERE processing_date IS NULL " +
-                        "OR processing_date < ?";
+                        "LEFT JOIN variety v ON pl.variety_id = v.id " +
+                        "WHERE processing_date IS NULL OR processing_date < ?";
 
         Cursor cursor = db.rawQuery(query,
                 new String[]{ String.valueOf(threshold) });
@@ -259,7 +264,6 @@ public class PointDataAccess {
 
         while (cursor.moveToNext()) {
             PlantPoint point = mapFromCursor(cursor);
-            //Log.d("CHECK", "Point: " + point.plant.name);
             result.add(point);
         }
 
@@ -276,13 +280,14 @@ public class PointDataAccess {
                 "SELECT p.id, p.x, p.y, p.count, p.processing_date, p.feeding_date, " +
                         "pl.id AS plant_id, " +
                         "pl.name, " +
-                        "pl.type, " +
-                        "pl.plant_group, " +
+                        "v.type, " +
+                        "v.plant_group, " +
                         "pl.pot_volume, " +
                         "pl.flower_color, " +
                         "pl.additional_info " +
                         "FROM points p " +
                         "JOIN plants pl ON p.plant_id = pl.id " +
+                        "LEFT JOIN variety v ON pl.variety_id = v.id " +
                         "WHERE p.feeding_date IS NULL";
 
         Cursor c = db.rawQuery(sql, null);
@@ -311,15 +316,15 @@ public class PointDataAccess {
                 "SELECT p.id, p.x, p.y, p.count, p.processing_date, p.feeding_date, " +
                         "pl.id AS plant_id, " +
                         "pl.name, " +
-                        "pl.type, " +
-                        "pl.plant_group, " +
+                        "v.type, " +
+                        "v.plant_group, " +
                         "pl.pot_volume, " +
                         "pl.flower_color, " +
                         "pl.additional_info " +
                         "FROM points p " +
                         "JOIN plants pl ON p.plant_id = pl.id " +
-                        "WHERE feeding_date IS NULL " +
-                        "OR feeding_date < ?";
+                        "LEFT JOIN variety v ON pl.variety_id = v.id " +
+                        "WHERE feeding_date IS NULL OR feeding_date < ?";
 
         Cursor cursor = db.rawQuery(query,
                 new String[]{ String.valueOf(threshold) });
@@ -328,7 +333,6 @@ public class PointDataAccess {
 
         while (cursor.moveToNext()) {
             PlantPoint point = mapFromCursor(cursor);
-            //Log.d("CHECK", "Point: " + point.plant.name);
             result.add(point);
         }
 

@@ -17,6 +17,7 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 
+import com.example.plantmap.db.BackupDatabase;
 import com.example.plantmap.db.DatabaseHelper;
 import com.example.plantmap.colors.ColorView;
 import com.example.plantmap.db.DbView;
@@ -249,6 +250,14 @@ public class MainActivity extends AppCompatActivity {
 
         //                          МЕНЮ
         navigationView.setNavigationItemSelectedListener(item -> {
+
+            if (item.getItemId() == R.id.download_db) {
+                BackupDatabase backup = new BackupDatabase(this);
+                backup.exportDatabase();
+
+                drawerLayout.closeDrawers();
+                return true;
+            }
 
             contentContainer.removeAllViews();
 
