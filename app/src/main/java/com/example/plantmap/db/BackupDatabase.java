@@ -14,18 +14,25 @@ import java.io.IOException;
 public class BackupDatabase {
 
     private Context context;
+    private DatabaseHelper dbHelper;
 
-    public BackupDatabase(Context context) {
+    public BackupDatabase(Context context, DatabaseHelper dbHelper) {
         this.context = context;
+        this.dbHelper = dbHelper;
     }
 
     public void exportDatabase() {
+
         try {
-            // Имя базы нужно уточнить под твой DatabaseHelper
+
+            // закрываем БД чтобы SQLite записал изменения
+            dbHelper.close();
+
             File dbFile = context.getDatabasePath("PlantMap_DB.db");
 
             File downloads = Environment.getExternalStoragePublicDirectory(
                     Environment.DIRECTORY_DOWNLOADS);
+
             if (!downloads.exists()) {
                 downloads.mkdirs();
             }
@@ -49,7 +56,6 @@ public class BackupDatabase {
 
         } catch (IOException e) {
             Toast.makeText(context, "Ошибка сохранения БД", Toast.LENGTH_LONG).show();
-            e.printStackTrace();
         }
     }
 }

@@ -252,7 +252,7 @@ public class MainActivity extends AppCompatActivity {
         navigationView.setNavigationItemSelectedListener(item -> {
 
             if (item.getItemId() == R.id.download_db) {
-                BackupDatabase backup = new BackupDatabase(this);
+                BackupDatabase backup = new BackupDatabase(this, dbHelper);
                 backup.exportDatabase();
 
                 drawerLayout.closeDrawers();
