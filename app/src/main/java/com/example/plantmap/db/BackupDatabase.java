@@ -39,6 +39,10 @@ public class BackupDatabase {
 
             File exportFile = new File(downloads, "PlantMap_DB_backup.db");
 
+            if (exportFile.exists()) {
+                exportFile.delete();
+            };
+
             try (InputStream in = new FileInputStream(dbFile);
                  OutputStream out = new FileOutputStream(exportFile)) {
 
@@ -56,6 +60,8 @@ public class BackupDatabase {
 
         } catch (IOException e) {
             Toast.makeText(context, "Ошибка сохранения БД", Toast.LENGTH_LONG).show();
+            // e.printStackTrace();
+            //Toast.makeText(context, "Ошибка: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 }

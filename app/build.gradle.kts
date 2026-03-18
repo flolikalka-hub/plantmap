@@ -10,15 +10,17 @@ android {
         applicationId = "com.example.plantmap"
         minSdk = 29
         targetSdk = 36
-        versionCode = 36
-        versionName = "5.2 - дополнение"
+        versionCode = 37
+        versionName = "5.3 - критические операции"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            //isMinifyEnabled = false
+            isMinifyEnabled = true // Включает сжатие и обфускацию
+            isShrinkResources = true // Включает удаление неиспользуемых ресурсов
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

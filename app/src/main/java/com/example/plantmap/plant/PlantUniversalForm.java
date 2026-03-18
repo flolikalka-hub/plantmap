@@ -1,7 +1,6 @@
 package com.example.plantmap.plant;
 
 import android.content.Context;
-import android.os.Bundle;
 import android.text.InputType;
 import android.view.View;
 import android.widget.ArrayAdapter;

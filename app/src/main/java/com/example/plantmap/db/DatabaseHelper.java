@@ -10,7 +10,7 @@ import java.io.*;
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DB_NAME = "PlantMap_DB.db";
-    private static final int DB_VERSION = 12;
+    private static final int DB_VERSION = 20;
 
     private final Context context;
     private String dbPath;
@@ -55,10 +55,27 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         try {
             createSchemaIfNeeded(db);
 
+            if (!columnExists(db, "plants", "variety_id")) {
+
+                db.execSQL("ALTER TABLE plants ADD COLUMN variety_id INTEGER");
+
+                db.execSQL(
+                        "INSERT OR IGNORE INTO variety(type, plant_group) " +
+                                "SELECT DISTINCT type, plant_group FROM plants"
+                );
+
+                db.execSQL(
+                        "UPDATE plants SET variety_id = (" +
+                                "SELECT id FROM variety v " +
+                                "WHERE v.type = plants.type AND v.plant_group = plants.plant_group" +
+                                ")"
+                );
+            }
+
             if (columnExists(db,"plants","type")) {
 
                 db.execSQL(
-                        "INSERT INTO variety(type, plant_group) " +
+                        "INSERT OR IGNORE INTO variety(type, plant_group)" +
                                 "SELECT DISTINCT type, plant_group FROM plants"
                 );
 
@@ -103,6 +120,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         } finally {
             db.endTransaction();
         }
+
+        Cursor c = db.rawQuery("PRAGMA table_info(plants)", null);
+        while (c.moveToNext()) {
+            android.util.Log.d("DB", "plants column: " + c.getString(1));
+        }
+        c.close();
     }
 
     private void createSchemaIfNeeded(SQLiteDatabase db) {

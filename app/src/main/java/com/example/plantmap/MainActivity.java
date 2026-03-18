@@ -22,7 +22,6 @@ import com.example.plantmap.db.DatabaseHelper;
 import com.example.plantmap.colors.ColorView;
 import com.example.plantmap.db.DbView;
 import com.example.plantmap.plant.PlantRepository;
-import com.example.plantmap.search.PlantSearchEngine;
 import com.example.plantmap.stats.StatisticsView;
 import com.example.plantmap.view.EditMode;
 import com.example.plantmap.view.PlanView;

@@ -7,7 +7,6 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View; //базовый визуальный элемент
@@ -288,12 +287,7 @@ public class PlanView extends View {
                         pressedPoint,
                         repository,
                         () -> {
-                            points.remove(tappedPoint); // удаляем точку
-
-                            if (selectedPoint == tappedPoint) selectedPoint = null;
-                            if (draggedPoint == tappedPoint) draggedPoint = null;
-
-                            invalidate();// перерисовываем экран
+                            showDeleteConfirmation(tappedPoint);
                         },
                         () -> {
                             invalidate();// перерисовываем экран
@@ -302,6 +296,28 @@ public class PlanView extends View {
             }
             // если isDragging == true — значит, это было перемещение
         }
+    }
+
+    // подтверждение удаления
+    private void showDeleteConfirmation(PlantPoint point) {
+        new AlertDialog.Builder(getContext())
+                .setTitle("Удаление точки")
+                .setMessage("Вы уверены, что хотите удалить эту точку?")
+                .setPositiveButton("Удалить", (dialog, which) -> {
+                    points.remove(point);
+
+                    if (selectedPoint == point) selectedPoint = null;
+                    if (draggedPoint == point) draggedPoint = null;
+
+                    // удаляем из БД
+                    if (point.id != 0) {
+                        repository.deletePoint(point.id);
+                    }
+
+                    invalidate();
+                })
+                .setNegativeButton("Отмена", null)
+                .show();
     }
 
     // предупреждение о выходе за границы территории
