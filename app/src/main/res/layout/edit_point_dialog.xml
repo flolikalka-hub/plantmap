@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:orientation="vertical"
+        android:padding="20dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <EditText
+            android:id="@+id/countInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Количество"
+            android:inputType="number" />
+
+        <CheckBox
+            android:id="@+id/processedCheck"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Уже обрабатывалось"/>
+
+        <EditText
+            android:id="@+id/dateInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:focusable="false"
+            android:hint="Дата обработки"/>
+
+        <CheckBox
+            android:id="@+id/feedingCheck"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Уже подкармливалось"/>
+
+        <EditText
+            android:id="@+id/feedingDateInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:focusable="false"
+            android:hint="Дата подкормки"/>
+
+        <Button
+            android:id="@+id/changePlantBtn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Сменить растение"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/btn_add_plant"
+            android:textColor="@color/btn_add_plant_txt"/>
+    </LinearLayout>
+</ScrollView>

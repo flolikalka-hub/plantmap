@@ -4,6 +4,9 @@ import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.content.Context;
 import android.text.InputType;
+import android.view.LayoutInflater;
+import com.example.plantmap.R;
+import android.view.View;
 import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
@@ -287,28 +290,25 @@ public class PlantDialogs {
             Runnable onDeleted,
             Runnable onUpdated) {
 
-        if (point.plant == null) {
-            return;
-        }
+        if (point.plant == null) return;
 
-        // поле количества
-        EditText countInput = new EditText(context);
-        countInput.setInputType(InputType.TYPE_CLASS_NUMBER);
+        // Inflate layout
+        View view = LayoutInflater.from(context).inflate(R.layout.edit_point_dialog, null);
+
+        EditText countInput = view.findViewById(R.id.countInput);
+        CheckBox processedCheckBox = view.findViewById(R.id.processedCheck);
+        EditText dateInput = view.findViewById(R.id.dateInput);
+        CheckBox feedingCheckBox = view.findViewById(R.id.feedingCheck);
+        EditText feedingDateInput = view.findViewById(R.id.feedingDateInput);
+        Button changePlantBtn = view.findViewById(R.id.changePlantBtn);
+
+        // Инициализация данных
         countInput.setText(String.valueOf(point.count));
-        // курсор в конец
         countInput.setSelection(countInput.getText().length());
-        countInput.setHint("Количество");
-
-        // поле даты
-        EditText dateInput = new EditText(context);
-        dateInput.setHint("Дата обработки");
-        dateInput.setFocusable(false); // чтобы по умолчанию не лезла клавиатура
-
-        CheckBox processedCheckBox = new CheckBox(context);
-        processedCheckBox.setText("Уже обрабатывалось");
 
         SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
 
+        // Обработка даты обработки
         if (point.processingDate == null) {
             processedCheckBox.setChecked(false);
             dateInput.setEnabled(false);
@@ -319,7 +319,6 @@ public class PlantDialogs {
             dateInput.setText(sdf.format(new Date(point.processingDate)));
         }
 
-        // логика переключения
         processedCheckBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isChecked) {
                 Calendar today = Calendar.getInstance();
@@ -338,42 +337,27 @@ public class PlantDialogs {
             }
         });
 
-
-        // подставляем текущую дату точки (если она есть)
         dateInput.setOnClickListener(v -> {
-
             if (point.processingDate == null) return;
 
             Calendar calendar = Calendar.getInstance();
             calendar.setTimeInMillis(point.processingDate);
 
-            DatePickerDialog picker = new DatePickerDialog(
-                    context,
-                    (view, year, month, dayOfMonth) -> {
-
+            new DatePickerDialog(context,
+                    (view1, year, month, dayOfMonth) -> {
                         Calendar selected = Calendar.getInstance();
                         selected.set(year, month, dayOfMonth, 0, 0, 0);
                         selected.set(Calendar.MILLISECOND, 0);
-
                         point.processingDate = selected.getTimeInMillis();
                         dateInput.setText(sdf.format(selected.getTime()));
                     },
                     calendar.get(Calendar.YEAR),
                     calendar.get(Calendar.MONTH),
                     calendar.get(Calendar.DAY_OF_MONTH)
-            );
-
-            picker.show();
+            ).show();
         });
 
-        // поле даты подкормки
-        EditText feedingDateInput = new EditText(context);
-        feedingDateInput.setHint("Дата подкормки");
-        feedingDateInput.setFocusable(false);
-
-        CheckBox feedingCheckBox = new CheckBox(context);
-        feedingCheckBox.setText("Уже подкармливалось");
-
+        // Обработка даты подкормки
         if (point.feedingDate == null) {
             feedingCheckBox.setChecked(false);
             feedingDateInput.setEnabled(false);
@@ -385,9 +369,7 @@ public class PlantDialogs {
         }
 
         feedingCheckBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
-
             if (isChecked) {
-
                 Calendar today = Calendar.getInstance();
                 today.set(Calendar.HOUR_OF_DAY, 0);
                 today.set(Calendar.MINUTE, 0);
@@ -397,109 +379,74 @@ public class PlantDialogs {
                 point.feedingDate = today.getTimeInMillis();
                 feedingDateInput.setEnabled(true);
                 feedingDateInput.setText(sdf.format(today.getTime()));
-
             } else {
-
                 point.feedingDate = null;
                 feedingDateInput.setEnabled(false);
                 feedingDateInput.setText("Не подкармливалось");
-
             }
-
         });
 
         feedingDateInput.setOnClickListener(v -> {
-
             if (point.feedingDate == null) return;
 
             Calendar calendar = Calendar.getInstance();
             calendar.setTimeInMillis(point.feedingDate);
 
-            DatePickerDialog picker = new DatePickerDialog(
-                    context,
-                    (view, year, month, dayOfMonth) -> {
-
+            new DatePickerDialog(context,
+                    (view12, year, month, dayOfMonth) -> {
                         Calendar selected = Calendar.getInstance();
                         selected.set(year, month, dayOfMonth, 0, 0, 0);
                         selected.set(Calendar.MILLISECOND, 0);
-
                         point.feedingDate = selected.getTimeInMillis();
                         feedingDateInput.setText(sdf.format(selected.getTime()));
                     },
                     calendar.get(Calendar.YEAR),
                     calendar.get(Calendar.MONTH),
                     calendar.get(Calendar.DAY_OF_MONTH)
-            );
-
-            picker.show();
+            ).show();
         });
 
-        // контейнер
-        LinearLayout layout = new LinearLayout(context);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.addView(countInput);
+        // Оборачиваем view в ScrollView для корректного отображения кнопок
+        ScrollView scrollView = new ScrollView(context);
+        scrollView.setFillViewport(true);
+        scrollView.addView(view);
 
-        layout.addView(processedCheckBox);
-        layout.addView(dateInput);
-
-        layout.addView(feedingCheckBox);
-        layout.addView(feedingDateInput);
-
-        // кнопка смены растения
-        Button changePlantBtn = new Button(context);
-        changePlantBtn.setText("Сменить растение");
-
-        layout.addView(changePlantBtn);
-
-        // диалог
-        AlertDialog editDialog = new AlertDialog.Builder(context)
+        AlertDialog dialog = new AlertDialog.Builder(context)
                 .setTitle(point.plant.name)
-                .setMessage("Изменить количество или удалить точку")
-                .setView(layout)
+                .setView(scrollView)
                 .setPositiveButton("Сохранить", null)
-                .setNegativeButton("Удалить", (dialog, which) -> {
+                .setNeutralButton("Удалить", (d, which) -> {
                     repository.deletePoint(point.id);
-                    // callback удаления
                     if (onDeleted != null) onDeleted.run();
                 })
-                .setNeutralButton("Отмена", null)
-                // только создаем, но не показываем ибо мб переход в редактирование растения
+                .setNegativeButton("Отмена", null)
                 .create();
-        editDialog.setOnShowListener(d -> {
+
+        dialog.setOnShowListener(d -> {
             focusAndShowKeyboard(countInput);
 
-            Button saveButton = editDialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            Button saveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
             saveButton.setOnClickListener(v -> {
-
                 Integer count = InputValidators.validatePositiveCount(countInput);
                 if (count == null) return;
 
                 point.count = count;
                 repository.updatePoint(point.id, point);
 
-                // callback обновления
                 if (onUpdated != null) onUpdated.run();
-
-                editDialog.dismiss();
+                dialog.dismiss();
             });
         });
 
+        // кнопка смены растения
         changePlantBtn.setOnClickListener(v -> {
-            // закрываем текущий диалог редактирования
-            editDialog.dismiss();
-            // открываем диалог смены растения
-            showChangePlantDialog(
-                    context,
-                    point,
-                    repository,
-                    () -> {
-                        if (onUpdated != null) onUpdated.run();
-                    }
-                    );
+            dialog.dismiss();
+            showChangePlantDialog(context, point, repository, () -> {
+                if (onUpdated != null) onUpdated.run();
+            });
         });
 
-        // показываем диалог
-        editDialog.show();
+        dialog.show();
     }
 
     public static void showChangePlantDialog(
