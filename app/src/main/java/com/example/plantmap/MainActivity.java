@@ -23,6 +23,7 @@ import com.example.plantmap.ui.StatsFragment;
 import com.example.plantmap.ui.PlanFragment;
 import com.google.android.material.navigation.NavigationView;
 
+import java.util.HashSet;
 import java.util.Set;
 
 
@@ -135,7 +136,7 @@ public class MainActivity extends AppCompatActivity {
     public PlantRepository getRepository() {
         return repository;
     }
-
+    /*
     public void openPlanWithResults(Set<PlantPoint> points) {
         navigationView.setCheckedItem(R.id.nav_plan);
         showScreen(R.id.nav_plan);
@@ -144,6 +145,21 @@ public class MainActivity extends AppCompatActivity {
         if (fragment instanceof PlanFragment) {
             ((PlanFragment) fragment).setSearchResults(points);
         }
+    }
+    */
+    public void openPlanWithResults(Set<PlantPoint> points) {
+        PlanFragment fragment = new PlanFragment();
+
+        Bundle args = new Bundle();
+        args.putSerializable("search_points", new HashSet<>(points));
+        fragment.setArguments(args);
+
+        navigationView.setCheckedItem(R.id.nav_plan);
+
+        getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.main_container, fragment, "plan_fragment")
+                .commit();
     }
 
     private void showScreen(int menuItemId) {

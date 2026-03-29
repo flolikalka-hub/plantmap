@@ -1,8 +1,12 @@
 package com.example.plantmap.ui;
 
+import android.app.AlertDialog;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -11,7 +15,10 @@ import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.view.MenuHost;
+import androidx.core.view.MenuProvider;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.Lifecycle;
 
 import com.example.plantmap.MainActivity;
 import com.example.plantmap.R;
@@ -116,6 +123,10 @@ public class PlanFragment extends Fragment {
             @Override
             public void onSearchCleared() {
                 btnSearch.setImageResource(R.drawable.btn_find);
+                // сбрасываем аргументы полностью
+                if (getArguments() != null) {
+                    getArguments().remove("search_points");
+                }
             }
         });
 
@@ -134,6 +145,17 @@ public class PlanFragment extends Fragment {
             pendingSearchResults = null;
         }
 
+        if (getArguments() != null) {
+            Set<PlantPoint> points =
+                    (Set<PlantPoint>) getArguments().getSerializable("search_points");
+
+            if (points != null) {
+                planView.setSearchResults(points);
+                // очищаем, чтобы не восстанавливалось после поворота
+                //getArguments().remove("search_points");
+            }
+        }
+
         return root;
     }
 
@@ -143,5 +165,34 @@ public class PlanFragment extends Fragment {
         } else {
             pendingSearchResults = points;
         }
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        MenuHost menuHost = requireActivity();
+        menuHost.addMenuProvider(new MenuProvider() {
+            @Override
+            public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater) {
+                menuInflater.inflate(R.menu.menu_common, menu); // справка
+            }
+
+            @Override
+            public boolean onMenuItemSelected(@NonNull MenuItem menuItem) {
+                if (menuItem.getItemId() == R.id.action_help) {
+                    showHelp();
+                    return true;
+                }
+                return false;
+            }
+        }, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
+    }
+    private void showHelp() {
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Справка")
+                .setMessage(getString(R.string.help_plan))
+                .setPositiveButton("ОК", null)
+                .show();
     }
 }

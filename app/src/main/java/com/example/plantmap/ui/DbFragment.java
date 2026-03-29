@@ -1,5 +1,6 @@
 package com.example.plantmap.ui;
 
+import android.app.AlertDialog;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -61,6 +62,7 @@ public class DbFragment extends Fragment {
             @Override
             public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater) {
                 menuInflater.inflate(R.menu.menu_db, menu);
+                menuInflater.inflate(R.menu.menu_common, menu); // справка
             }
 
             @Override
@@ -83,8 +85,19 @@ public class DbFragment extends Fragment {
                     requireActivity().invalidateOptionsMenu();
                     return true;
                 }
+                if (menuItem.getItemId() == R.id.action_help) {
+                    showHelp();
+                    return true;
+                }
                 return false;
             }
         }, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
+    }
+    private void showHelp() {
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Справка")
+                .setMessage(getString(R.string.help_db))
+                .setPositiveButton("ОК", null)
+                .show();
     }
 }
