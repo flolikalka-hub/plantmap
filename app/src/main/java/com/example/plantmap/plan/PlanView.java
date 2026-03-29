@@ -1,4 +1,4 @@
-package com.example.plantmap.view;
+package com.example.plantmap.plan;
 
 import android.app.AlertDialog;
 import android.content.Context; //объект среды

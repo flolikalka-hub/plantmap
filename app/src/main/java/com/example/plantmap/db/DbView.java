@@ -24,7 +24,7 @@ import com.example.plantmap.plant.PlantAdapter;
 import com.example.plantmap.model.Plant;
 import com.example.plantmap.plant.PlantRepository;
 import com.example.plantmap.util.InputValidators;
-import com.example.plantmap.view.PlanView;
+import com.example.plantmap.plan.PlanView;
 
 import java.util.Collections;
 import java.util.Comparator;

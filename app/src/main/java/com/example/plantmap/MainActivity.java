@@ -1,12 +1,7 @@
 package com.example.plantmap;
 
 import android.os.Bundle;
-import android.view.Gravity;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.widget.FrameLayout;
-import android.widget.ImageButton;
-import android.widget.LinearLayout;
 
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
@@ -16,42 +11,28 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.fragment.app.Fragment;
 
 import com.example.plantmap.db.BackupDatabase;
 import com.example.plantmap.db.DatabaseHelper;
-import com.example.plantmap.colors.ColorView;
-import com.example.plantmap.db.DbView;
+import com.example.plantmap.model.PlantPoint;
 import com.example.plantmap.plant.PlantRepository;
-import com.example.plantmap.stats.StatisticsView;
-import com.example.plantmap.view.EditMode;
-import com.example.plantmap.view.PlanView;
+import com.example.plantmap.ui.ColorsFragment;
+import com.example.plantmap.ui.DbFragment;
+import com.example.plantmap.ui.StatsFragment;
+import com.example.plantmap.ui.PlanFragment;
 import com.google.android.material.navigation.NavigationView;
 
-public class MainActivity extends AppCompatActivity {
+import java.util.Set;
 
-    // флаги для отслеживания текущего состояния
-    final boolean[] addActive = {false};
-    final boolean[] editActive = {false};
-    // разнообразные контейнеры
+
+public class MainActivity extends AppCompatActivity {
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
+    private Toolbar toolbar;
     private FrameLayout contentContainer;
-    private PlanView planView;
-    private DbView dbView;
-    // экраны для appbar
-    private enum Screen {
-        PLAN,
-        DB,
-        COLORS,
-        STATS
-    }
-    // текущий отображаемый
-    private Screen currentScreen = Screen.PLAN;
-    // для сброса фильтра
-    private boolean dbSearchActive = false;
     private DatabaseHelper dbHelper;
     private PlantRepository repository;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,8 +45,7 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
 
-        // визуализируем наличие меню
-        Toolbar toolbar = findViewById(R.id.toolbar);
+        toolbar = findViewById(R.id.toolbar);
         toolbar.setTitle("План территории");
         setSupportActionBar(toolbar);
 
@@ -89,124 +69,10 @@ public class MainActivity extends AppCompatActivity {
         // по умолчанию подсветка плана как выбранного
         navigationView.setCheckedItem(R.id.nav_plan);
 
-        //                          ЭКРАН ПЛАН
-        planView = new PlanView(this, repository);
-        contentContainer.addView(
-                planView,
-                new FrameLayout.LayoutParams(
-                        FrameLayout.LayoutParams.MATCH_PARENT,
-                        FrameLayout.LayoutParams.MATCH_PARENT
-                )
-        );
-
-        // контейнер с кнопками
-        LinearLayout btnCont = new LinearLayout(this);
-        FrameLayout.LayoutParams contParams =
-                new FrameLayout.LayoutParams(
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                );
-        contParams.gravity = Gravity.BOTTOM | Gravity.END;
-
-        // поиск
-        ImageButton btnSearch = new ImageButton(this);
-        btnSearch.setImageResource(R.drawable.btn_find);
-        btnSearch.setBackground(null);
-        LinearLayout.LayoutParams searchParams =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                );
-        searchParams.gravity = Gravity.BOTTOM | Gravity.END;
-        btnCont.addView(btnSearch, searchParams);
-
-        // добавление точки
-        ImageButton btnAdd = new ImageButton(this);
-        btnAdd.setImageResource(R.drawable.btn_add_point);
-        btnAdd.setBackground(null);
-        LinearLayout.LayoutParams addParams =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                );
-        addParams.gravity = Gravity.BOTTOM | Gravity.END;
-        btnCont.addView(btnAdd, addParams);
-
-        // редактирование существующих
-        ImageButton btnEdit = new ImageButton(this);
-        btnEdit.setImageResource(R.drawable.btn_edit_point);
-        btnEdit.setBackground(null);
-        LinearLayout.LayoutParams editParams =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                );
-        editParams.gravity = Gravity.BOTTOM | Gravity.END;
-        btnCont.addView(btnEdit, editParams);
-
-        // Логика работы переключателей режимов
-        // кнопка добавления точки
-        btnAdd.setOnClickListener(v -> {
-            if (addActive[0]) {
-                // если уже активна → сброс в VIEW
-                planView.setEditMode(EditMode.VIEW);
-                btnAdd.setImageResource(R.drawable.btn_add_point); // исходный ресурс
-                addActive[0] = false;
-            } else {
-                // включаем ADD_POINT
-                planView.setEditMode(EditMode.ADD_POINT);
-                btnAdd.setImageResource(R.drawable.btn_add_point_active); // активная иконка
-                addActive[0] = true;
-
-                // сбрасываем edit
-                if (editActive[0]) {
-                    btnEdit.setImageResource(R.drawable.btn_edit_point);
-                    editActive[0] = false;
-                }
-            }
-        });
-
-        // кнопка редактирования существующих
-        btnEdit.setOnClickListener(v -> {
-            if (editActive[0]) {
-                planView.setEditMode(EditMode.VIEW);
-                btnEdit.setImageResource(R.drawable.btn_edit_point);
-                editActive[0] = false;
-            } else {
-                planView.setEditMode(EditMode.EDIT_POINT);
-                btnEdit.setImageResource(R.drawable.btn_edit_point_active);
-                editActive[0] = true;
-
-                // сбрасываем add
-                if (addActive[0]) {
-                    btnAdd.setImageResource(R.drawable.btn_add_point);
-                    addActive[0] = false;
-                }
-            }
-        });
-
-        // кнопка поиска
-        planView.setSearchStateListener(new PlanView.SearchStateListener() {
-            @Override
-            public void onSearchApplied() {
-                btnSearch.setImageResource(R.drawable.btn_find_active);
-            }
-
-            @Override
-            public void onSearchCleared() {
-                btnSearch.setImageResource(R.drawable.btn_find);
-            }
-        });
-
-        btnSearch.setOnClickListener(v -> {
-            if (planView.isSearchActive()) {
-                planView.clearSearch();
-            } else {
-                planView.showSearchDialog();
-            }
-        });
-
-        contentContainer.addView(btnCont, contParams);
+        if (savedInstanceState == null)
+        {
+            showScreen(R.id.nav_plan);
+        }
 
         // отступы тулбар (гамбургер)
         final int toolbarBaseLeft = toolbar.getPaddingLeft();
@@ -243,14 +109,16 @@ public class MainActivity extends AppCompatActivity {
                     content.left,
                     v.getPaddingTop(),
                     content.right,
-                    content.bottom);
+                    content.bottom
+            );
             return insets;
         });
 
         //                          МЕНЮ
         navigationView.setNavigationItemSelectedListener(item -> {
+            int itemId = item.getItemId();
 
-            if (item.getItemId() == R.id.download_db) {
+            if (itemId == R.id.download_db) {
                 BackupDatabase backup = new BackupDatabase(this, dbHelper);
                 backup.exportDatabase();
 
@@ -258,128 +126,55 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
 
-            contentContainer.removeAllViews();
-
-            if (item.getItemId() == R.id.nav_plan) {
-                // настраиваем меню
-                currentScreen = Screen.PLAN;
-                invalidateOptionsMenu();
-                // Загружаем основной экран с планом
-                contentContainer.addView(planView);
-                contentContainer.addView(btnCont);
-                toolbar.setTitle("План территории");
-            } else if (item.getItemId() == R.id.nav_db) {
-                // настраиваем меню
-                currentScreen = Screen.DB;
-                invalidateOptionsMenu();
-                // Сбрасываем режим
-                planView.setEditMode(EditMode.VIEW);
-                // Сбрасываем визуал
-                addActive[0] = false;
-                editActive[0] = false;
-                btnAdd.setImageResource(R.drawable.btn_add_point);
-                btnEdit.setImageResource(R.drawable.btn_edit_point);
-                // Загружаем экран с БД
-                dbView = new DbView(this, planView, repository);
-                dbView.setSearchStateListener(new DbView.SearchStateListener() {
-                    @Override
-                    public void onSearchApplied() {
-                        dbSearchActive = true;
-                        invalidateOptionsMenu();
-                    }
-
-                    @Override
-                    public void onSearchCleared() {
-                        dbSearchActive = false;
-                        invalidateOptionsMenu();
-                    }
-                });
-                contentContainer.addView(dbView.createDbView());
-                toolbar.setTitle("Растения");
-            } else if (item.getItemId() == R.id.nav_colors) {
-                // настраиваем меню
-                currentScreen = Screen.COLORS;
-                invalidateOptionsMenu();
-                // Сбрасываем режим
-                planView.setEditMode(EditMode.VIEW);
-                // Сбрасываем визуал
-                addActive[0] = false;
-                editActive[0] = false;
-                btnAdd.setImageResource(R.drawable.btn_add_point);
-                btnEdit.setImageResource(R.drawable.btn_edit_point);
-                // загружаем экран с цветами
-                ColorView colorView = new ColorView(this, repository.getColorDataAccess());
-                contentContainer.addView(colorView.createColorView());
-                toolbar.setTitle("Цвета");
-            } else if (item.getItemId() == R.id.nav_stats) {
-                // настраиваем меню
-                currentScreen = Screen.STATS;
-                invalidateOptionsMenu();
-                // Сбрасываем режим
-                planView.setEditMode(EditMode.VIEW);
-                // Сбрасываем визуал
-                addActive[0] = false;
-                editActive[0] = false;
-                btnAdd.setImageResource(R.drawable.btn_add_point);
-                btnEdit.setImageResource(R.drawable.btn_edit_point);
-                // загружаем экран со статистикой
-                StatisticsView statisticsView = new StatisticsView(this,
-                        repository,
-                        points -> {
-                            planView.setSearchResults(points);
-
-                            navigationView.setCheckedItem(R.id.nav_plan);
-                            navigationView.getMenu().performIdentifierAction(R.id.nav_plan, 0);
-                        });
-                contentContainer.addView(statisticsView.createView());
-                toolbar.setTitle("Статистика");
-            }
-
+            showScreen(itemId);
             drawerLayout.closeDrawers();
             return true;
         });
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        if (currentScreen == Screen.DB) {
-            getMenuInflater().inflate(R.menu.menu_db, menu);
-        }
-        return true;
+    public PlantRepository getRepository() {
+        return repository;
     }
 
-    // управление видимостью кнопок
-    @Override
-    public boolean onPrepareOptionsMenu(Menu menu) {
-        menu.clear();
-        if (currentScreen == Screen.DB) {
-            getMenuInflater().inflate(R.menu.menu_db, menu);
-            MenuItem resetItem = menu.findItem(R.id.action_reset_db);
-            if (resetItem != null) {
-                resetItem.setVisible(dbSearchActive);
-            }
+    public void openPlanWithResults(Set<PlantPoint> points) {
+        navigationView.setCheckedItem(R.id.nav_plan);
+        showScreen(R.id.nav_plan);
+
+        Fragment fragment = getSupportFragmentManager().findFragmentByTag("plan_fragment");
+        if (fragment instanceof PlanFragment) {
+            ((PlanFragment) fragment).setSearchResults(points);
         }
-        return super.onPrepareOptionsMenu(menu);
     }
 
-    // обработка нажатий
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.action_search_db) {
-            if (dbView != null) {
-                dbView.showSearchDialog();
-            }
-            return true;
-        }
-        if (item.getItemId() == R.id.action_reset_db) {
-            if (dbView != null) {
-                dbView.resetSearch();
-            }
-            dbSearchActive = false;
-            invalidateOptionsMenu();
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
-    }
+    private void showScreen(int menuItemId) {
+        Fragment fragment;
+        String tag;
 
+        if (menuItemId == R.id.nav_plan) {
+            fragment = getSupportFragmentManager().findFragmentByTag("plan_fragment");
+            if (fragment == null) {
+                fragment = new PlanFragment();
+            }
+            tag = "plan_fragment";
+            toolbar.setTitle("План территории");
+        } else if (menuItemId == R.id.nav_db) {
+            fragment = new DbFragment();
+            tag = "db_fragment";
+            toolbar.setTitle("Растения");
+        } else if (menuItemId == R.id.nav_colors) {
+            fragment = new ColorsFragment();
+            tag = "colors_fragment";
+            toolbar.setTitle("Цвета");
+        } else if (menuItemId == R.id.nav_stats) {
+            fragment = new StatsFragment();
+            tag = "stats_fragment";
+            toolbar.setTitle("Статистика");
+        } else {
+            return;
+        }
+        getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.main_container, fragment, tag)
+                .commit();
+    }
 }

@@ -18,7 +18,7 @@ import com.example.plantmap.model.PlantPoint;
 import com.example.plantmap.model.StatItem;
 import com.example.plantmap.plant.PlantRepository;
 import com.example.plantmap.plant.PlantUniversalForm;
-import com.example.plantmap.view.PlanView;
+import com.example.plantmap.plan.PlanView;
 
 import java.util.ArrayList;
 import java.util.HashSet;

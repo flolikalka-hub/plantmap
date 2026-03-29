@@ -1,4 +1,4 @@
-package com.example.plantmap.view;
+package com.example.plantmap.plan;
 
 public enum EditMode {
     VIEW,       // просто ПРОСМОТР
