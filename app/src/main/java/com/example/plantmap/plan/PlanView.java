@@ -38,8 +38,8 @@ public class PlanView extends View {
     private float planOriginalWidth, planOriginalHeight; // размеры Drawable
 
     private ArrayList<PlantPoint> points; // точки на плане
-    private static final float POINT_RADIUS = 15f; // константа радиуса для рисования
-    private static final float HIT_RADIUS = 30f; // константа для попаданию в точку, чтобы не мучаться с "пиксель в пиксель"
+    private static final float POINT_RADIUS = 7f; // константа радиуса для рисования
+    private static final float HIT_RADIUS = POINT_RADIUS * 3f; // константа для попаданию в точку, чтобы не мучаться с "пиксель в пиксель"
     private EditMode currentMode = EditMode.VIEW; // режимы, по умолчанию ПРОСМОТР
     private PlantPoint draggedPoint = null; // перетаскивание (в режиме рпадактирования зажал - перетащил - отпустил)
     private PlantPoint pressedPoint = null; // просто выделенная
@@ -201,7 +201,7 @@ public class PlanView extends View {
         // ТОЧКИ
         Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         textPaint.setColor(Color.WHITE);      // цвет текста
-        textPaint.setTextSize(20f * planScale);           // размер шрифта, можно масштабировать
+        textPaint.setTextSize(10f * planScale);           // размер шрифта, можно масштабировать
         textPaint.setTextAlign(Paint.Align.LEFT); // центрирование далее вручную
 
         for (PlantPoint p : points) {

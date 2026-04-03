@@ -11,8 +11,8 @@
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 38,
-      "versionName": "ver5 - saveDB",
+      "versionCode": 40,
+      "versionName": "Release-2.2",
       "outputFile": "app-release.apk"
     }
   ],
