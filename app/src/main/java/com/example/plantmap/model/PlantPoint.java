@@ -1,6 +1,8 @@
 package com.example.plantmap.model;
 
-public class PlantPoint {
+import java.io.Serializable;
+
+public class PlantPoint implements Serializable {
     // POJO - простая структура данных без поведения
     public int id = 0; //id = 0 начит, что в БД еще нет
     public float x;

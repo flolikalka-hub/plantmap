@@ -12,15 +12,17 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.example.plantmap.db.BackupDatabase;
 import com.example.plantmap.db.DatabaseHelper;
 import com.example.plantmap.model.PlantPoint;
 import com.example.plantmap.plant.PlantRepository;
-import com.example.plantmap.ui.ColorsFragment;
-import com.example.plantmap.ui.DbFragment;
-import com.example.plantmap.ui.StatsFragment;
-import com.example.plantmap.ui.PlanFragment;
+import com.example.plantmap.fragments.ColorsFragment;
+import com.example.plantmap.fragments.DbFragment;
+import com.example.plantmap.fragments.StatsFragment;
+import com.example.plantmap.fragments.PlanFragment;
+import com.example.plantmap.viewmodel.MainViewModel;
 import com.google.android.material.navigation.NavigationView;
 
 import java.util.HashSet;
@@ -31,9 +33,9 @@ public class MainActivity extends AppCompatActivity {
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
     private Toolbar toolbar;
-    private FrameLayout contentContainer;
     private DatabaseHelper dbHelper;
     private PlantRepository repository;
+    private MainViewModel viewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,18 +43,18 @@ public class MainActivity extends AppCompatActivity {
 
         dbHelper = new DatabaseHelper(this);
         repository = new PlantRepository(dbHelper);
+        viewModel = new ViewModelProvider(this).get(MainViewModel.class);
 
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 
         setContentView(R.layout.activity_main);
 
         toolbar = findViewById(R.id.toolbar);
-        toolbar.setTitle("План территории");
         setSupportActionBar(toolbar);
 
         drawerLayout = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.nav_view);
-        contentContainer = findViewById(R.id.main_container);
+        FrameLayout contentContainer = findViewById(R.id.main_container);
 
         // связываем боковое меню с гамбургером
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
@@ -68,12 +70,13 @@ public class MainActivity extends AppCompatActivity {
         toggle.syncState();
 
         // по умолчанию подсветка плана как выбранного
-        navigationView.setCheckedItem(R.id.nav_plan);
-
-        if (savedInstanceState == null)
-        {
-            showScreen(R.id.nav_plan);
-        }
+        viewModel.getSelectedScreen().observe(this, menuItemId -> {
+            if (menuItemId == null) {
+                return;
+            }
+            navigationView.setCheckedItem(menuItemId);
+            showScreen(menuItemId);
+        });
 
         // отступы тулбар (гамбургер)
         final int toolbarBaseLeft = toolbar.getPaddingLeft();
@@ -127,7 +130,7 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
 
-            showScreen(itemId);
+            viewModel.selectScreen(itemId);
             drawerLayout.closeDrawers();
             return true;
         });
@@ -136,17 +139,7 @@ public class MainActivity extends AppCompatActivity {
     public PlantRepository getRepository() {
         return repository;
     }
-    /*
-    public void openPlanWithResults(Set<PlantPoint> points) {
-        navigationView.setCheckedItem(R.id.nav_plan);
-        showScreen(R.id.nav_plan);
 
-        Fragment fragment = getSupportFragmentManager().findFragmentByTag("plan_fragment");
-        if (fragment instanceof PlanFragment) {
-            ((PlanFragment) fragment).setSearchResults(points);
-        }
-    }
-    */
     public void openPlanWithResults(Set<PlantPoint> points) {
         PlanFragment fragment = new PlanFragment();
 
@@ -154,7 +147,7 @@ public class MainActivity extends AppCompatActivity {
         args.putSerializable("search_points", new HashSet<>(points));
         fragment.setArguments(args);
 
-        navigationView.setCheckedItem(R.id.nav_plan);
+        viewModel.selectScreen(R.id.nav_plan);
 
         getSupportFragmentManager()
                 .beginTransaction()
@@ -186,6 +179,10 @@ public class MainActivity extends AppCompatActivity {
             tag = "stats_fragment";
             toolbar.setTitle("Статистика");
         } else {
+            return;
+        }
+        Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.main_container);
+        if (currentFragment != null && tag.equals(currentFragment.getTag())) {
             return;
         }
         getSupportFragmentManager()

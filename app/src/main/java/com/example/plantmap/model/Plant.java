@@ -1,6 +1,8 @@
 package com.example.plantmap.model;
 
-public class Plant {
+import java.io.Serializable;
+
+public class Plant implements Serializable {
     public int id = 0;
     public String name;
     public String type;

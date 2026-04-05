@@ -1,4 +1,4 @@
-package com.example.plantmap.ui;
+package com.example.plantmap.fragments;
 
 import android.app.AlertDialog;
 import android.os.Bundle;
@@ -58,10 +58,7 @@ public class StatsFragment extends Fragment {
         }, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
     }
     private void showHelp() {
-        new AlertDialog.Builder(requireContext())
-                .setTitle("Справка")
-                .setMessage(getString(R.string.help_stats))
-                .setPositiveButton("ОК", null)
-                .show();
+        HelpDialogFragment.newInstance(R.string.help_stats)
+                .show(getParentFragmentManager(), HelpDialogFragment.TAG);
     }
 }

@@ -1,4 +1,4 @@
-package com.example.plantmap.ui;
+package com.example.plantmap.fragments;
 
 import android.app.AlertDialog;
 import android.os.Bundle;
@@ -19,6 +19,7 @@ import androidx.lifecycle.Lifecycle;
 import com.example.plantmap.MainActivity;
 import com.example.plantmap.R;
 import com.example.plantmap.db.DbView;
+import com.example.plantmap.fragments.HelpDialogFragment;
 
 public class DbFragment extends Fragment {
 
@@ -94,10 +95,7 @@ public class DbFragment extends Fragment {
         }, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
     }
     private void showHelp() {
-        new AlertDialog.Builder(requireContext())
-                .setTitle("Справка")
-                .setMessage(getString(R.string.help_db))
-                .setPositiveButton("ОК", null)
-                .show();
+        HelpDialogFragment.newInstance(R.string.help_db)
+                .show(getParentFragmentManager(), HelpDialogFragment.TAG);
     }
 }
