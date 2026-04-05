@@ -125,4 +125,13 @@ public class PlantRepository {
     public List<PlantPoint> getNotFeedingMoreThanDays(int days) {
         return pointDa.getNotFeedingMoreThanDays(days);
     }
+    public List<String> getAllTypes() {
+        return plantDa.getAllTypes();
+    }
+    public List<String> getAllGroups() {
+        return plantDa.getAllGroups();
+    }
+    public String getTypeByGroup(String group) {
+        return plantDa.getTypeByGroup(group);
+    }
 }

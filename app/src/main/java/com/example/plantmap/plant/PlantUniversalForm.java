@@ -19,8 +19,8 @@ import android.view.inputmethod.EditorInfo;
 public class PlantUniversalForm {
 
     public AutoCompleteTextView nameInput;
-    public EditText typeInput;
-    public EditText groupInput;
+    public AutoCompleteTextView typeInput;
+    public AutoCompleteTextView groupInput;
     public EditText potVolumeInput;
     public AutoCompleteTextView flowerColorInput;
     public EditText additionalInfoInput;
@@ -50,10 +50,10 @@ public class PlantUniversalForm {
         nameInput.setHint("Название сорта");
         nameInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
 
-        typeInput = new EditText(context);
+        typeInput = new AutoCompleteTextView(context);
         typeInput.setHint("Тип растения");
 
-        groupInput = new EditText(context);
+        groupInput = new AutoCompleteTextView(context);
         groupInput.setHint("Группа растения");
 
         potVolumeInput = new EditText(context);
@@ -89,11 +89,42 @@ public class PlantUniversalForm {
         flowerColorInput.setAdapter(colorAdapter);
         flowerColorInput.setThreshold(1);
 
+        List<String> types = repository.getAllTypes();
+        ArrayAdapter<String> typeAdapter =
+                new ArrayAdapter<>(
+                        context,
+                        android.R.layout.simple_dropdown_item_1line,
+                        types
+                );
+
+        typeInput.setAdapter(typeAdapter);
+        typeInput.setThreshold(1);
+
+
+        List<String> groups = repository.getAllGroups();
+        ArrayAdapter<String> groupAdapter =
+                new ArrayAdapter<>(
+                        context,
+                        android.R.layout.simple_dropdown_item_1line,
+                        groups
+                );
+
+        groupInput.setAdapter(groupAdapter);
+        groupInput.setThreshold(1);
+
         // автозаполнение остальных полей (по сорту)
         nameInput.setOnItemClickListener((parent, view, position, id) -> {
             Plant selectedPlant = (Plant) parent.getItemAtPosition(position);
             fillFromPlant(selectedPlant);
             selectedPlantFromAutocomplete = selectedPlant;
+        });
+        groupInput.setOnItemClickListener((parent, view, position, id) -> {
+            String selectedGroup = (String) parent.getItemAtPosition(position);
+
+            String type = repository.getTypeByGroup(selectedGroup);
+            if (type != null) {
+                typeInput.setText(type);
+            }
         });
 
         // перевод фокусов полей

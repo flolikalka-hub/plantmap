@@ -247,4 +247,50 @@ public class PlantDataAccess {
 
         return db.insert("variety", null, cv);
     }
+    public List<String> getAllTypes() {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        List<String> list = new ArrayList<>();
+
+        Cursor c = db.rawQuery(
+                "SELECT DISTINCT type FROM variety WHERE type IS NOT NULL ORDER BY type",
+                null
+        );
+
+        while (c.moveToNext()) {
+            list.add(c.getString(0));
+        }
+        c.close();
+        return list;
+    }
+
+    public List<String> getAllGroups() {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        List<String> list = new ArrayList<>();
+
+        Cursor c = db.rawQuery(
+                "SELECT DISTINCT plant_group FROM variety WHERE plant_group IS NOT NULL ORDER BY plant_group",
+                null
+        );
+
+        while (c.moveToNext()) {
+            list.add(c.getString(0));
+        }
+        c.close();
+        return list;
+    }
+    public String getTypeByGroup(String group) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        Cursor c = db.rawQuery(
+                "SELECT type FROM variety WHERE plant_group=? LIMIT 1",
+                new String[]{group}
+        );
+
+        String result = null;
+        if (c.moveToFirst()) {
+            result = c.getString(0);
+        }
+        c.close();
+        return result;
+    }
 }
