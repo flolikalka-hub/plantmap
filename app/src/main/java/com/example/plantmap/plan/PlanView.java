@@ -555,10 +555,6 @@ public class PlanView extends View {
         invalidate();
     }
 
-    public ArrayList<PlantPoint> getAllPointsSnapshot() {
-        return new ArrayList<>(points);
-    }
-
     // ПОИСК
     // работает с результатами, полученными извне
     public void setSearchResults(Set<PlantPoint> results) {
@@ -575,10 +571,6 @@ public class PlanView extends View {
         }
 
         invalidate();
-    }
-
-    public Set<PlantPoint> getCurrentSearchResults() {
-        return new HashSet<>(searchResultsSet);
     }
 
     // очистка поиска

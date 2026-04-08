@@ -1,4 +1,4 @@
-package com.example.plantmap.fragments;
+package com.example.plantmap.ui;
 
 import android.app.AlertDialog;
 import android.os.Bundle;
@@ -19,7 +19,6 @@ import androidx.lifecycle.Lifecycle;
 import com.example.plantmap.MainActivity;
 import com.example.plantmap.R;
 import com.example.plantmap.colors.ColorView;
-import com.example.plantmap.fragments.HelpDialogFragment;
 
 public class ColorsFragment extends Fragment {
 
@@ -56,7 +55,10 @@ public class ColorsFragment extends Fragment {
         }, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
     }
     private void showHelp() {
-        HelpDialogFragment.newInstance(R.string.help_colors)
-                .show(getParentFragmentManager(), HelpDialogFragment.TAG);
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Справка")
+                .setMessage(getString(R.string.help_colors))
+                .setPositiveButton("ОК", null)
+                .show();
     }
 }
