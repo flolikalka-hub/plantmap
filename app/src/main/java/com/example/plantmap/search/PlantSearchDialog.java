@@ -10,8 +10,11 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 
+import com.example.plantmap.model.Plant;
 import com.example.plantmap.model.PlantPoint;
 import com.example.plantmap.model.SearchFilter;
+import com.example.plantmap.plant.PlantRepository;
+import com.example.plantmap.plant.PlantUniversalForm;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -22,6 +25,7 @@ import java.util.Set;
 public class PlantSearchDialog {
     public interface OnSearchListener {
         void onSearchApplied(Set<PlantPoint> result);
+
         void onSearchCleared();
     }
 
@@ -29,103 +33,76 @@ public class PlantSearchDialog {
             Context context,
             List<PlantPoint> allPoints,
             PlantSearchEngine engine,
-            OnSearchListener listener) {
-        ScrollView scrollView = new ScrollView(context);
+            PlantRepository repository,
+            PlantSearchDialog.OnSearchListener listener) {
 
+        ScrollView scrollView = new ScrollView(context);
         LinearLayout layout = new LinearLayout(context);
         layout.setOrientation(LinearLayout.VERTICAL);
 
-        AutoCompleteTextView nameInput = new AutoCompleteTextView(context);
-        nameInput.setHint("Название сорта");
+        // Универсальная форма для выбора/автокомплита растения
+        PlantUniversalForm form = new PlantUniversalForm(context, repository);
 
-        EditText typeInput = new EditText(context);
-        typeInput.setHint("Тип растения");
-
-        EditText groupInput = new EditText(context);
-        groupInput.setHint("Группа растения");
-
-        EditText potVolumeInput = new EditText(context);
-        potVolumeInput.setHint("Литраж горшка");
-        potVolumeInput.setInputType(InputType.TYPE_CLASS_NUMBER);
-
-        AutoCompleteTextView flowerColorInput = new AutoCompleteTextView(context);
-        flowerColorInput.setHint("Цвет цветка");
-
+        // Количество
         EditText countInput = new EditText(context);
         countInput.setHint("Количество");
         countInput.setInputType(InputType.TYPE_CLASS_NUMBER);
 
+        // Дата обработки
         EditText dateInput = new EditText(context);
         dateInput.setHint("Дата обработки");
-        dateInput.setFocusable(false); // чтобы не открывалась клавиатура
+        dateInput.setFocusable(false); // клавиатура не нужна
+        final Long[] processingDateMillis = {null}; // null = дата не выбрана
 
-        EditText feedingDateInput = new EditText(context);
-        feedingDateInput.setHint("Дата подкормки");
-        feedingDateInput.setFocusable(false);
-
-        EditText addInput = new EditText(context); addInput.setHint("Дополнительная информация");
-        // для лямбды final массив, чтобы значение можно было менять
-        final long[] selectedDateMillis = {0}; // 0 = дата не выбрана
-        final long[] selectedFeedingDateMillis = {0};
         SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
 
         dateInput.setOnClickListener(v -> {
-
             Calendar calendar = Calendar.getInstance();
 
             DatePickerDialog picker = new DatePickerDialog(
                     context,
                     (view, year, month, dayOfMonth) -> {
-
                         Calendar selected = Calendar.getInstance();
                         selected.set(year, month, dayOfMonth, 0, 0, 0);
                         selected.set(Calendar.MILLISECOND, 0);
-
-                        selectedDateMillis[0] = selected.getTimeInMillis();
-
+                        processingDateMillis[0] = selected.getTimeInMillis();
                         dateInput.setText(sdf.format(selected.getTime()));
                     },
                     calendar.get(Calendar.YEAR),
                     calendar.get(Calendar.MONTH),
                     calendar.get(Calendar.DAY_OF_MONTH)
             );
-
             picker.show();
         });
 
-        feedingDateInput.setOnClickListener(v -> {
+        // Дата подкормки
+        EditText feedingDateInput = new EditText(context);
+        feedingDateInput.setHint("Дата подкормки");
+        feedingDateInput.setFocusable(false);
+        final Long[] feedingDateMillis = {null};
 
+        feedingDateInput.setOnClickListener(v -> {
             Calendar calendar = Calendar.getInstance();
 
             DatePickerDialog picker = new DatePickerDialog(
                     context,
                     (view, year, month, dayOfMonth) -> {
-
                         Calendar selected = Calendar.getInstance();
                         selected.set(year, month, dayOfMonth, 0, 0, 0);
                         selected.set(Calendar.MILLISECOND, 0);
-
-                        selectedFeedingDateMillis[0] = selected.getTimeInMillis();
-
+                        feedingDateMillis[0] = selected.getTimeInMillis();
                         feedingDateInput.setText(sdf.format(selected.getTime()));
                     },
                     calendar.get(Calendar.YEAR),
                     calendar.get(Calendar.MONTH),
                     calendar.get(Calendar.DAY_OF_MONTH)
             );
-
             picker.show();
         });
 
-        layout.addView(nameInput);
-        layout.addView(typeInput);
-        layout.addView(groupInput);
-        layout.addView(potVolumeInput);
-        layout.addView(flowerColorInput);
-        layout.addView(addInput);
-
+        // Сборка layout
+        layout.addView(form.getView());
         layout.addView(countInput);
-
         layout.addView(dateInput);
         layout.addView(feedingDateInput);
 
@@ -135,35 +112,32 @@ public class PlantSearchDialog {
                 .setTitle("Поиск")
                 .setView(scrollView)
                 .setPositiveButton("Найти", null)
-                .setNegativeButton("Отменить", null)
+                .setNegativeButton("Отмена", null)
                 .create();
 
         dialog.setOnShowListener(d -> {
             Button findBtn = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
             findBtn.setOnClickListener(v -> {
                 SearchFilter filter = new SearchFilter();
-                filter.name = nameInput.getText().toString().trim();
-                filter.type = typeInput.getText().toString().trim();
-                filter.group = groupInput.getText().toString().trim();
-                filter.flowerColor = flowerColorInput.getText().toString().trim();
-                filter.additionalInfo = addInput.getText().toString().trim();
-                filter.potVolume = parseIntOrNull(potVolumeInput.getText().toString().trim());
+
+                // Значения из универсальной формы
+                Plant selectedPlant = form.getSelectedPlant();
+                if (selectedPlant != null) {
+                    filter.name = selectedPlant.name;
+                    filter.type = selectedPlant.type;
+                    filter.group = selectedPlant.group;
+                    filter.flowerColor = selectedPlant.flowerColor;
+                    filter.potVolume = selectedPlant.potVolume;
+                }
+
+                // Дополнительные фильтры
                 filter.count = parseIntOrNull(countInput.getText().toString().trim());
-
-                if (selectedDateMillis[0] != 0) {
-                    filter.processingDate = selectedDateMillis[0];
-                } else {
-                    filter.processingDate = null;
-                }
-
-                if (selectedFeedingDateMillis[0] != 0) {
-                    filter.feedingDate = selectedFeedingDateMillis[0];
-                } else {
-                    filter.feedingDate = null;
-                }
+                filter.processingDate = processingDateMillis[0];
+                filter.feedingDate = feedingDateMillis[0];
 
                 Set<PlantPoint> result = engine.applyFilter(allPoints, filter);
                 if (listener != null) listener.onSearchApplied(result);
+
                 dialog.dismiss();
             });
         });

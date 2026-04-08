@@ -594,6 +594,7 @@ public class PlanView extends View {
                 getContext(),
                 points,
                 searchEngine,
+                repository,
                 new PlantSearchDialog.OnSearchListener() {
                     @Override
                     public void onSearchApplied(Set<PlantPoint> result) {
