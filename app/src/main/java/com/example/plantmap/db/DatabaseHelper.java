@@ -10,7 +10,7 @@ import java.io.*;
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DB_NAME = "PlantMap_DB.db";
-    private static final int DB_VERSION = 23;
+    private static final int DB_VERSION = 24;
 
     private final Context context;
     private String dbPath;
