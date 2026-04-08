@@ -10,9 +10,6 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
 
 public class BackupDatabase {
 
@@ -40,15 +37,11 @@ public class BackupDatabase {
                 downloads.mkdirs();
             }
 
-            String timestamp = new SimpleDateFormat(
-                    "dd-MM-yyyy_HH-mm",
-                    Locale.getDefault()
-            ).format(new Date());
+            File exportFile = new File(downloads, "PlantMap_DB_backup.db");
 
-            File exportFile = new File(
-                    downloads,
-                    "PlantMap_" + timestamp + ".db"
-            );
+            if (exportFile.exists()) {
+                exportFile.delete();
+            };
 
             try (InputStream in = new FileInputStream(dbFile);
                  OutputStream out = new FileOutputStream(exportFile)) {
