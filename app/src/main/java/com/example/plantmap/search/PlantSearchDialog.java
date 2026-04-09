@@ -15,6 +15,7 @@ import com.example.plantmap.model.PlantPoint;
 import com.example.plantmap.model.SearchFilter;
 import com.example.plantmap.plant.PlantRepository;
 import com.example.plantmap.plant.PlantUniversalForm;
+import com.example.plantmap.util.ImeActionUtil;
 import com.example.plantmap.util.LayoutUtils;
 
 import java.text.SimpleDateFormat;
@@ -98,6 +99,15 @@ public class PlantSearchDialog {
             );
             picker.show();
         });
+
+        ImeActionUtil.setupImeChain(
+                form.nameInput,
+                form.typeInput,
+                form.groupInput,
+                form.potVolumeInput,
+                form.flowerColorInput,
+                form.additionalInfoInput,
+                countInput);
 
         // Сборка layout
         scrollableLayout.layout.addView(form.getView());

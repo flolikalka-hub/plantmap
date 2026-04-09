@@ -17,13 +17,9 @@ import android.widget.ScrollView;
 import com.example.plantmap.model.Plant;
 import com.example.plantmap.model.PlantPoint;
 import com.example.plantmap.util.DateCheckBoxHelper;
+import com.example.plantmap.util.ImeActionUtil;
 import com.example.plantmap.util.InputValidators;
 import com.example.plantmap.util.LayoutUtils;
-
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.Locale;
 
 public class PlantDialogs {
     // ввод данных о растении, когда НОВАЯ ТОЧКА
@@ -38,7 +34,6 @@ public class PlantDialogs {
         EditText countInput = new EditText(context);
         countInput.setHint("Количество");
         countInput.setInputType(InputType.TYPE_CLASS_NUMBER);
-        countInput.setImeOptions(EditorInfo.IME_ACTION_DONE);
 
         // Обработка
         CheckBox processedCheckBox = new CheckBox(context);
@@ -62,22 +57,14 @@ public class PlantDialogs {
                 date -> point.feedingDate = date
         );
 
-        form.additionalInfoInput.setImeOptions(EditorInfo.IME_ACTION_NEXT);
-        form.additionalInfoInput.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_NEXT) {
-                countInput.requestFocus();
-                return true;
-            }
-            return false;
-        });
-
-        countInput.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_DONE) {
-                hideKeyboardAndClearFocus(v);
-                return true;
-            }
-            return false;
-        });
+        ImeActionUtil.setupImeChain(
+                form.nameInput,
+                form.typeInput,
+                form.groupInput,
+                form.potVolumeInput,
+                form.flowerColorInput,
+                form.additionalInfoInput,
+                countInput);
 
         // сборка
         LayoutUtils.ScrollableLayout scrollableLayout = LayoutUtils.createVerticalScrollView(context);
@@ -164,16 +151,6 @@ public class PlantDialogs {
         }
 
         dialog.show();
-    }
-
-    // для закрытия клавиатуры при завершенном действии
-    private static void hideKeyboardAndClearFocus(android.view.View view) {
-        Context context = view.getContext();
-        InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
-        if (imm != null) {
-            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
-        }
-        view.clearFocus();
     }
 
     // работа с СУЩЕСТВУЮЩЕЙ ТОЧКОЙ + изменение растения

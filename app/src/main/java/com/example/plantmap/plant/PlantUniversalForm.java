@@ -11,11 +11,10 @@ import android.widget.ScrollView;
 import android.view.inputmethod.InputMethodManager;
 
 import com.example.plantmap.model.Plant;
+import com.example.plantmap.util.ImeActionUtil;
 import com.example.plantmap.util.LayoutUtils;
 
 import java.util.List;
-
-import android.view.inputmethod.EditorInfo;
 
 public class PlantUniversalForm {
 
@@ -28,9 +27,6 @@ public class PlantUniversalForm {
 
     private LinearLayout rootLayout;
     private ScrollView scrollContainer;
-
-    //private View lastFocusedView = null;
-
     private Plant selectedPlantFromAutocomplete;
 
     public Plant getSelectedPlant() {
@@ -126,62 +122,13 @@ public class PlantUniversalForm {
         });
 
         // перевод фокусов полей
-        nameInput.setImeOptions(EditorInfo.IME_ACTION_NEXT);
-        typeInput.setImeOptions(EditorInfo.IME_ACTION_NEXT);
-        groupInput.setImeOptions(EditorInfo.IME_ACTION_NEXT);
-        potVolumeInput.setImeOptions(EditorInfo.IME_ACTION_NEXT);
-        flowerColorInput.setImeOptions(EditorInfo.IME_ACTION_NEXT);
-        additionalInfoInput.setImeOptions(EditorInfo.IME_ACTION_DONE); // последнее поле — закрывает клавиатуру
-
-        nameInput.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_NEXT) {
-                typeInput.requestFocus();
-                return true;
-            }
-            return false;
-        });
-
-        typeInput.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_NEXT) {
-                groupInput.requestFocus();
-                return true;
-            }
-            return false;
-        });
-
-        groupInput.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_NEXT) {
-                potVolumeInput.requestFocus();
-                return true;
-            }
-            return false;
-        });
-
-        potVolumeInput.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_NEXT) {
-                flowerColorInput.requestFocus();
-                return true;
-            }
-            return false;
-        });
-
-        flowerColorInput.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_NEXT) {
-                additionalInfoInput.requestFocus();
-                return true;
-            }
-            return false;
-        });
-
-        // дополнительнаяInfo — последняя, закрывает клавиатуру
-        additionalInfoInput.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_DONE) {
-                hideKeyboard(v);
-                v.clearFocus();
-                return true;
-            }
-            return false;
-        });
+        ImeActionUtil.setupImeChain(
+                nameInput,
+                typeInput,
+                groupInput,
+                potVolumeInput,
+                flowerColorInput,
+                additionalInfoInput);
 
         // сборка
         rootLayout.addView(nameInput);
@@ -231,14 +178,6 @@ public class PlantUniversalForm {
         p.additionalInfo = additionalInfoInput.getText().toString().trim();
 
         return p;
-    }
-
-    private void hideKeyboard(View view) {
-        Context context = view.getContext();
-        InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
-        if (imm != null) {
-            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
-        }
     }
 
     // чтобы получать все эти поля
