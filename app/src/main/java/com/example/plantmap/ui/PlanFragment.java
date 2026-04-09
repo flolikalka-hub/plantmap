@@ -30,6 +30,7 @@ public class PlanFragment extends BaseFragment {
     private boolean addActive = false;
     private boolean editActive = false;
     private Set<PlantPoint> pendingSearchResults;
+    private ImageButton btnAdd, btnEdit;
 
     @Nullable
     @Override
@@ -64,11 +65,11 @@ public class PlanFragment extends BaseFragment {
         btnSearch.setImageResource(R.drawable.btn_find);
         btnSearch.setBackground(null);
 
-        ImageButton btnAdd = new ImageButton(requireContext());
+        btnAdd = new ImageButton(requireContext());
         btnAdd.setImageResource(R.drawable.btn_add_point);
         btnAdd.setBackground(null);
 
-        ImageButton btnEdit = new ImageButton(requireContext());
+        btnEdit = new ImageButton(requireContext());
         btnEdit.setImageResource(R.drawable.btn_edit_point);
         btnEdit.setBackground(null);
 
@@ -77,37 +78,23 @@ public class PlanFragment extends BaseFragment {
         btnCont.addView(btnEdit);
 
         btnAdd.setOnClickListener(v -> {
-            if (addActive) {
-                planView.setEditMode(EditMode.VIEW);
-                btnAdd.setImageResource(R.drawable.btn_add_point);
-                addActive = false;
-            } else {
-                planView.setEditMode(EditMode.ADD_POINT);
-                btnAdd.setImageResource(R.drawable.btn_add_point_active);
-                addActive = true;
-
-                if (editActive) {
-                    btnEdit.setImageResource(R.drawable.btn_edit_point);
-                    editActive = false;
-                }
-            }
+            addActive = toggleEditMode(
+                    EditMode.ADD_POINT,
+                    addActive,
+                    R.drawable.btn_add_point_active,
+                    R.drawable.btn_add_point,
+                    btnAdd
+            );
         });
 
         btnEdit.setOnClickListener(v -> {
-            if (editActive) {
-                planView.setEditMode(EditMode.VIEW);
-                btnEdit.setImageResource(R.drawable.btn_edit_point);
-                editActive = false;
-            } else {
-                planView.setEditMode(EditMode.EDIT_POINT);
-                btnEdit.setImageResource(R.drawable.btn_edit_point_active);
-                editActive = true;
-
-                if (addActive) {
-                    btnAdd.setImageResource(R.drawable.btn_add_point);
-                    addActive = false;
-                }
-            }
+            editActive = toggleEditMode(
+                    EditMode.EDIT_POINT,
+                    editActive,
+                    R.drawable.btn_edit_point_active,
+                    R.drawable.btn_edit_point,
+                    btnEdit
+            );
         });
 
         planView.setSearchStateListener(new PlanView.SearchStateListener() {
@@ -153,6 +140,37 @@ public class PlanFragment extends BaseFragment {
         }
 
         return root;
+    }
+
+    /**
+     Переключает указанный режим редактирования
+     mode               режим (ADD_POINT или EDIT_POINT)
+     isActive           текущее состояние активности этого режима
+     activeIcon         ресурс иконки для активного состояния
+     inactiveIcon       ресурс иконки для неактивного состояния
+     button             кнопка, на которой меняется иконка
+     return             новое состояние активности режима (true — включён, false — выключен)
+     */
+    private boolean toggleEditMode(EditMode mode, boolean isActive,
+                                   int activeIcon, int inactiveIcon,
+                                   ImageButton button) {
+        if (isActive) {
+            planView.setEditMode(EditMode.VIEW);
+            button.setImageResource(inactiveIcon);
+            return false;
+        } else {
+            planView.setEditMode(mode);
+            button.setImageResource(activeIcon);
+            // Деактивируем противоположный режим, если он был активен
+            if (mode == EditMode.ADD_POINT && editActive) {
+                editActive = false;
+                btnEdit.setImageResource(R.drawable.btn_edit_point);
+            } else if (mode == EditMode.EDIT_POINT && addActive) {
+                addActive = false;
+                btnAdd.setImageResource(R.drawable.btn_add_point);
+            }
+            return true;
+        }
     }
 
     public void setSearchResults(Set<PlantPoint> points) {
