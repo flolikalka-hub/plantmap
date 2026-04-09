@@ -17,22 +17,15 @@ import java.util.Locale;
 public class BackupDatabase {
 
     private Context context;
-    private DatabaseHelper dbHelper;
-
-    public BackupDatabase(Context context, DatabaseHelper dbHelper) {
+    private File dbFile;
+    public BackupDatabase(Context context) {
         this.context = context;
-        this.dbHelper = dbHelper;
+        this.dbFile = context.getDatabasePath("PlantMap_DB.db");
     }
 
     public void exportDatabase() {
 
         try {
-
-            // закрываем БД чтобы SQLite записал изменения
-            dbHelper.close();
-
-            File dbFile = context.getDatabasePath("PlantMap_DB.db");
-
             File downloads = Environment.getExternalStoragePublicDirectory(
                     Environment.DIRECTORY_DOWNLOADS);
 
@@ -67,8 +60,6 @@ public class BackupDatabase {
 
         } catch (IOException e) {
             Toast.makeText(context, "Ошибка сохранения БД", Toast.LENGTH_LONG).show();
-            // e.printStackTrace();
-            //Toast.makeText(context, "Ошибка: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 }

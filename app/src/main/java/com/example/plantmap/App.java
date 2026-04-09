@@ -5,9 +5,7 @@ import com.example.plantmap.db.DatabaseHelper;
 import com.example.plantmap.plant.PlantRepository;
 
 /*
-PlantRepository будет синглтоном на уровне приложения.
-Все ViewModel смогут получить к нему доступ через App.getInstance().getRepository().
-Это упростит создание ViewModel и позволит избежать передачи зависимостей через Activity.
+синглтоны на уровне приложения - БД (временно) и репозиторий
 */
 public class App extends Application {
     private static App instance;

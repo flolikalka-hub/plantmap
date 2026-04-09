@@ -14,7 +14,6 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 
 import com.example.plantmap.db.BackupDatabase;
-import com.example.plantmap.db.DatabaseHelper;
 import com.example.plantmap.model.PlantPoint;
 import com.example.plantmap.plant.PlantRepository;
 import com.example.plantmap.ui.ColorsFragment;
@@ -118,7 +117,8 @@ public class MainActivity extends AppCompatActivity {
             int itemId = item.getItemId();
 
             if (itemId == R.id.download_db) {
-                BackupDatabase backup = new BackupDatabase(this, App.getInstance().getDbHelper());
+                //BackupDatabase backup = new BackupDatabase(this, App.getInstance().getDbHelper());
+                BackupDatabase backup = new BackupDatabase(this);
                 backup.exportDatabase();
 
                 drawerLayout.closeDrawers();
@@ -134,17 +134,7 @@ public class MainActivity extends AppCompatActivity {
     public PlantRepository getRepository() {
         return repository;
     }
-    /*
-    public void openPlanWithResults(Set<PlantPoint> points) {
-        navigationView.setCheckedItem(R.id.nav_plan);
-        showScreen(R.id.nav_plan);
 
-        Fragment fragment = getSupportFragmentManager().findFragmentByTag("plan_fragment");
-        if (fragment instanceof PlanFragment) {
-            ((PlanFragment) fragment).setSearchResults(points);
-        }
-    }
-    */
     public void openPlanWithResults(Set<PlantPoint> points) {
         PlanFragment fragment = new PlanFragment();
 
