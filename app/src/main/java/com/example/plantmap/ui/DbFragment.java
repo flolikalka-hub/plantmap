@@ -1,6 +1,5 @@
 package com.example.plantmap.ui;
 
-import android.app.AlertDialog;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -11,16 +10,16 @@ import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.view.MenuHost;
-import androidx.core.view.MenuProvider;
-import androidx.fragment.app.Fragment;
-import androidx.lifecycle.Lifecycle;
 
 import com.example.plantmap.MainActivity;
 import com.example.plantmap.R;
 import com.example.plantmap.db.DbView;
 
-public class DbFragment extends Fragment {
+public class DbFragment extends BaseFragment {
+    @Override
+    protected int getHelpTextResId() {
+        return R.string.help_db;
+    }
 
     private DbView dbView;
     private boolean dbSearchActive = false;
@@ -49,55 +48,37 @@ public class DbFragment extends Fragment {
                 requireActivity().invalidateOptionsMenu();
             }
         });
-
         return dbView.createDbView();
     }
 
     @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
-
-        MenuHost menuHost = requireActivity();
-        menuHost.addMenuProvider(new MenuProvider() {
-            @Override
-            public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater) {
-                menuInflater.inflate(R.menu.menu_db, menu);
-                menuInflater.inflate(R.menu.menu_common, menu); // справка
-            }
-
-            @Override
-            public void onPrepareMenu(@NonNull Menu menu) {
-                MenuItem resetItem = menu.findItem(R.id.action_reset_db);
-                if (resetItem != null) {
-                    resetItem.setVisible(dbSearchActive);
-                }
-            }
-
-            @Override
-            public boolean onMenuItemSelected(@NonNull MenuItem menuItem) {
-                if (menuItem.getItemId() == R.id.action_search_db) {
-                    dbView.showSearchDialog();
-                    return true;
-                }
-                if (menuItem.getItemId() == R.id.action_reset_db) {
-                    dbView.resetSearch();
-                    dbSearchActive = false;
-                    requireActivity().invalidateOptionsMenu();
-                    return true;
-                }
-                if (menuItem.getItemId() == R.id.action_help) {
-                    showHelp();
-                    return true;
-                }
-                return false;
-            }
-        }, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
+    protected void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
+        super.onCreateMenu(menu, inflater); // добавляет menu_common
+        inflater.inflate(R.menu.menu_db, menu); // добавляем специфичное для БД меню
     }
-    private void showHelp() {
-        new AlertDialog.Builder(requireContext())
-                .setTitle("Справка")
-                .setMessage(getString(R.string.help_db))
-                .setPositiveButton("ОК", null)
-                .show();
+
+    @Override
+    public void onPrepareMenu(@NonNull Menu menu) {
+        super.onPrepareMenu(menu);
+        MenuItem resetItem = menu.findItem(R.id.action_reset_db);
+        if (resetItem != null) {
+            resetItem.setVisible(dbSearchActive);
+        }
+    }
+
+    @Override
+    protected boolean onMenuItemSelected(@NonNull MenuItem item) {
+        int id = item.getItemId();
+        if (id == R.id.action_search_db) {
+            dbView.showSearchDialog();
+            return true;
+        }
+        if (id == R.id.action_reset_db) {
+            dbView.resetSearch();
+            dbSearchActive = false;
+            requireActivity().invalidateOptionsMenu();
+            return true;
+        }
+        return false; // справка уже обработана в BaseFragment
     }
 }
