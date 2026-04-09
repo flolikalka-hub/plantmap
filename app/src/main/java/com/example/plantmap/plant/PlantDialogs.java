@@ -26,25 +26,19 @@ import java.util.Date;
 import java.util.Locale;
 
 public class PlantDialogs {
-    // ввод данных о растении, когда НОВАЯ ТОЧКА
     public static void showNewPlantDialog(
             Context context,
             PlantPoint point,
             PlantRepository repository,
             Runnable onSaved) {
         PlantUniversalForm form = new PlantUniversalForm(context, repository);
-
-        // count отдельно, в универсальной болванке его нет
         EditText countInput = new EditText(context);
         countInput.setHint("Количество");
         countInput.setInputType(InputType.TYPE_CLASS_NUMBER);
         countInput.setImeOptions(EditorInfo.IME_ACTION_DONE);
-
-        // дата без прямого ввода
         EditText dateInput = new EditText(context);
         dateInput.setHint("Дата обработки");
-        dateInput.setFocusable(false); // чтобы по умолчанию не лезла клавиатура
-        // на случай не обработки растения в принципе
+        dateInput.setFocusable(false);
         CheckBox processedCheckBox = new CheckBox(context);
         processedCheckBox.setText("Уже обрабатывалось");
 
@@ -65,7 +59,6 @@ public class PlantDialogs {
             return false;
         });
 
-        // форматирование даты и открытие календаря
         SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
 
         point.processingDate = null;
@@ -117,7 +110,6 @@ public class PlantDialogs {
             picker.show();
         });
 
-        // дата подкормки
         EditText feedingDateInput = new EditText(context);
         feedingDateInput.setHint("Дата подкормки");
         feedingDateInput.setFocusable(false);
@@ -178,7 +170,6 @@ public class PlantDialogs {
             picker.show();
         });
 
-        // сборка
         LinearLayout layout = new LinearLayout(context);
         layout.setOrientation(LinearLayout.VERTICAL);
 
@@ -191,12 +182,10 @@ public class PlantDialogs {
         layout.addView(feedingCheckBox);
         layout.addView(feedingDateInput);
 
-        // оборачиваем в скролл, чтобы в альбомной поля можно было посмотреть
         ScrollView scrollView = new ScrollView(context);
         scrollView.setFillViewport(true);
         scrollView.addView(layout);
 
-        // стандартное диалоговое окно, не xml
         AlertDialog dialog = new AlertDialog.Builder(context)
                 .setTitle("Новое растение")
                 .setView(scrollView)
@@ -218,7 +207,6 @@ public class PlantDialogs {
                     return;
                 }
 
-                // валидаторные обработки
                 Integer count = InputValidators.validatePositiveCount(countInput);
                 if (count == null) return;
 
@@ -226,13 +214,11 @@ public class PlantDialogs {
                 if (form.potVolumeInput.getError() != null) return;
                 modifiedPlant.potVolume = potVolume;
 
-                // поиск полного совпадения
                 Plant plant;
 
                 if (originalPlant != null &&
                         !repository.isPlantModified(originalPlant, modifiedPlant)) {
 
-                    // выбрали существующее и ничего не изменили
                     plant = originalPlant;
 
                 } else {
@@ -255,7 +241,6 @@ public class PlantDialogs {
                 long newId = repository.addPoint(point);
                 point.id = (int) newId;
 
-                // callback для добавления точки и перерисовки
                 if (onSaved != null) onSaved.run();
 
                 dialog.dismiss();
@@ -272,7 +257,6 @@ public class PlantDialogs {
         dialog.show();
     }
 
-    // для закрытия клавиатуры при завершенном действии
     private static void hideKeyboardAndClearFocus(android.view.View view) {
         Context context = view.getContext();
         InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -282,7 +266,6 @@ public class PlantDialogs {
         view.clearFocus();
     }
 
-    // работа с СУЩЕСТВУЮЩЕЙ ТОЧКОЙ + изменение растения
     public static void showEditPointDialog(
             Context context,
             PlantPoint point,
@@ -292,7 +275,6 @@ public class PlantDialogs {
 
         if (point.plant == null) return;
 
-        // Inflate layout
         View view = LayoutInflater.from(context).inflate(R.layout.edit_point_dialog, null);
 
         EditText countInput = view.findViewById(R.id.countInput);
@@ -302,13 +284,11 @@ public class PlantDialogs {
         EditText feedingDateInput = view.findViewById(R.id.feedingDateInput);
         Button changePlantBtn = view.findViewById(R.id.changePlantBtn);
 
-        // Инициализация данных
         countInput.setText(String.valueOf(point.count));
         countInput.setSelection(countInput.getText().length());
 
         SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
 
-        // Обработка даты обработки
         if (point.processingDate == null) {
             processedCheckBox.setChecked(false);
             dateInput.setEnabled(false);
@@ -357,7 +337,6 @@ public class PlantDialogs {
             ).show();
         });
 
-        // Обработка даты подкормки
         if (point.feedingDate == null) {
             feedingCheckBox.setChecked(false);
             feedingDateInput.setEnabled(false);
@@ -406,7 +385,6 @@ public class PlantDialogs {
             ).show();
         });
 
-        // Оборачиваем view в ScrollView для корректного отображения кнопок
         ScrollView scrollView = new ScrollView(context);
         scrollView.setFillViewport(true);
         scrollView.addView(view);
@@ -438,7 +416,6 @@ public class PlantDialogs {
             });
         });
 
-        // кнопка смены растения
         changePlantBtn.setOnClickListener(v -> {
             dialog.dismiss();
             showChangePlantDialog(context, point, repository, () -> {
@@ -457,15 +434,12 @@ public class PlantDialogs {
         PlantUniversalForm form = new PlantUniversalForm(context, repository);
         form.fillFromPlant(point.plant);
 
-        // диалог
         AlertDialog changeDialog = new AlertDialog.Builder(context)
                 .setTitle("Сменить растение")
                 .setView(form.getView())
                 .setPositiveButton("Сохранить", null)
                 .setNegativeButton("Отмена", null)
                 .create();
-
-        // логика сохранения, но без создания точки
         changeDialog.setOnShowListener(d -> {
             focusAndShowKeyboard(form.nameInput);
 
@@ -478,7 +452,6 @@ public class PlantDialogs {
                     return;
                 }
 
-                // обработка валидатором по условиям
                 Integer potVolume = InputValidators.validatePositiveOptionalInt(form.potVolumeInput);
                 if (form.potVolumeInput.getError() != null) return;
 
@@ -488,10 +461,8 @@ public class PlantDialogs {
 
                 if (selectedPlant != null
                         && !repository.isPlantModified(selectedPlant, tempPlant)) {
-                    // выбрали из автокомплита и ничего не меняли в автозаполненных полях
                     plant = selectedPlant;
                 } else {
-                    // поиск полного совпадения
                     Plant existingPlant = repository.findPlantByAllFields(tempPlant);
                     if (existingPlant == null) {
                         long plantId = repository.addPlant(tempPlant);
@@ -502,11 +473,9 @@ public class PlantDialogs {
                     }
                 }
 
-                // смена растения в точке непосредственная
                 point.plant = plant;
                 repository.updatePoint(point.id, point);
 
-                // callback обновления
                 if (onChanged != null) onChanged.run();
 
                 changeDialog.dismiss();

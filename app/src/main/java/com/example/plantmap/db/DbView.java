@@ -56,22 +56,15 @@ public class DbView {
     }
 
     public View createDbView() {
-        // корневой контейнер с вертикальной ориентацией
         LinearLayout rootLayout = new LinearLayout(context);
         rootLayout.setOrientation(LinearLayout.VERTICAL);
-
-        // кнопка добавления нового растения
         Button addButton = new Button(context);
         addButton.setText("Добавить новое растение");
         addButton.setBackground(ContextCompat.getDrawable(context, R.drawable.btn_add_plant));
         addButton.setTextColor(ContextCompat.getColorStateList(context, R.color.btn_add_plant_txt));
-        addButton.setPadding(20, 20, 20, 20);    // внутренние отступы
-
-        // список растений
+        addButton.setPadding(20, 20, 20, 20);
         recyclerView = new RecyclerView(context);
         recyclerView.setLayoutManager(new LinearLayoutManager(context));
-
-        // пусть кнопка будет внизу
         LinearLayout.LayoutParams recyclerParams =
                 new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
@@ -79,21 +72,12 @@ public class DbView {
                         1f
                 );
         recyclerView.setLayoutParams(recyclerParams);
-
-        // действие на кнопку
         addButton.setOnClickListener(v -> showPlantDialog(null, recyclerView));
-
-        // вкладываем
         rootLayout.addView(recyclerView);
         rootLayout.addView(addButton);
-
-        // первый раз заполняем список растений
         refreshPlantList(recyclerView);
-
         return rootLayout;
     }
-
-    // Метод для обновления списка растений
     private void refreshPlantList(RecyclerView recyclerView) {
         List<Plant> plants = repository.getAllPlants();
         Collections.sort(plants, Comparator.comparing(p -> p.name));
@@ -107,21 +91,16 @@ public class DbView {
             searchListener.onSearchCleared();
         }
     }
-
-    // Диалог добавления/редактирования растения. Раньше было LinearLayout listLayout
     private void showPlantDialog(Plant plant, RecyclerView recyclerView) {
         boolean isNew = (plant == null);
         if (isNew) plant = new Plant();
-
         final Plant plantFinal = plant;
-
         LinearLayout layout = new LinearLayout(context);
         layout.setOrientation(LinearLayout.VERTICAL);
 
         EditText nameInput = new EditText(context);
         nameInput.setHint("Название сорта");
         nameInput.setText(plant.name != null ? plant.name : "");
-        // пусть с заглавной будет
         nameInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
 
         EditText typeInput = new EditText(context);
@@ -136,17 +115,12 @@ public class DbView {
         potVolumeInput.setHint("Литраж горшка");
         potVolumeInput.setInputType(InputType.TYPE_CLASS_NUMBER);
         potVolumeInput.setText(plant.potVolume != null ? String.valueOf(plant.potVolume) : "");
-
-        // с автозаполнением из БД
         AutoCompleteTextView flowerColorInput = new AutoCompleteTextView(context);
         flowerColorInput.setHint("Цвет цветка");
         flowerColorInput.setText(plant.flowerColor != null ? plant.flowerColor : "");
-
         EditText additionalInfoInput = new EditText(context);
         additionalInfoInput.setHint("Дополнительная информация");
         additionalInfoInput.setText(plant.additionalInfo != null ? plant.additionalInfo : "");
-
-        // Получаем список цветов из БД
         List<String> colorNames = repository.getAllColorNames();
 
         ArrayAdapter<String> colorAdapter = new ArrayAdapter<>(
@@ -156,8 +130,7 @@ public class DbView {
         );
 
         flowerColorInput.setAdapter(colorAdapter);
-        flowerColorInput.setThreshold(1); // показывать подсказки после ввода 1 символа
-
+        flowerColorInput.setThreshold(1);
         nameInput.setImeOptions(EditorInfo.IME_ACTION_NEXT );
         typeInput.setImeOptions(EditorInfo.IME_ACTION_NEXT);
         groupInput.setImeOptions(EditorInfo.IME_ACTION_NEXT);
@@ -247,11 +220,8 @@ public class DbView {
                 }
             });
         }
-        // для сохранить отдельно ибо надо контролировать ввод
         builder.setPositiveButton("Сохранить", null);
-
         AlertDialog dialog = builder.create();
-
         if (dialog.getWindow() != null) {
             dialog.getWindow().setSoftInputMode(
                     WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
@@ -259,23 +229,19 @@ public class DbView {
             );
         }
         focusAndShowKeyboard(nameInput);
-
         dialog.show();
-
-        // Кастомный обработчик кнопки "Сохранить"
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             String name = nameInput.getText().toString().trim();
             if (name.isEmpty()) {
                 nameInput.setError("Название обязательно");
                 nameInput.requestFocus();
-                return; // не закрываем диалог
+                return;
             }
-
             Integer potVolume = InputValidators.validatePositiveOptionalInt(potVolumeInput);
 
             if (potVolume == null && !potVolumeInput.getText().toString().trim().isEmpty()) {
                 potVolumeInput.requestFocus();
-                return; // НЕ закрываем диалог
+                return;
             }
 
             plantFinal.name = name;
@@ -286,21 +252,17 @@ public class DbView {
             plantFinal.additionalInfo = additionalInfoInput.getText().toString().trim();
 
             if (isNew) {
-                // Добавляем новое растение
                 repository.addPlant(plantFinal);
             } else {
-                // Обновляем существующее
                 repository.updatePlant(plantFinal);
             }
             if (planView != null) planView.reloadPoints();
 
             refreshPlantList(recyclerView);
 
-            dialog.dismiss(); // закрываем диалог вручную
+            dialog.dismiss();
         });
     }
-
-    // открытие клавиатуры для ввода автоматически
     private void focusAndShowKeyboard(View view) {
         view.requestFocus();
         view.requestFocusFromTouch();
@@ -311,8 +273,6 @@ public class DbView {
             }
         });
     }
-
-    // для закрытия клавиатуры при завершенном действии
     private void hideKeyboardAndClearFocus(View view) {
         InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
         if (imm != null) {
@@ -320,8 +280,6 @@ public class DbView {
         }
         view.clearFocus();
     }
-
-    // диалог поиска
     public void showSearchDialog() {
         LinearLayout layout = new LinearLayout(context);
         layout.setOrientation(LinearLayout.VERTICAL);
