@@ -1,7 +1,6 @@
 package com.example.plantmap.plant;
 
 import android.app.AlertDialog;
-import android.app.DatePickerDialog;
 import android.content.Context;
 import android.text.InputType;
 import android.view.LayoutInflater;
@@ -13,11 +12,11 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.widget.ScrollView;
 
 import com.example.plantmap.model.Plant;
 import com.example.plantmap.model.PlantPoint;
+import com.example.plantmap.util.DateCheckBoxHelper;
 import com.example.plantmap.util.InputValidators;
 import com.example.plantmap.util.LayoutUtils;
 
@@ -41,13 +40,27 @@ public class PlantDialogs {
         countInput.setInputType(InputType.TYPE_CLASS_NUMBER);
         countInput.setImeOptions(EditorInfo.IME_ACTION_DONE);
 
-        // дата без прямого ввода
-        EditText dateInput = new EditText(context);
-        dateInput.setHint("Дата обработки");
-        dateInput.setFocusable(false); // чтобы по умолчанию не лезла клавиатура
-        // на случай не обработки растения в принципе
+        // Обработка
         CheckBox processedCheckBox = new CheckBox(context);
         processedCheckBox.setText("Уже обрабатывалось");
+        EditText dateInput = new EditText(context);
+        dateInput.setHint("Дата обработки");
+
+        DateCheckBoxHelper processHelper = new DateCheckBoxHelper(
+                processedCheckBox, dateInput,
+                date -> point.processingDate = date
+        );
+
+        // Подкормка
+        CheckBox feedingCheckBox = new CheckBox(context);
+        feedingCheckBox.setText("Уже подкармливалось");
+        EditText feedingDateInput = new EditText(context);
+        feedingDateInput.setHint("Дата подкормки");
+
+        DateCheckBoxHelper feedingHelper = new DateCheckBoxHelper(
+                feedingCheckBox, feedingDateInput,
+                date -> point.feedingDate = date
+        );
 
         form.additionalInfoInput.setImeOptions(EditorInfo.IME_ACTION_NEXT);
         form.additionalInfoInput.setOnEditorActionListener((v, actionId, event) -> {
@@ -64,119 +77,6 @@ public class PlantDialogs {
                 return true;
             }
             return false;
-        });
-
-        // форматирование даты и открытие календаря
-        SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
-
-        point.processingDate = null;
-        dateInput.setEnabled(false);
-        dateInput.setText("Не обрабатывалось");
-        processedCheckBox.setChecked(false);
-
-        processedCheckBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (isChecked) {
-                Calendar today = Calendar.getInstance();
-                today.set(Calendar.HOUR_OF_DAY, 0);
-                today.set(Calendar.MINUTE, 0);
-                today.set(Calendar.SECOND, 0);
-                today.set(Calendar.MILLISECOND, 0);
-
-                point.processingDate = today.getTimeInMillis();
-                dateInput.setEnabled(true);
-                dateInput.setText(sdf.format(today.getTime()));
-            } else {
-                point.processingDate = null;
-                dateInput.setEnabled(false);
-                dateInput.setText("Не обрабатывалось");
-            }
-        });
-
-        dateInput.setOnClickListener(v -> {
-
-            if (point.processingDate == null) return;
-
-            Calendar calendar = Calendar.getInstance();
-            calendar.setTimeInMillis(point.processingDate);
-
-            DatePickerDialog picker = new DatePickerDialog(
-                    context,
-                    (view, year, month, dayOfMonth) -> {
-
-                        Calendar selected = Calendar.getInstance();
-                        selected.set(year, month, dayOfMonth, 0, 0, 0);
-                        selected.set(Calendar.MILLISECOND, 0);
-
-                        point.processingDate = selected.getTimeInMillis();
-                        dateInput.setText(sdf.format(selected.getTime()));
-                    },
-                    calendar.get(Calendar.YEAR),
-                    calendar.get(Calendar.MONTH),
-                    calendar.get(Calendar.DAY_OF_MONTH)
-            );
-
-            picker.show();
-        });
-
-        // дата подкормки
-        EditText feedingDateInput = new EditText(context);
-        feedingDateInput.setHint("Дата подкормки");
-        feedingDateInput.setFocusable(false);
-
-        CheckBox feedingCheckBox = new CheckBox(context);
-        feedingCheckBox.setText("Уже подкармливалось");
-
-        point.feedingDate = null;
-        feedingDateInput.setEnabled(false);
-        feedingDateInput.setText("Не подкармливалось");
-        feedingCheckBox.setChecked(false);
-
-        feedingCheckBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (isChecked) {
-
-                Calendar today = Calendar.getInstance();
-                today.set(Calendar.HOUR_OF_DAY, 0);
-                today.set(Calendar.MINUTE, 0);
-                today.set(Calendar.SECOND, 0);
-                today.set(Calendar.MILLISECOND, 0);
-
-                point.feedingDate = today.getTimeInMillis();
-                feedingDateInput.setEnabled(true);
-                feedingDateInput.setText(sdf.format(today.getTime()));
-
-            } else {
-
-                point.feedingDate = null;
-                feedingDateInput.setEnabled(false);
-                feedingDateInput.setText("Не подкармливалось");
-
-            }
-        });
-
-        feedingDateInput.setOnClickListener(v -> {
-
-            if (point.feedingDate == null) return;
-
-            Calendar calendar = Calendar.getInstance();
-            calendar.setTimeInMillis(point.feedingDate);
-
-            DatePickerDialog picker = new DatePickerDialog(
-                    context,
-                    (view, year, month, dayOfMonth) -> {
-
-                        Calendar selected = Calendar.getInstance();
-                        selected.set(year, month, dayOfMonth, 0, 0, 0);
-                        selected.set(Calendar.MILLISECOND, 0);
-
-                        point.feedingDate = selected.getTimeInMillis();
-                        feedingDateInput.setText(sdf.format(selected.getTime()));
-                    },
-                    calendar.get(Calendar.YEAR),
-                    calendar.get(Calendar.MONTH),
-                    calendar.get(Calendar.DAY_OF_MONTH)
-            );
-
-            picker.show();
         });
 
         // сборка
@@ -297,108 +197,20 @@ public class PlantDialogs {
         Button changePlantBtn = view.findViewById(R.id.changePlantBtn);
 
         // Инициализация данных
+        DateCheckBoxHelper processHelper = new DateCheckBoxHelper(
+                processedCheckBox, dateInput,
+                date -> point.processingDate = date
+        );
+        processHelper.setDate(point.processingDate);
+
+        DateCheckBoxHelper feedingHelper = new DateCheckBoxHelper(
+                feedingCheckBox, feedingDateInput,
+                date -> point.feedingDate = date
+        );
+        feedingHelper.setDate(point.feedingDate);
+
         countInput.setText(String.valueOf(point.count));
         countInput.setSelection(countInput.getText().length());
-
-        SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
-
-        // Обработка даты обработки
-        if (point.processingDate == null) {
-            processedCheckBox.setChecked(false);
-            dateInput.setEnabled(false);
-            dateInput.setText("Не обрабатывалось");
-        } else {
-            processedCheckBox.setChecked(true);
-            dateInput.setEnabled(true);
-            dateInput.setText(sdf.format(new Date(point.processingDate)));
-        }
-
-        processedCheckBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (isChecked) {
-                Calendar today = Calendar.getInstance();
-                today.set(Calendar.HOUR_OF_DAY, 0);
-                today.set(Calendar.MINUTE, 0);
-                today.set(Calendar.SECOND, 0);
-                today.set(Calendar.MILLISECOND, 0);
-
-                point.processingDate = today.getTimeInMillis();
-                dateInput.setEnabled(true);
-                dateInput.setText(sdf.format(today.getTime()));
-            } else {
-                point.processingDate = null;
-                dateInput.setEnabled(false);
-                dateInput.setText("Не обрабатывалось");
-            }
-        });
-
-        dateInput.setOnClickListener(v -> {
-            if (point.processingDate == null) return;
-
-            Calendar calendar = Calendar.getInstance();
-            calendar.setTimeInMillis(point.processingDate);
-
-            new DatePickerDialog(context,
-                    (view1, year, month, dayOfMonth) -> {
-                        Calendar selected = Calendar.getInstance();
-                        selected.set(year, month, dayOfMonth, 0, 0, 0);
-                        selected.set(Calendar.MILLISECOND, 0);
-                        point.processingDate = selected.getTimeInMillis();
-                        dateInput.setText(sdf.format(selected.getTime()));
-                    },
-                    calendar.get(Calendar.YEAR),
-                    calendar.get(Calendar.MONTH),
-                    calendar.get(Calendar.DAY_OF_MONTH)
-            ).show();
-        });
-
-        // Обработка даты подкормки
-        if (point.feedingDate == null) {
-            feedingCheckBox.setChecked(false);
-            feedingDateInput.setEnabled(false);
-            feedingDateInput.setText("Не подкармливалось");
-        } else {
-            feedingCheckBox.setChecked(true);
-            feedingDateInput.setEnabled(true);
-            feedingDateInput.setText(sdf.format(new Date(point.feedingDate)));
-        }
-
-        feedingCheckBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (isChecked) {
-                Calendar today = Calendar.getInstance();
-                today.set(Calendar.HOUR_OF_DAY, 0);
-                today.set(Calendar.MINUTE, 0);
-                today.set(Calendar.SECOND, 0);
-                today.set(Calendar.MILLISECOND, 0);
-
-                point.feedingDate = today.getTimeInMillis();
-                feedingDateInput.setEnabled(true);
-                feedingDateInput.setText(sdf.format(today.getTime()));
-            } else {
-                point.feedingDate = null;
-                feedingDateInput.setEnabled(false);
-                feedingDateInput.setText("Не подкармливалось");
-            }
-        });
-
-        feedingDateInput.setOnClickListener(v -> {
-            if (point.feedingDate == null) return;
-
-            Calendar calendar = Calendar.getInstance();
-            calendar.setTimeInMillis(point.feedingDate);
-
-            new DatePickerDialog(context,
-                    (view12, year, month, dayOfMonth) -> {
-                        Calendar selected = Calendar.getInstance();
-                        selected.set(year, month, dayOfMonth, 0, 0, 0);
-                        selected.set(Calendar.MILLISECOND, 0);
-                        point.feedingDate = selected.getTimeInMillis();
-                        feedingDateInput.setText(sdf.format(selected.getTime()));
-                    },
-                    calendar.get(Calendar.YEAR),
-                    calendar.get(Calendar.MONTH),
-                    calendar.get(Calendar.DAY_OF_MONTH)
-            ).show();
-        });
 
         // Оборачиваем view в ScrollView для корректного отображения кнопок
         ScrollView scrollView = LayoutUtils.wrapInScrollView(context, view);
