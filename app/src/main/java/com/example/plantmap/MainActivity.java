@@ -134,7 +134,17 @@ public class MainActivity extends AppCompatActivity {
     public PlantRepository getRepository() {
         return repository;
     }
+    /*
+    public void openPlanWithResults(Set<PlantPoint> points) {
+        navigationView.setCheckedItem(R.id.nav_plan);
+        showScreen(R.id.nav_plan);
 
+        Fragment fragment = getSupportFragmentManager().findFragmentByTag("plan_fragment");
+        if (fragment instanceof PlanFragment) {
+            ((PlanFragment) fragment).setSearchResults(points);
+        }
+    }
+    */
     public void openPlanWithResults(Set<PlantPoint> points) {
         PlanFragment fragment = new PlanFragment();
 
