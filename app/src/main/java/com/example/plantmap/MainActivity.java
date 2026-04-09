@@ -32,15 +32,13 @@ public class MainActivity extends AppCompatActivity {
     private NavigationView navigationView;
     private Toolbar toolbar;
     private FrameLayout contentContainer;
-    private DatabaseHelper dbHelper;
     private PlantRepository repository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        dbHelper = new DatabaseHelper(this);
-        repository = new PlantRepository(dbHelper);
+        repository = App.getInstance().getRepository();
 
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 
@@ -120,7 +118,7 @@ public class MainActivity extends AppCompatActivity {
             int itemId = item.getItemId();
 
             if (itemId == R.id.download_db) {
-                BackupDatabase backup = new BackupDatabase(this, dbHelper);
+                BackupDatabase backup = new BackupDatabase(this, App.getInstance().getDbHelper());
                 backup.exportDatabase();
 
                 drawerLayout.closeDrawers();
