@@ -11,6 +11,7 @@ import android.widget.ScrollView;
 import android.view.inputmethod.InputMethodManager;
 
 import com.example.plantmap.model.Plant;
+import com.example.plantmap.util.LayoutUtils;
 
 import java.util.List;
 
@@ -38,12 +39,9 @@ public class PlantUniversalForm {
 
     public PlantUniversalForm(Context context, PlantRepository repository) {
 
-        rootLayout = new LinearLayout(context);
-        rootLayout.setOrientation(LinearLayout.VERTICAL);
-
-        scrollContainer = new ScrollView(context);
-        scrollContainer.setFillViewport(true);
-        scrollContainer.addView(rootLayout);
+        LayoutUtils.ScrollableLayout scrollableLayout = LayoutUtils.createVerticalScrollView(context);
+        rootLayout = scrollableLayout.layout;
+        scrollContainer = scrollableLayout.scrollView;
 
         // поля
         nameInput = new AutoCompleteTextView(context);

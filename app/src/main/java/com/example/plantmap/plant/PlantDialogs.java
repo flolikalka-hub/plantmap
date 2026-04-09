@@ -19,6 +19,7 @@ import android.widget.ScrollView;
 import com.example.plantmap.model.Plant;
 import com.example.plantmap.model.PlantPoint;
 import com.example.plantmap.util.InputValidators;
+import com.example.plantmap.util.LayoutUtils;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -179,27 +180,20 @@ public class PlantDialogs {
         });
 
         // сборка
-        LinearLayout layout = new LinearLayout(context);
-        layout.setOrientation(LinearLayout.VERTICAL);
+        LayoutUtils.ScrollableLayout scrollableLayout = LayoutUtils.createVerticalScrollView(context);
+        scrollableLayout.layout.addView(form.getView());
+        scrollableLayout.layout.addView(countInput);
 
-        layout.addView(form.getView());
-        layout.addView(countInput);
+        scrollableLayout.layout.addView(processedCheckBox);
+        scrollableLayout.layout.addView(dateInput);
 
-        layout.addView(processedCheckBox);
-        layout.addView(dateInput);
-
-        layout.addView(feedingCheckBox);
-        layout.addView(feedingDateInput);
-
-        // оборачиваем в скролл, чтобы в альбомной поля можно было посмотреть
-        ScrollView scrollView = new ScrollView(context);
-        scrollView.setFillViewport(true);
-        scrollView.addView(layout);
+        scrollableLayout.layout.addView(feedingCheckBox);
+        scrollableLayout.layout.addView(feedingDateInput);
 
         // стандартное диалоговое окно, не xml
         AlertDialog dialog = new AlertDialog.Builder(context)
                 .setTitle("Новое растение")
-                .setView(scrollView)
+                .setView(scrollableLayout.scrollView)
                 .setPositiveButton("Сохранить", null)
                 .setNegativeButton("Отмена", null)
                 .create();
@@ -407,9 +401,7 @@ public class PlantDialogs {
         });
 
         // Оборачиваем view в ScrollView для корректного отображения кнопок
-        ScrollView scrollView = new ScrollView(context);
-        scrollView.setFillViewport(true);
-        scrollView.addView(view);
+        ScrollView scrollView = LayoutUtils.wrapInScrollView(context, view);
 
         AlertDialog dialog = new AlertDialog.Builder(context)
                 .setTitle(point.plant.name)

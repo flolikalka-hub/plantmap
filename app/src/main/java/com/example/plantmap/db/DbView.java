@@ -25,6 +25,7 @@ import com.example.plantmap.model.Plant;
 import com.example.plantmap.plant.PlantRepository;
 import com.example.plantmap.util.InputValidators;
 import com.example.plantmap.plan.PlanView;
+import com.example.plantmap.util.LayoutUtils;
 
 import java.util.Collections;
 import java.util.Comparator;
@@ -114,9 +115,6 @@ public class DbView {
         if (isNew) plant = new Plant();
 
         final Plant plantFinal = plant;
-
-        LinearLayout layout = new LinearLayout(context);
-        layout.setOrientation(LinearLayout.VERTICAL);
 
         EditText nameInput = new EditText(context);
         nameInput.setHint("Название сорта");
@@ -208,20 +206,18 @@ public class DbView {
             return false;
         });
 
-        layout.addView(nameInput);
-        layout.addView(typeInput);
-        layout.addView(groupInput);
-        layout.addView(potVolumeInput);
-        layout.addView(flowerColorInput);
-        layout.addView(additionalInfoInput);
+        LayoutUtils.ScrollableLayout scrollableLayout = LayoutUtils.createVerticalScrollView(context);
 
-        ScrollView scrollView = new ScrollView(context);
-        scrollView.setFillViewport(true);
-        scrollView.addView(layout);
+        scrollableLayout.layout.addView(nameInput);
+        scrollableLayout.layout.addView(typeInput);
+        scrollableLayout.layout.addView(groupInput);
+        scrollableLayout.layout.addView(potVolumeInput);
+        scrollableLayout.layout.addView(flowerColorInput);
+        scrollableLayout.layout.addView(additionalInfoInput);
 
         AlertDialog.Builder builder = new AlertDialog.Builder(context)
                 .setTitle(isNew ? "Новое растение" : "Редактировать растение")
-                .setView(scrollView)
+                .setView(scrollableLayout.scrollView)
                 .setNegativeButton("Отмена", null);
 
         if (!isNew) {

@@ -19,6 +19,7 @@ import com.example.plantmap.model.StatItem;
 import com.example.plantmap.plant.PlantRepository;
 import com.example.plantmap.plant.PlantUniversalForm;
 import com.example.plantmap.plan.PlanView;
+import com.example.plantmap.util.LayoutUtils;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -40,8 +41,7 @@ public class StatisticsView {
     }
 
     public View createView() {
-        LinearLayout rootLayout = new LinearLayout(context);
-        rootLayout.setOrientation(LinearLayout.VERTICAL);
+        LayoutUtils.ScrollableLayout scrollableLayout = LayoutUtils.createVerticalScrollView(context);
         List<StatItem> stats = new ArrayList<>();
 
         // Секция "Уход"
@@ -85,14 +85,9 @@ public class StatisticsView {
                 )
         ));
 
-        addStatItems(rootLayout, stats);
+        addStatItems(scrollableLayout.layout, stats);
 
-        // оборачиваем в ScrollView
-        ScrollView scrollView = new ScrollView(context);
-        scrollView.setFillViewport(true);
-        scrollView.addView(rootLayout);
-
-        return scrollView;
+        return scrollableLayout.scrollView;
     }
 
     private void addStatItems(LinearLayout parent, List<StatItem> items) {
@@ -149,20 +144,13 @@ public class StatisticsView {
     private  void  showFilteredCountDialog() {
         PlantUniversalForm form = new PlantUniversalForm(context, plantRepository);
 
-        // сборка
-        LinearLayout layout = new LinearLayout(context);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.addView(form.getView());
-
-        // оборачиваем в скролл, чтобы в альбомной поля можно было посмотреть
-        ScrollView scrollView = new ScrollView(context);
-        scrollView.setFillViewport(true);
-        scrollView.addView(layout);
+        LayoutUtils.ScrollableLayout scrollableLayout = LayoutUtils.createVerticalScrollView(context);
+        scrollableLayout.layout.addView(form.getView());
 
         // диалог
         new AlertDialog.Builder(context)
                 .setTitle("Фильтры растений")
-                .setView(scrollView)
+                .setView(scrollableLayout.scrollView)
                 .setPositiveButton("Применить", (dialog, which) -> {
                     // собираем параметры
                     String name = form.getNameInput().getText().toString();
@@ -326,7 +314,6 @@ public class StatisticsView {
         StringBuilder sb = new StringBuilder();
 
         for (PlantPoint p : resPoints) {
-            //Log.d("CHECK", "Stat id: " + p.id);
             sb.append(p.plant.name)
                     .append(" (")
                     .append(p.count)

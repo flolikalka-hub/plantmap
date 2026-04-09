@@ -15,6 +15,7 @@ import com.example.plantmap.model.PlantPoint;
 import com.example.plantmap.model.SearchFilter;
 import com.example.plantmap.plant.PlantRepository;
 import com.example.plantmap.plant.PlantUniversalForm;
+import com.example.plantmap.util.LayoutUtils;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -36,9 +37,7 @@ public class PlantSearchDialog {
             PlantRepository repository,
             PlantSearchDialog.OnSearchListener listener) {
 
-        ScrollView scrollView = new ScrollView(context);
-        LinearLayout layout = new LinearLayout(context);
-        layout.setOrientation(LinearLayout.VERTICAL);
+        LayoutUtils.ScrollableLayout scrollableLayout = LayoutUtils.createVerticalScrollView(context);
 
         // Универсальная форма для выбора/автокомплита растения
         PlantUniversalForm form = new PlantUniversalForm(context, repository);
@@ -101,16 +100,14 @@ public class PlantSearchDialog {
         });
 
         // Сборка layout
-        layout.addView(form.getView());
-        layout.addView(countInput);
-        layout.addView(dateInput);
-        layout.addView(feedingDateInput);
-
-        scrollView.addView(layout);
+        scrollableLayout.layout.addView(form.getView());
+        scrollableLayout.layout.addView(countInput);
+        scrollableLayout.layout.addView(dateInput);
+        scrollableLayout.layout.addView(feedingDateInput);
 
         AlertDialog dialog = new AlertDialog.Builder(context)
                 .setTitle("Поиск")
-                .setView(scrollView)
+                .setView(scrollableLayout.scrollView)
                 .setPositiveButton("Найти", null)
                 .setNegativeButton("Отмена", null)
                 .create();
