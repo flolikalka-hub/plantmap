@@ -2,4 +2,14 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <color name="default_color">#000000</color>
+
+    <color name="point_text_default">#FFFFFF</color>
+    <color name="point_default">#0000FF</color>
+
+    <color name="point_text_selected">#000000</color>
+    <color name="point_selected">#FFFF00</color>
+
+    <color name="search_highlight">#FF00FF</color>
 </resources>

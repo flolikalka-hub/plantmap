@@ -3,7 +3,6 @@ package com.example.plantmap.plan;
 import android.app.AlertDialog;
 import android.content.Context; //объект среды
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
@@ -65,6 +64,7 @@ public class PlanView extends View {
     private String searchQuery = "";
     private final Set<PlantPoint> searchResultsSet = new HashSet<>();
     private Paint searchStrokePaint; // ободка для точек, чтобы не конфликтовать с режимными окрасами
+    private Context contextColors;
 
     // а был ли поиск вообще
     public interface SearchStateListener {
@@ -82,14 +82,12 @@ public class PlanView extends View {
     private int pl;
     private int pr;
     private int pt;
-    private int pb;
-
 
     //                                  КОНСТРУКТОР, вызывается в момент создания view
     public PlanView(Context context, PlantRepository repository) {
         // контекст - дступ к ресурсам, экрану, системе, БД ("где я живу")
         super(context);
-
+        contextColors = context;
         this.repository = repository;
 
         scaleDetector = new ScaleGestureDetector(getContext(), new ScaleListener());
@@ -101,14 +99,13 @@ public class PlanView extends View {
         // кисти
         // точки
         paint = new Paint();
-        paint.setColor(Color.BLACK);
+        paint.setColor(ContextCompat.getColor(context, R.color.default_color));
         paint.setStrokeWidth(5f);        // толщина линии 5 пикселей
         // обводка поиска
         searchStrokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         searchStrokePaint.setStyle(Paint.Style.STROKE);
         searchStrokePaint.setStrokeWidth(5f);
-        searchStrokePaint.setColor(Color.MAGENTA);
-
+        searchStrokePaint.setColor(ContextCompat.getColor(context, R.color.search_highlight));
 
         // план территории
         planDrawable = ContextCompat.getDrawable(context, R.drawable.terr_plan);
@@ -150,7 +147,6 @@ public class PlanView extends View {
         pl = getPaddingLeft();
         pr = getPaddingRight();
         pt = getPaddingTop();
-        pb = getPaddingBottom();
         // ПЛАН
         // ширина под экран
         planWidth = Math.max(0f, getWidth() - pl - pr);
@@ -170,6 +166,7 @@ public class PlanView extends View {
 
     // проверяем границы
     private boolean isInsidePlan(float planX, float planY) {
+        //float r = pointRadius;
         float r = POINT_RADIUS;
 
         return planX >= r &&
@@ -200,7 +197,7 @@ public class PlanView extends View {
 
         // ТОЧКИ
         Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        textPaint.setColor(Color.WHITE);      // цвет текста
+        textPaint.setColor(ContextCompat.getColor(contextColors, R.color.point_text_default));      // цвет текста
         textPaint.setTextSize(10f * planScale);           // размер шрифта, можно масштабировать
         textPaint.setTextAlign(Paint.Align.LEFT); // центрирование далее вручную
 
@@ -208,11 +205,11 @@ public class PlanView extends View {
             if (p.plant == null) continue;
             // окраска для обычных/выбранных точек в режимах
             if (p == selectedPoint) {
-                paint.setColor(Color.YELLOW); // выделение — желтый
-                textPaint.setColor(Color.BLACK);
+                paint.setColor(ContextCompat.getColor(contextColors, R.color.point_selected)); // выделение — желтый
+                textPaint.setColor(ContextCompat.getColor(contextColors, R.color.point_text_selected));
             } else {
-                paint.setColor(Color.BLUE); // обычные точки
-                textPaint.setColor(Color.WHITE);
+                paint.setColor(ContextCompat.getColor(contextColors, R.color.point_default)); // обычные точки
+                textPaint.setColor(ContextCompat.getColor(contextColors, R.color.point_text_default));
             }
 
             boolean isFound = searchActive && searchResultsSet.contains(p);
@@ -221,6 +218,7 @@ public class PlanView extends View {
             if (isFound) {
                 float screenX = pl + p.x * planScale;
                 float screenY = pt + p.y * planScale;
+                //float screenRadius = pointRadius * planScale + 4f;
                 float screenRadius = POINT_RADIUS * planScale + 4f;
 
                 canvas.drawCircle(
@@ -233,6 +231,7 @@ public class PlanView extends View {
 
             float screenX = pl + p.x * planScale;
             float screenY = pt + p.y * planScale;
+            //float screenRadius = pointRadius * planScale;
             float screenRadius = POINT_RADIUS * planScale;
             canvas.drawCircle(screenX, screenY, screenRadius, paint);
 
@@ -513,6 +512,7 @@ public class PlanView extends View {
             float dy = touchY - p.y;
             float distanceSquared = dx * dx + dy * dy;
             // чтобы при масштабировании не было слишишком большого радиуса попадания
+            //float scaledHitRad = hitRadius * hitRadius / scaleFactor;
             float scaledHitRad = HIT_RADIUS * HIT_RADIUS / scaleFactor;
             if (distanceSquared <= scaledHitRad) {
                 if (distanceSquared < minDistanceSq) {
