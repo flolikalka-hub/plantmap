@@ -30,12 +30,10 @@ import java.util.Set;
 //extends view - значит planview частный случай view
 public class PlanView extends View {
     private Paint paint; //кисточка
-
     private Drawable planDrawable; // план территории
     private float planWidth, planHeight;   // реальные размеры плана на экране
     private float planScale;               // масштаб плана относительно его оригинального размера
     private float planOriginalWidth, planOriginalHeight; // размеры Drawable
-
     private ArrayList<PlantPoint> points; // точки на плане
     private static final float POINT_RADIUS = 7f; // константа радиуса для рисования
     private static final float HIT_RADIUS = POINT_RADIUS * 3f; // константа для попаданию в точку, чтобы не мучаться с "пиксель в пиксель"
@@ -46,9 +44,7 @@ public class PlanView extends View {
     private float downX, downY; // коорд
     private final float touchSlop; // чтобы не было "ложного" перетаскивания из-за помех
     private PlantPoint selectedPoint = null; // выделение выбранной точки
-
     private PlantRepository repository; // все связанное с БД вынесено из view
-
     private ScaleGestureDetector scaleDetector;
     private float scaleFactor = 1.0f;  // текущий масштаб
     private final float MIN_SCALE = 1.0f;  // минимальный масштаб
@@ -61,7 +57,6 @@ public class PlanView extends View {
     private boolean gestureConsumed = false; // подтверждение действия для разграничения режмных и масштабирования
     // поиск (не режим, а состояние отображения)
     private boolean searchActive = false;
-    private String searchQuery = "";
     private final Set<PlantPoint> searchResultsSet = new HashSet<>();
     private Paint searchStrokePaint; // ободка для точек, чтобы не конфликтовать с режимными окрасами
     private Context contextColors;
@@ -75,8 +70,6 @@ public class PlanView extends View {
 
     private SearchStateListener searchStateListener;
     private PlantSearchEngine searchEngine = new PlantSearchEngine();
-
-
     // ИНФОРМАТИВНОЕ
     // отступы устройства
     private int pl;

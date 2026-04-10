@@ -12,10 +12,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ColorResolver {
-    private final ColorDataAccess cdb;
+    private final ColorDataAccess colorDa;
 
-    public ColorResolver(ColorDataAccess cdb) {
-        this.cdb = cdb;
+    public ColorResolver(ColorDataAccess colorDa) {
+        this.colorDa = colorDa;
     }
 
     public List<Integer> resolveColors(String rawColor) {
@@ -27,12 +27,12 @@ public class ColorResolver {
         List<ColorModifier> modifiers = new ArrayList<>();
 
         for (String part : parts) {
-            ColorModifier m = cdb.findModifierByRoot(part);
+            ColorModifier m = colorDa.findModifierByRoot(part);
             if (m != null) modifiers.add(m);
         }
 
         for (String part : parts) {
-            FlowerColor c = cdb.findColorByRoot(part);
+            FlowerColor c = colorDa.findColorByRoot(part);
             if (c != null) {
                 int base = Color.parseColor(c.hex);
                 result.add(applyModifiers(base, modifiers));

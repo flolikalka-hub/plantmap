@@ -51,81 +51,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        db.beginTransaction();
-        try {
-            createSchemaIfNeeded(db);
-
-            if (!columnExists(db, "plants", "variety_id")) {
-
-                db.execSQL("ALTER TABLE plants ADD COLUMN variety_id INTEGER");
-
-                db.execSQL(
-                        "INSERT OR IGNORE INTO variety(type, plant_group) " +
-                                "SELECT DISTINCT type, plant_group FROM plants"
-                );
-
-                db.execSQL(
-                        "UPDATE plants SET variety_id = (" +
-                                "SELECT id FROM variety v " +
-                                "WHERE v.type = plants.type AND v.plant_group = plants.plant_group" +
-                                ")"
-                );
+        // Миграции начинаются с версии, следующей за текущей актуальной.
+        for (int v = oldVersion + 1; v <= newVersion; v++) {
+            switch (v) {
+                // case 25: migrateTo25(db); break;
+                // case 26: migrateTo26(db); break;
+                default:
+                    throw new IllegalStateException("Unknown migration from " + oldVersion + " to " + newVersion);
             }
-
-            if (columnExists(db,"plants","type")) {
-
-                db.execSQL(
-                        "INSERT OR IGNORE INTO variety(type, plant_group)" +
-                                "SELECT DISTINCT type, plant_group FROM plants"
-                );
-
-                db.execSQL(
-                        "CREATE TABLE plants_new (" +
-                                "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                                "name TEXT NOT NULL, " +
-                                "variety_id INTEGER NOT NULL, " +
-                                "pot_volume INTEGER, " +
-                                "flower_color TEXT, " +
-                                "additional_info TEXT, " +
-                                "is_builtin INTEGER NOT NULL DEFAULT 0, " +
-                                "FOREIGN KEY (variety_id) REFERENCES variety(id) ON DELETE CASCADE" +
-                                ")"
-                );
-
-                db.execSQL(
-                        "INSERT INTO plants_new(id,name,variety_id,pot_volume,flower_color,additional_info,is_builtin) " +
-                                "SELECT p.id, p.name, v.id, p.pot_volume, p.flower_color, p.additional_info, p.is_builtin " +
-                                "FROM plants p " +
-                                "LEFT JOIN variety v " +
-                                "ON p.type = v.type AND p.plant_group = v.plant_group"
-                );
-
-                db.execSQL("DROP TABLE plants");
-                db.execSQL("ALTER TABLE plants_new RENAME TO plants");
-            }
-
-            if (!columnExists(db,"plants","is_builtin")){
-                db.execSQL("ALTER TABLE plants ADD COLUMN is_builtin INTEGER NOT NULL DEFAULT 0");
-            }
-
-            if (!columnExists(db,"points","processing_date")){
-                db.execSQL("ALTER TABLE points ADD COLUMN processing_date INTEGER");
-            }
-
-            if (!columnExists(db,"points","feeding_date")){
-                db.execSQL("ALTER TABLE points ADD COLUMN feeding_date INTEGER");
-            }
-
-            db.setTransactionSuccessful();
-        } finally {
-            db.endTransaction();
         }
-
-        Cursor c = db.rawQuery("PRAGMA table_info(plants)", null);
-        while (c.moveToNext()) {
-            android.util.Log.d("DB", "plants column: " + c.getString(1));
-        }
-        c.close();
     }
 
     private void createSchemaIfNeeded(SQLiteDatabase db) {
