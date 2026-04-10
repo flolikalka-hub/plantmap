@@ -37,7 +37,6 @@ public class ColorDataAccess {
         }
 
         c.close();
-        //db.close();
         return color;
     }
 
@@ -61,7 +60,6 @@ public class ColorDataAccess {
         }
 
         c.close();
-        //db.close();
         return modifier;
     }
 
@@ -76,7 +74,6 @@ public class ColorDataAccess {
         }
 
         c.close();
-        //db.close();
         return colors;
     }
 
@@ -105,7 +102,6 @@ public class ColorDataAccess {
         }
 
         c.close();
-        //db.close();
         return colors;
     }
     // Добавление нового цвета
@@ -128,13 +124,11 @@ public class ColorDataAccess {
         cv.put("root", root != null ? root.toLowerCase().trim() : null);
         cv.put("hex", hex != null ? hex.toLowerCase().trim() : null);
         db.update("colors", cv, "id=?", new String[]{String.valueOf(id)});
-        //db.close();
     }
 
     public void deleteColor(int id) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         db.delete("colors", "id=?", new String[]{String.valueOf(id)});
-        //db.close();
     }
 
     public boolean colorNameExists(String name, @Nullable Integer excludeId) {
@@ -156,7 +150,6 @@ public class ColorDataAccess {
         Cursor cursor = db.rawQuery(sql, args);
         boolean exists = cursor.moveToFirst();
         cursor.close();
-        //db.close();
 
         return exists;
     }

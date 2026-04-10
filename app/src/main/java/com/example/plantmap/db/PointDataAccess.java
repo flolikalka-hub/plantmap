@@ -153,7 +153,6 @@ public class PointDataAccess {
         }
 
         cursor.close();
-        db.close();
 
         return total;
     }
@@ -197,7 +196,6 @@ public class PointDataAccess {
         }
 
         cursor.close();
-        db.close();
 
         return total;
     }
