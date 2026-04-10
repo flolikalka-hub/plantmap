@@ -15,6 +15,7 @@ import com.example.plantmap.R;
 import com.example.plantmap.colors.ColorResolver;
 import com.example.plantmap.model.Plant;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class PlantAdapter extends RecyclerView.Adapter<PlantAdapter.PlantViewHolder> {
@@ -51,18 +52,7 @@ public class PlantAdapter extends RecyclerView.Adapter<PlantAdapter.PlantViewHol
 
         // подпись карточки
         // название сорта + цвет цветка и литраж горшка
-        boolean hasPotVolume = plant.potVolume != null;
-        boolean hasFlowerColor = plant.flowerColor != null && !plant.flowerColor.isEmpty();
-
-        if (hasPotVolume && hasFlowerColor) {
-            holder.name.setText(plant.name + " (" + plant.flowerColor + ", " + plant.potVolume + "л)");
-        } else if (hasFlowerColor) {
-            holder.name.setText(plant.name + " (" + plant.flowerColor + ")");
-        } else if (hasPotVolume) {
-            holder.name.setText(plant.name + " (" + plant.potVolume + "л)");
-        } else {
-            holder.name.setText(plant.name);
-        }
+        holder.name.setText(formatPlantTitle(plant));
         // тип + группа
         if (plant.group != null && !plant.group.isEmpty()) {
             holder.type.setText(plant.type + " (" + plant.group + ")");
@@ -81,6 +71,21 @@ public class PlantAdapter extends RecyclerView.Adapter<PlantAdapter.PlantViewHol
         holder.editBtn.setOnClickListener(v -> {
             if (listener != null) listener.onEditClick(plant);
         });
+    }
+
+    private String formatPlantTitle(Plant plant) {
+        /**
+         Подпись карточки - заголовок
+         */
+        StringBuilder sb = new StringBuilder(plant.name);
+        List<String> extras = new ArrayList<>();
+        if (plant.flowerColor != null && !plant.flowerColor.isEmpty())
+            extras.add(plant.flowerColor);
+        if (plant.potVolume != null)
+            extras.add(plant.potVolume + "л");
+        if (!extras.isEmpty())
+            sb.append(" (").append(String.join(", ", extras)).append(")");
+        return sb.toString();
     }
 
     @Override
