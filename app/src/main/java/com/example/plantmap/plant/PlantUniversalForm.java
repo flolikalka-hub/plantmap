@@ -185,11 +185,11 @@ public class PlantUniversalForm {
         return nameInput;
     }
 
-    public EditText getTypeInput() {
+    public AutoCompleteTextView getTypeInput() {
         return typeInput;
     }
 
-    public EditText getGroupInput() {
+    public AutoCompleteTextView getGroupInput() {
         return groupInput;
     }
 

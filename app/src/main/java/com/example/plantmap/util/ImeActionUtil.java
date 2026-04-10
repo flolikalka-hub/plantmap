@@ -7,11 +7,18 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 
 public class ImeActionUtil {
+    /**
+     Настраивает цепочку перехода по кнопке "Далее" (IME_ACTION_NEXT)
+     и автоматически делает все поля однострочными.
+
+     fields поля ввода в порядке их следования
+     */
     public static void setupImeChain(EditText... fields) {
         for (int i = 0; i < fields.length; i++) {
             EditText edit = fields[i];
             boolean isLast = (i == fields.length - 1);
 
+            // однострочность чтобы энтер превратился в далее
             edit.setSingleLine(true);
 
             edit.setImeOptions(isLast ? EditorInfo.IME_ACTION_DONE : EditorInfo.IME_ACTION_NEXT);
@@ -31,11 +38,36 @@ public class ImeActionUtil {
         }
     }
 
+    /**
+     Скрывает клавиатуру
+     */
     public static void hideKeyboard(View view) {
         InputMethodManager imm = (InputMethodManager) view.getContext()
                 .getSystemService(Context.INPUT_METHOD_SERVICE);
         if (imm != null) {
             imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
         }
+    }
+
+    /**
+     Скрывает клавиатуру и снимает фокус с view.
+     */
+    public static void hideKeyboardAndClearFocus(View view) {
+        hideKeyboard(view);
+        view.clearFocus();
+    }
+    /**
+     Запрашивает фокус и показывает клавиатуру для указанного view.
+     */
+    public static void focusAndShowKeyboard(View view) {
+        view.requestFocus();
+        view.requestFocusFromTouch();
+        view.post(() -> {
+            InputMethodManager imm = (InputMethodManager) view.getContext()
+                    .getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm != null) {
+                imm.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT);
+            }
+        });
     }
 }

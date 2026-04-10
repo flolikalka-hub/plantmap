@@ -4,11 +4,9 @@ import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.content.Context;
 import android.text.InputType;
-import android.widget.AutoCompleteTextView;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.LinearLayout;
-import android.widget.ScrollView;
 
 import com.example.plantmap.model.Plant;
 import com.example.plantmap.model.PlantPoint;
@@ -122,7 +120,16 @@ public class PlantSearchDialog {
                 .setNegativeButton("Отмена", null)
                 .create();
 
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setSoftInputMode(
+                    WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
+                            | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
+            );
+        }
+
         dialog.setOnShowListener(d -> {
+            ImeActionUtil.focusAndShowKeyboard(form.nameInput);
+
             Button findBtn = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
             findBtn.setOnClickListener(v -> {
                 SearchFilter filter = new SearchFilter();

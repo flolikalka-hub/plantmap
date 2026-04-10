@@ -7,7 +7,7 @@ public class InputValidators {
     /**
      Универсальный валидатор положительного целого числа.
      input              поле ввода
-     required           true — поле обязательно, false — можно оставить пустым (вернёт null без ошибки)
+     required           true — поле обязательно, false — можно оставить пустым (вернет null без ошибки)
      errorEmpty         текст ошибки при пустом поле (если required = true)
      errorInvalid       текст ошибки при неверном формате числа
      errorNotPositive   текст ошибки, если число <= 0
@@ -38,22 +38,30 @@ public class InputValidators {
     // обертки для сохранения обратной совместимости
 
     public static Integer validatePositiveOptionalInt(EditText input) {
-        return validatePositiveInt(
+        Integer result = validatePositiveInt(
                 input,
                 false,                          // не обязательно
                 "",                             // errorEmpty не используется
                 "Неверное число",
                 "Литраж должен быть больше 0"
         );
+        if (result == null) {
+            input.requestFocus();
+        }
+        return result;
     }
 
     public static Integer validatePositiveCount(EditText input) {
-        return validatePositiveInt(
+        Integer result = validatePositiveInt(
                 input,
                 true,                           // обязательно
                 "Количество обязательно",
                 "Неверное число",
                 "Количество должно быть больше 0"
         );
+        if (result == null) {
+            input.requestFocus();
+        }
+        return result;
     }
 }

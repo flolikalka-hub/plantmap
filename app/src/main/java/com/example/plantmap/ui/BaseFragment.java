@@ -32,13 +32,13 @@ public abstract class BaseFragment extends Fragment {
         menuHost.addMenuProvider(new MenuProvider() {
             @Override
             public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
-                // Даём наследнику возможность добавить пункты меню
+                // Даем наследнику возможность добавить пункты меню
                 BaseFragment.this.onCreateMenu(menu, inflater);
             }
 
             @Override
             public boolean onMenuItemSelected(@NonNull MenuItem item) {
-                // Сначала даём шанс наследнику, потом обрабатываем общие пункты (справка)
+                // Сначала даем шанс наследнику, потом обрабатываем общие пункты (справка)
                 if (BaseFragment.this.onMenuItemSelected(item)) {
                     return true;
                 }

@@ -149,7 +149,7 @@ public class PlanFragment extends BaseFragment {
      activeIcon         ресурс иконки для активного состояния
      inactiveIcon       ресурс иконки для неактивного состояния
      button             кнопка, на которой меняется иконка
-     return             новое состояние активности режима (true — включён, false — выключен)
+     return             новое состояние активности режима (true — включен, false — выключен)
      */
     private boolean toggleEditMode(EditMode mode, boolean isActive,
                                    int activeIcon, int inactiveIcon,

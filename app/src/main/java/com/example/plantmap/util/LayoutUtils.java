@@ -4,7 +4,9 @@ import android.content.Context;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
-
+/**
+ ScrollView с LinearLayout
+ */
 public class LayoutUtils {
     public static class ScrollableLayout {
         public final ScrollView scrollView;
@@ -15,7 +17,11 @@ public class LayoutUtils {
             this.layout = layout;
         }
     }
-
+    /**
+     создание прокручиваемого контейнера,
+     когда нужен полный контроль
+     над добавляемыми View и логикой сохранения
+     */
     public static ScrollableLayout createVerticalScrollView(Context context) {
         LinearLayout layout = new LinearLayout(context);
         layout.setOrientation(LinearLayout.VERTICAL);

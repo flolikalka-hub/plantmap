@@ -7,7 +7,6 @@ import android.view.LayoutInflater;
 import com.example.plantmap.R;
 import android.view.View;
 import android.view.WindowManager;
-import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -16,7 +15,7 @@ import android.widget.ScrollView;
 
 import com.example.plantmap.model.Plant;
 import com.example.plantmap.model.PlantPoint;
-import com.example.plantmap.util.DateCheckBoxHelper;
+import com.example.plantmap.util.DateCheckBoxUtil;
 import com.example.plantmap.util.ImeActionUtil;
 import com.example.plantmap.util.InputValidators;
 import com.example.plantmap.util.LayoutUtils;
@@ -41,7 +40,7 @@ public class PlantDialogs {
         EditText dateInput = new EditText(context);
         dateInput.setHint("Дата обработки");
 
-        DateCheckBoxHelper processHelper = new DateCheckBoxHelper(
+        DateCheckBoxUtil processHelper = new DateCheckBoxUtil(
                 processedCheckBox, dateInput,
                 date -> point.processingDate = date
         );
@@ -52,7 +51,7 @@ public class PlantDialogs {
         EditText feedingDateInput = new EditText(context);
         feedingDateInput.setHint("Дата подкормки");
 
-        DateCheckBoxHelper feedingHelper = new DateCheckBoxHelper(
+        DateCheckBoxUtil feedingHelper = new DateCheckBoxUtil(
                 feedingCheckBox, feedingDateInput,
                 date -> point.feedingDate = date
         );
@@ -86,7 +85,7 @@ public class PlantDialogs {
                 .create();
 
         dialog.setOnShowListener(d -> {
-            focusAndShowKeyboard(form.nameInput);
+            ImeActionUtil.focusAndShowKeyboard(form.nameInput);
 
             Button saveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
             saveButton.setOnClickListener(v -> {
@@ -96,6 +95,7 @@ public class PlantDialogs {
 
                 if (modifiedPlant.name.isEmpty()) {
                     form.nameInput.setError("Название обязательно");
+                    form.nameInput.requestFocus();
                     return;
                 }
 
@@ -174,13 +174,13 @@ public class PlantDialogs {
         Button changePlantBtn = view.findViewById(R.id.changePlantBtn);
 
         // Инициализация данных
-        DateCheckBoxHelper processHelper = new DateCheckBoxHelper(
+        DateCheckBoxUtil processHelper = new DateCheckBoxUtil(
                 processedCheckBox, dateInput,
                 date -> point.processingDate = date
         );
         processHelper.setDate(point.processingDate);
 
-        DateCheckBoxHelper feedingHelper = new DateCheckBoxHelper(
+        DateCheckBoxUtil feedingHelper = new DateCheckBoxUtil(
                 feedingCheckBox, feedingDateInput,
                 date -> point.feedingDate = date
         );
@@ -203,8 +203,15 @@ public class PlantDialogs {
                 .setNegativeButton("Отмена", null)
                 .create();
 
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setSoftInputMode(
+                    WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
+                            | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
+            );
+        }
+
         dialog.setOnShowListener(d -> {
-            focusAndShowKeyboard(countInput);
+            ImeActionUtil.focusAndShowKeyboard(countInput);
 
             Button saveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
             saveButton.setOnClickListener(v -> {
@@ -248,7 +255,7 @@ public class PlantDialogs {
 
         // логика сохранения, но без создания точки
         changeDialog.setOnShowListener(d -> {
-            focusAndShowKeyboard(form.nameInput);
+            ImeActionUtil.focusAndShowKeyboard(form.nameInput);
 
             Button saveButton = changeDialog.getButton(AlertDialog.BUTTON_POSITIVE);
             saveButton.setOnClickListener(v -> {
@@ -256,6 +263,7 @@ public class PlantDialogs {
                 Plant tempPlant = form.buildPlantFromInputs();
                 if (tempPlant.name.isEmpty()) {
                     form.nameInput.setError("Название обязательно");
+                    form.nameInput.requestFocus();
                     return;
                 }
 
@@ -302,17 +310,5 @@ public class PlantDialogs {
         }
 
         changeDialog.show();
-    }
-
-    private static void focusAndShowKeyboard(android.view.View view) {
-        view.requestFocus();
-        view.requestFocusFromTouch();
-        view.post(() -> {
-            Context context = view.getContext();
-            InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
-            if (imm != null) {
-                imm.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT);
-            }
-        });
     }
 }

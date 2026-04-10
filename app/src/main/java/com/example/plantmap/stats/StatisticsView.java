@@ -175,7 +175,7 @@ public class StatisticsView {
                         return;
                     }
 
-                    // вызываем метод репозитория для подсчёта
+                    // вызываем метод репозитория для подсчета
                     int count = plantRepository.getFilteredPlantCount(name, type, group, color, potVolume);
 
                     // показываем результат

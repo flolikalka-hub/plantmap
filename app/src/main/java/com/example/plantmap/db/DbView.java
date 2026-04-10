@@ -2,14 +2,9 @@ package com.example.plantmap.db;
 
 import android.app.AlertDialog;
 import android.content.Context;
-import android.text.InputType;
 import android.view.View;
 import android.view.WindowManager;
-import android.view.inputmethod.InputMethodManager;
-import android.widget.ArrayAdapter;
-import android.widget.AutoCompleteTextView;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.LinearLayout;
 
 import androidx.core.content.ContextCompat;
@@ -21,10 +16,10 @@ import com.example.plantmap.colors.ColorResolver;
 import com.example.plantmap.plant.PlantAdapter;
 import com.example.plantmap.model.Plant;
 import com.example.plantmap.plant.PlantRepository;
+import com.example.plantmap.plant.PlantUniversalForm;
 import com.example.plantmap.util.ImeActionUtil;
 import com.example.plantmap.util.InputValidators;
 import com.example.plantmap.plan.PlanView;
-import com.example.plantmap.util.LayoutUtils;
 
 import java.util.Collections;
 import java.util.Comparator;
@@ -112,70 +107,16 @@ public class DbView {
     private void showPlantDialog(Plant plant, RecyclerView recyclerView) {
         boolean isNew = (plant == null);
         if (isNew) plant = new Plant();
+        final Plant originalPlant = plant;
 
-        final Plant plantFinal = plant;
-
-        EditText nameInput = new EditText(context);
-        nameInput.setHint("Название сорта");
-        nameInput.setText(plant.name != null ? plant.name : "");
-        // пусть с заглавной будет
-        nameInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
-
-        EditText typeInput = new EditText(context);
-        typeInput.setHint("Тип растения");
-        typeInput.setText(plant.type != null ? plant.type : "");
-
-        EditText groupInput = new EditText(context);
-        groupInput.setHint("Группа растения");
-        groupInput.setText(plant.group != null ? plant.group : "");
-
-        EditText potVolumeInput = new EditText(context);
-        potVolumeInput.setHint("Литраж горшка");
-        potVolumeInput.setInputType(InputType.TYPE_CLASS_NUMBER);
-        potVolumeInput.setText(plant.potVolume != null ? String.valueOf(plant.potVolume) : "");
-
-        // с автозаполнением из БД
-        AutoCompleteTextView flowerColorInput = new AutoCompleteTextView(context);
-        flowerColorInput.setHint("Цвет цветка");
-        flowerColorInput.setText(plant.flowerColor != null ? plant.flowerColor : "");
-
-        EditText additionalInfoInput = new EditText(context);
-        additionalInfoInput.setHint("Дополнительная информация");
-        additionalInfoInput.setText(plant.additionalInfo != null ? plant.additionalInfo : "");
-
-        // Получаем список цветов из БД
-        List<String> colorNames = repository.getAllColorNames();
-
-        ArrayAdapter<String> colorAdapter = new ArrayAdapter<>(
-                context,
-                android.R.layout.simple_dropdown_item_1line,
-                colorNames
-        );
-
-        flowerColorInput.setAdapter(colorAdapter);
-        flowerColorInput.setThreshold(1); // показывать подсказки после ввода 1 символа
-
-        ImeActionUtil.setupImeChain(
-                nameInput,
-                typeInput,
-                groupInput,
-                potVolumeInput,
-                flowerColorInput,
-                additionalInfoInput);
-
-        LayoutUtils.ScrollableLayout scrollableLayout = LayoutUtils.createVerticalScrollView(context);
-
-        scrollableLayout.layout.addView(nameInput);
-        scrollableLayout.layout.addView(typeInput);
-        scrollableLayout.layout.addView(groupInput);
-        scrollableLayout.layout.addView(potVolumeInput);
-        scrollableLayout.layout.addView(flowerColorInput);
-        scrollableLayout.layout.addView(additionalInfoInput);
+        PlantUniversalForm form = new PlantUniversalForm(context, repository);
+        form.fillFromPlant(plant);
 
         AlertDialog.Builder builder = new AlertDialog.Builder(context)
                 .setTitle(isNew ? "Новое растение" : "Редактировать растение")
-                .setView(scrollableLayout.scrollView)
-                .setNegativeButton("Отмена", null);
+                .setView(form.getView())
+                .setNegativeButton("Отмена", null)
+                .setPositiveButton("Сохранить", null);
 
         if (!isNew) {
             final int idPlant = plant.id;
@@ -200,10 +141,135 @@ public class DbView {
                 }
             });
         }
-        // для сохранить отдельно ибо надо контролировать ввод
-        builder.setPositiveButton("Сохранить", null);
 
         AlertDialog dialog = builder.create();
+        // настройка soft input
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setSoftInputMode(
+                    WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
+                            | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
+            );
+        }
+
+        dialog.setOnShowListener(d -> {
+            ImeActionUtil.focusAndShowKeyboard(form.getNameInput());
+            Button saveBtn = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            saveBtn.setOnClickListener(v -> {
+                // валидация
+                String name = form.getNameInput().getText().toString().trim();
+                if (name.isEmpty()) {
+                    form.getNameInput().setError("Название обязательно");
+                    form.getNameInput().requestFocus();
+                    return;
+                }
+                Integer potVolume = InputValidators.validatePositiveOptionalInt(form.getPotVolumeInput());
+                if (potVolume == null && !form.getPotVolumeInput().getText().toString().trim().isEmpty()) {
+                    form.getPotVolumeInput().requestFocus();
+                    return;
+                }
+
+                // построить Plant из формы
+                Plant updatedPlant = form.buildPlantFromInputs();
+                // Присваиваем проверенное значение, чтобы быть уверенным
+                updatedPlant.potVolume = potVolume;
+
+                // Проверка на существование такого же растения
+                Plant existingPlant = repository.findPlantByAllFields(updatedPlant);
+                Plant plantToSave;
+                if (existingPlant != null) {
+                    // Если редактируем существующее и найденное растение — это оно само
+                    if (!isNew && existingPlant.id == originalPlant.id) {
+                        plantToSave = updatedPlant;
+                        plantToSave.id = originalPlant.id;
+                    } else {
+                        // Дубликат: для нового или чужого при редактировании
+                        new AlertDialog.Builder(context)
+                                .setTitle("Растение уже существует")
+                                .setMessage("Такое растение уже есть в базе. Измените данные или используйте существующее.")
+                                .setPositiveButton("ОК", null)
+                                .show();
+                        return; // прерываем сохранение, диалог остаётся открытым
+                    }
+                } else {
+                    plantToSave = updatedPlant;
+                    if (!isNew) {
+                        plantToSave.id = originalPlant.id;
+                    }
+                }
+
+                if (isNew) {
+                    // Если plantToSave — существующее, то addPlant не нужен, оно уже есть
+                    if (existingPlant != null) {
+                        // Ничего не добавляем, просто используем существующее
+                    } else {
+                        repository.addPlant(plantToSave);
+                    }
+                } else {
+                    repository.updatePlant(plantToSave);
+                }
+
+                if (planView != null) planView.reloadPoints();
+                refreshPlantList(recyclerView);
+                dialog.dismiss();
+            });
+        });
+        dialog.show();
+    }
+
+    // диалог поиска
+    public void showSearchDialog() {
+        // Создаем форму поиска (используем ту же PlantUniversalForm)
+        PlantUniversalForm form = new PlantUniversalForm(context, repository);
+        // Очищаем поля, если они заполнились предыдущими значениями
+        form.fillFromPlant(new Plant());
+
+        AlertDialog dialog = new AlertDialog.Builder(context)
+                .setTitle("Поиск растений")
+                .setView(form.getView())
+                .setPositiveButton("Найти", null)
+                .setNegativeButton("Отменить", (d, w) -> refreshPlantList(recyclerView))
+                .create();
+
+        dialog.setOnShowListener(d -> {
+            ImeActionUtil.focusAndShowKeyboard(form.getNameInput());
+
+            Button findBtn = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            findBtn.setOnClickListener(v -> {
+                // Получаем данные из формы
+                String name = form.getNameInput().getText().toString().trim();
+                String type = form.getTypeInput().getText().toString().trim();
+                String group = form.getGroupInput().getText().toString().trim();
+                String flowerColor = form.getFlowerColorInput().getText().toString().trim();
+                String addInfo = form.getAdditionalInfoInput().getText().toString().trim();
+
+                Integer potVolume = null;
+                String potVolumeStr = form.getPotVolumeInput().getText().toString().trim();
+                if (!potVolumeStr.isEmpty()) {
+                    try {
+                        potVolume = Integer.parseInt(potVolumeStr);
+                    } catch (NumberFormatException ignored) {}
+                }
+
+                // Выполняем поиск
+                List<Plant> result = repository.searchPlants(
+                        name, type, group, potVolume, flowerColor, addInfo
+                );
+
+                if (searchListener != null) {
+                    searchListener.onSearchApplied();
+                }
+
+                PlantAdapter adapter = new PlantAdapter(
+                        context,
+                        result,
+                        colorResolver,
+                        plant -> showPlantDialog(plant, recyclerView)
+                );
+                recyclerView.setAdapter(adapter);
+
+                dialog.dismiss();
+            });
+        });
 
         if (dialog.getWindow() != null) {
             dialog.getWindow().setSoftInputMode(
@@ -211,140 +277,8 @@ public class DbView {
                             | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
             );
         }
-        focusAndShowKeyboard(nameInput);
 
         dialog.show();
-
-        // Кастомный обработчик кнопки "Сохранить"
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-            String name = nameInput.getText().toString().trim();
-            if (name.isEmpty()) {
-                nameInput.setError("Название обязательно");
-                nameInput.requestFocus();
-                return; // не закрываем диалог
-            }
-
-            Integer potVolume = InputValidators.validatePositiveOptionalInt(potVolumeInput);
-
-            if (potVolume == null && !potVolumeInput.getText().toString().trim().isEmpty()) {
-                potVolumeInput.requestFocus();
-                return; // НЕ закрываем диалог
-            }
-
-            plantFinal.name = name;
-            plantFinal.type = typeInput.getText().toString().trim();
-            plantFinal.group = groupInput.getText().toString().trim();
-            plantFinal.potVolume = potVolume;
-            plantFinal.flowerColor = flowerColorInput.getText().toString().trim();
-            plantFinal.additionalInfo = additionalInfoInput.getText().toString().trim();
-
-            if (isNew) {
-                // Добавляем новое растение
-                repository.addPlant(plantFinal);
-            } else {
-                // Обновляем существующее
-                repository.updatePlant(plantFinal);
-            }
-            if (planView != null) planView.reloadPoints();
-
-            refreshPlantList(recyclerView);
-
-            dialog.dismiss(); // закрываем диалог вручную
-        });
-    }
-
-    // открытие клавиатуры для ввода автоматически
-    private void focusAndShowKeyboard(View view) {
-        view.requestFocus();
-        view.requestFocusFromTouch();
-        view.post(() -> {
-            InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
-            if (imm != null) {
-                imm.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT);
-            }
-        });
-    }
-
-    // диалог поиска
-    public void showSearchDialog() {
-        LinearLayout layout = new LinearLayout(context);
-        layout.setOrientation(LinearLayout.VERTICAL);
-
-        EditText nameInput = new EditText(context);
-        nameInput.setHint("Название сорта");
-
-        EditText typeInput = new EditText(context);
-        typeInput.setHint("Тип растения");
-
-        EditText groupInput = new EditText(context);
-        groupInput.setHint("Группа растения");
-
-        EditText potVolumeInput = new EditText(context);
-        potVolumeInput.setHint("Литраж горшка");
-        potVolumeInput.setInputType(InputType.TYPE_CLASS_NUMBER);
-
-        EditText flowerColorInput = new EditText(context);
-        flowerColorInput.setHint("Цвет цветка");
-
-        EditText addInput = new EditText(context);
-        addInput.setHint("Доп. информация");
-
-        ImeActionUtil.setupImeChain(
-                nameInput,
-                typeInput,
-                groupInput,
-                potVolumeInput,
-                flowerColorInput,
-                addInput);
-
-        layout.addView(nameInput);
-        layout.addView(typeInput);
-        layout.addView(groupInput);
-        layout.addView(potVolumeInput);
-        layout.addView(flowerColorInput);
-        layout.addView(addInput);
-
-        AlertDialog searchDialog = new AlertDialog.Builder(context)
-                .setTitle("Поиск растений")
-                .setView(layout)
-                .setPositiveButton("Найти", (d, w) -> {
-
-                    Integer potVolume = potVolumeInput.getText().toString().isEmpty()
-                            ? null
-                            : Integer.parseInt(potVolumeInput.getText().toString());
-
-                    List<Plant> result = repository.searchPlants(
-                            nameInput.getText().toString().trim(),
-                            typeInput.getText().toString().trim(),
-                            groupInput.getText().toString().trim(),
-                            potVolume,
-                            flowerColorInput.getText().toString().trim(),
-                            addInput.getText().toString().trim()
-                    );
-                    if (searchListener != null) {
-                        searchListener.onSearchApplied();
-                    }
-                    PlantAdapter adapter = new PlantAdapter(
-                            context,
-                            result,
-                            colorResolver,
-                            plant -> showPlantDialog(plant, recyclerView)
-                    );
-
-                    recyclerView.setAdapter(adapter);
-                })
-                .setNegativeButton("Отменить", (d, w) -> refreshPlantList(recyclerView))
-                .create();
-
-        if (searchDialog.getWindow() != null) {
-            searchDialog.getWindow().setSoftInputMode(
-                    WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
-                            | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
-            );
-        }
-        focusAndShowKeyboard(nameInput);
-
-        searchDialog.show();
     }
 
     public void setSearchStateListener(SearchStateListener listener) {

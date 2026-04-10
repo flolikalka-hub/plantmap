@@ -337,7 +337,7 @@ public class PlanView extends View {
             return false;
         }
 
-        // Передаём событие детектору масштабирования
+        // Передаем событие детектору масштабирования
         scaleDetector.onTouchEvent(event);
 
         // координаты касания

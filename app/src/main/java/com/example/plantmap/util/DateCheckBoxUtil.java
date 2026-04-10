@@ -9,7 +9,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
-public class DateCheckBoxHelper {
+public class DateCheckBoxUtil {
     private final CheckBox checkBox;
     private final EditText dateEditText;
     private final SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
@@ -20,7 +20,7 @@ public class DateCheckBoxHelper {
         void onDateChanged(Long date);
     }
 
-    public DateCheckBoxHelper(CheckBox checkBox, EditText dateEditText, OnDateChangedListener listener) {
+    public DateCheckBoxUtil(CheckBox checkBox, EditText dateEditText, OnDateChangedListener listener) {
         this.checkBox = checkBox;
         this.dateEditText = dateEditText;
         this.listener = listener;
