@@ -1,6 +1,7 @@
 package com.example.plantmap;
 
 import android.os.Bundle;
+import android.view.View;
 import android.widget.FrameLayout;
 
 import androidx.appcompat.app.ActionBarDrawerToggle;
@@ -73,51 +74,17 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // отступы тулбар (гамбургер)
-        final int toolbarBaseLeft = toolbar.getPaddingLeft();
-        final int toolbarBaseTop = toolbar.getPaddingTop();
-        final int toolbarBaseRight = toolbar.getPaddingRight();
-        final int toolbarBaseBottom = toolbar.getPaddingBottom();
-        ViewCompat.setOnApplyWindowInsetsListener(toolbar, (v, insets) -> {
-            Insets curr = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(
-                    toolbarBaseLeft + curr.left,
-                    toolbarBaseTop + curr.top,
-                    toolbarBaseRight + curr.right,
-                    toolbarBaseBottom
-            );
-            return insets;
-        });
-
+        applySystemBarInsets(toolbar,true,false);
         // отступы навигациннное меню
-        ViewCompat.setOnApplyWindowInsetsListener(navigationView, (v, insets) -> {
-            Insets nav = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(
-                    nav.left,
-                    nav.top,
-                    nav.right,
-                    nav.bottom
-            );
-            return insets;
-        });
-
+        applySystemBarInsets(navigationView,true,true);
         // отступы основной план с кнопками
-        ViewCompat.setOnApplyWindowInsetsListener(contentContainer, (v, insets) -> {
-            Insets content = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(
-                    content.left,
-                    v.getPaddingTop(),
-                    content.right,
-                    content.bottom
-            );
-            return insets;
-        });
+        applySystemBarInsets(contentContainer,false,true);
 
         //                          МЕНЮ
         navigationView.setNavigationItemSelectedListener(item -> {
             int itemId = item.getItemId();
 
             if (itemId == R.id.download_db) {
-                //BackupDatabase backup = new BackupDatabase(this, App.getInstance().getDbHelper());
                 BackupDatabase backup = new BackupDatabase(this);
                 backup.exportDatabase();
 
@@ -128,6 +95,26 @@ public class MainActivity extends AppCompatActivity {
             showScreen(itemId);
             drawerLayout.closeDrawers();
             return true;
+        });
+    }
+
+    public static void applySystemBarInsets(View view, boolean applyTop, boolean applyBottom) {
+        /**
+         Системные отступы
+         */
+        final int baseLeft = view.getPaddingLeft();
+        final int baseTop = view.getPaddingTop();
+        final int baseRight = view.getPaddingRight();
+        final int baseBottom = view.getPaddingBottom();
+        ViewCompat.setOnApplyWindowInsetsListener(view, (v, insets) -> {
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(
+                    baseLeft + bars.left,
+                    applyTop ? baseTop + bars.top : baseTop,
+                    baseRight + bars.right,
+                    applyBottom ? baseBottom + bars.bottom : baseBottom
+            );
+            return insets;
         });
     }
 
