@@ -64,7 +64,7 @@ public class PlantAdapter extends RecyclerView.Adapter<PlantAdapter.PlantViewHol
         try {
             applyColor(holder.colorView, plant.flowerColor);
         } catch (IllegalArgumentException e) {
-            holder.colorView.setBackgroundColor(android.graphics.Color.TRANSPARENT);
+            holder.colorView.setBackgroundColor(android.R.attr.windowBackground);
         }
 
         // кнопка редактирования

@@ -106,7 +106,7 @@ public class ColorAdapter extends RecyclerView.Adapter<ColorAdapter.ColorViewHol
             return textColor;
 
         } catch (IllegalArgumentException e) {
-            card.setCardBackgroundColor(Color.LTGRAY);
+            card.setCardBackgroundColor(android.R.attr.windowBackground);
             textView.setTextColor(Color.BLACK);
             return Color.BLACK;
         }

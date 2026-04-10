@@ -9,6 +9,7 @@ import com.example.plantmap.model.ColorModifier;
 import com.example.plantmap.model.FlowerColor;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class ColorResolver {
@@ -39,7 +40,12 @@ public class ColorResolver {
             }
         }
 
-        return result;
+        if (result.isEmpty()) {
+            // неизменяемый пустой список
+            return Collections.emptyList();
+        } else {
+            return result;
+        }
     }
 
     // применение модификаторов (темно-, нежно- и тд)

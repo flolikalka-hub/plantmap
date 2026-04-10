@@ -239,7 +239,6 @@ public class PlanView extends View {
             float textY = screenY + bounds.height() / 2f;
 
             canvas.drawText(text, textX, textY, textPaint);
-            //Log.d("CHECK", "Plan id: " + p.id);
         }
         canvas.restore();
     }
@@ -505,7 +504,6 @@ public class PlanView extends View {
             float dy = touchY - p.y;
             float distanceSquared = dx * dx + dy * dy;
             // чтобы при масштабировании не было слишишком большого радиуса попадания
-            //float scaledHitRad = hitRadius * hitRadius / scaleFactor;
             float scaledHitRad = HIT_RADIUS * HIT_RADIUS / scaleFactor;
             if (distanceSquared <= scaledHitRad) {
                 if (distanceSquared < minDistanceSq) {
