@@ -42,6 +42,10 @@ public class ImeActionUtil {
      Скрывает клавиатуру
      */
     public static void hideKeyboard(View view) {
+        /*У View есть Context
+        используем, чтобы получить
+        специальную системную службу InputMethodManager,
+        которая управляет клавиатурой.*/
         InputMethodManager imm = (InputMethodManager) view.getContext()
                 .getSystemService(Context.INPUT_METHOD_SERVICE);
         if (imm != null) {
@@ -50,21 +54,17 @@ public class ImeActionUtil {
     }
 
     /**
-     Скрывает клавиатуру и снимает фокус с view.
-     */
-    public static void hideKeyboardAndClearFocus(View view) {
-        hideKeyboard(view);
-        view.clearFocus();
-    }
-    /**
      Запрашивает фокус и показывает клавиатуру для указанного view.
      */
     public static void focusAndShowKeyboard(View view) {
         view.requestFocus();
         view.requestFocusFromTouch();
+        // выполняем код после того, как все события обработаются
         view.post(() -> {
+            // получаем службу ввода (клаиатуру)
             InputMethodManager imm = (InputMethodManager) view.getContext()
                     .getSystemService(Context.INPUT_METHOD_SERVICE);
+            // программный вызов, а не по требованию пользователя
             if (imm != null) {
                 imm.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT);
             }

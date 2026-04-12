@@ -19,6 +19,7 @@ import com.example.plantmap.util.DateCheckBoxUtil;
 import com.example.plantmap.util.ImeActionUtil;
 import com.example.plantmap.util.InputValidators;
 import com.example.plantmap.util.LayoutUtils;
+import com.example.plantmap.util.SoftInputUtil;
 
 public class PlantDialogs {
     // ввод данных о растении, когда НОВАЯ ТОЧКА
@@ -143,12 +144,7 @@ public class PlantDialogs {
             });
         });
 
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setSoftInputMode(
-                    WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE |
-                            WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
-            );
-        }
+        SoftInputUtil.setupSoftInput(dialog);
 
         dialog.show();
     }
@@ -203,12 +199,7 @@ public class PlantDialogs {
                 .setNegativeButton("Отмена", null)
                 .create();
 
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setSoftInputMode(
-                    WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
-                            | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
-            );
-        }
+        SoftInputUtil.setupSoftInput(dialog);
 
         dialog.setOnShowListener(d -> {
             ImeActionUtil.focusAndShowKeyboard(countInput);
@@ -302,12 +293,7 @@ public class PlantDialogs {
             });
         });
 
-        if (changeDialog.getWindow() != null) {
-            changeDialog.getWindow().setSoftInputMode(
-                    WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE |
-                            WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
-            );
-        }
+        SoftInputUtil.setupSoftInput(changeDialog);
 
         changeDialog.show();
     }

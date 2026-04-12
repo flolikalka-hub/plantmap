@@ -15,6 +15,7 @@ import com.example.plantmap.plant.PlantRepository;
 import com.example.plantmap.plant.PlantUniversalForm;
 import com.example.plantmap.util.ImeActionUtil;
 import com.example.plantmap.util.LayoutUtils;
+import com.example.plantmap.util.SoftInputUtil;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -120,12 +121,7 @@ public class PlantSearchDialog {
                 .setNegativeButton("Отмена", null)
                 .create();
 
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setSoftInputMode(
-                    WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
-                            | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
-            );
-        }
+        SoftInputUtil.setupSoftInput(dialog);
 
         dialog.setOnShowListener(d -> {
             ImeActionUtil.focusAndShowKeyboard(form.nameInput);

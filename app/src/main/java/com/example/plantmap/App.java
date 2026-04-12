@@ -4,13 +4,15 @@ import android.app.Application;
 import com.example.plantmap.db.DatabaseHelper;
 import com.example.plantmap.plant.PlantRepository;
 
-/*
+/**
 синглтоны на уровне приложения - БД (временно) и репозиторий
+запускается самым первым, ещё до того, как появится первый экран
 */
 public class App extends Application {
-    private static App instance;
-    private DatabaseHelper dbHelper;
-    private PlantRepository repository;
+    private static App instance; /** общая для всего приложения, единственный экземпляр
+    статическая переменная может запомнить старые данные от предыдущего теста, приходится чистить руками*/
+    private DatabaseHelper dbHelper; //помощник, который умеет разговаривать с базой данных
+    private PlantRepository repository; //склад, который знает, как правильно брать растения из помощника и отдавать их экранам
 
     @Override
     public void onCreate() {
@@ -26,8 +28,5 @@ public class App extends Application {
 
     public PlantRepository getRepository() {
         return repository;
-    }
-    public DatabaseHelper getDbHelper() {
-        return dbHelper;
     }
 }

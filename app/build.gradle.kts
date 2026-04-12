@@ -1,14 +1,20 @@
 plugins {
+    /**
+    Version Catalog (libs.versions.toml)
+    современный и рекомендуемый способ
+    централизованного управления версиями плагинов и зависимостей.
+    Упрощает обновление и обеспечивает консистентность между модулями.
+     */
     alias(libs.plugins.android.application)
 }
 
 android {
     namespace = "com.example.plantmap"
-    compileSdk = 36
+    compileSdk = 36 // android 16
 
     defaultConfig {
         applicationId = "com.example.plantmap"
-        minSdk = 29
+        minSdk = 29 // android 10
         targetSdk = 36
         versionCode = 44
         versionName = "Release-2.3.5"
@@ -18,9 +24,15 @@ android {
 
     buildTypes {
         release {
-            //isMinifyEnabled = false
-            isMinifyEnabled = true // Включает сжатие и обфускацию
-            isShrinkResources = true // Включает удаление неиспользуемых ресурсов
+            /**
+            обфускация, оптимизация и удаление неиспользуемого кода
+            Снижает размер APK и повышает безопасность
+             */
+            isMinifyEnabled = true
+            /**
+            удаляет неиспользуемые ресурсы (картинки, строки и т.д.)
+             */
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -39,17 +51,17 @@ android {
 
 dependencies {
 
-    implementation(libs.appcompat)
-    implementation(libs.material)
-    implementation(libs.activity)
-    implementation(libs.constraintlayout)
+    implementation(libs.appcompat) //для старых телефонов, чтобы новые фишки выглядели на них одинаково
+    implementation(libs.material) // красивые кнопки и менюшки от Google
+    implementation(libs.activity) // для создания окон (экранов)
+    implementation(libs.constraintlayout) // для расстановки кнопок и картинок на экране
 
-    implementation(libs.navigation.fragment)
-    implementation(libs.lifecycle.viewmodel)
-    implementation(libs.lifecycle.livedata)
+    implementation(libs.navigation.fragment) // для переключения между экранами
+    implementation(libs.lifecycle.viewmodel) // для хранения данных, которые не теряются при повороте телефона
+    implementation(libs.lifecycle.livedata) // сам сообщает экрану, что данные обновились
 
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.ext.junit)
-    androidTestImplementation(libs.espresso.core)
-    implementation(libs.colorpickerview)
+    testImplementation(libs.junit) // тесты комп
+    androidTestImplementation(libs.ext.junit) // тесты тел
+    androidTestImplementation(libs.espresso.core) // имитация действий пользователя
+    implementation(libs.colorpickerview) // палитра для выбора цвета
 }

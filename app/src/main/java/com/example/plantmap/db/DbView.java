@@ -3,7 +3,6 @@ package com.example.plantmap.db;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.view.View;
-import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.LinearLayout;
 
@@ -20,11 +19,19 @@ import com.example.plantmap.plant.PlantUniversalForm;
 import com.example.plantmap.util.ImeActionUtil;
 import com.example.plantmap.util.InputValidators;
 import com.example.plantmap.plan.PlanView;
+import com.example.plantmap.util.SoftInputUtil;
 
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-
+/**
+ Экран со списком растений в виде карточек
+ planView               ссылка на карту (чтобы обновлять после изменений)
+ recyclerView           список растений (прокручиваемая лента)
+ searchListener         слушатель, который сообщает, что поиск начался или закончился
+ repository             склад данных
+ colorResolver          помощник, который определяет цвет для каждого типа растения (нужен для красивого отображения)
+ */
 public class DbView {
     private Context context;
     private PlanView planView;
@@ -144,12 +151,7 @@ public class DbView {
 
         AlertDialog dialog = builder.create();
         // настройка soft input
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setSoftInputMode(
-                    WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
-                            | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
-            );
-        }
+        SoftInputUtil.setupSoftInput(dialog);
 
         dialog.setOnShowListener(d -> {
             ImeActionUtil.focusAndShowKeyboard(form.getNameInput());
@@ -271,12 +273,7 @@ public class DbView {
             });
         });
 
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setSoftInputMode(
-                    WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
-                            | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
-            );
-        }
+        SoftInputUtil.setupSoftInput(dialog);
 
         dialog.show();
     }

@@ -11,7 +11,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DB_NAME = "PlantMap_DB.db";
     private static final int DB_VERSION = 24;
-
     private final Context context;
     private String dbPath;
 
@@ -96,7 +95,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                         "FOREIGN KEY (plant_id) REFERENCES plants(id) ON DELETE CASCADE" +
                         ")"
         );
-        // индекс для plant_id таблицы points, ускоряет операции для join
+        /* индекс для plant_id таблицы points, ускоряет операции для join
+        чтобы быстро находить все точки для конкретного растения.*/
         db.execSQL("CREATE INDEX IF NOT EXISTS idx_points_plant_id ON points(plant_id)");
     }
 

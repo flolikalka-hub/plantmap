@@ -26,13 +26,14 @@ public class BackupDatabase {
     public void exportDatabase() {
 
         try {
+            // в общую папку загрузок
             File downloads = Environment.getExternalStoragePublicDirectory(
                     Environment.DIRECTORY_DOWNLOADS);
 
             if (!downloads.exists()) {
                 downloads.mkdirs();
             }
-
+            // файл с подписью день-месяц-год_час-минута
             String timestamp = new SimpleDateFormat(
                     "dd-MM-yyyy_HH-mm",
                     Locale.getDefault()
@@ -53,7 +54,7 @@ public class BackupDatabase {
                     out.write(buffer, 0, length);
                 }
             }
-
+            // маленькое всплывающее окно внизу экрана
             Toast.makeText(context,
                     "БД сохранена: " + exportFile.getAbsolutePath(),
                     Toast.LENGTH_LONG).show();

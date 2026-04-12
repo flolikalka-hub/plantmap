@@ -30,7 +30,10 @@ public class LayoutUtils {
         scrollView.addView(layout);
         return new ScrollableLayout(scrollView, layout);
     }
-
+    /**
+     берет уже готовую деталь (content)
+     и заворачивает её в прокрутку
+     */
     public static ScrollView wrapInScrollView(Context context, View content) {
         ScrollView scrollView = new ScrollView(context);
         scrollView.setFillViewport(true);

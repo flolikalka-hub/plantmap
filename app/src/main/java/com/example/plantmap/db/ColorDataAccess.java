@@ -112,7 +112,6 @@ public class ColorDataAccess {
         cv.put("root", root != null ? root.toLowerCase().trim() : null);
         cv.put("hex", hex != null ? hex.toLowerCase().trim() : null);
         long id = db.insert("colors", null, cv); // вернет -1 если не удалось (дубликат прим)
-        //se();
         return id;
     }
 

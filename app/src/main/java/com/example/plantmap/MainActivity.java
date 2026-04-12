@@ -25,13 +25,13 @@ import com.google.android.material.navigation.NavigationView;
 
 import java.util.HashSet;
 import java.util.Set;
-
-
+/**
+ Главный экран, запускаемый первым
+ */
 public class MainActivity extends AppCompatActivity {
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
     private Toolbar toolbar;
-    private FrameLayout contentContainer;
     private PlantRepository repository;
 
     @Override
@@ -40,17 +40,18 @@ public class MainActivity extends AppCompatActivity {
 
         repository = App.getInstance().getRepository();
 
-        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);/* запрет
+        на автоматическое расставление отступов, далее настроено вручную */
 
         setContentView(R.layout.activity_main);
 
         toolbar = findViewById(R.id.toolbar);
         toolbar.setTitle("План территории");
-        setSupportActionBar(toolbar);
+        setSupportActionBar(toolbar); // toolbar - главная панель действий
 
-        drawerLayout = findViewById(R.id.drawer_layout);
-        navigationView = findViewById(R.id.nav_view);
-        contentContainer = findViewById(R.id.main_container);
+        drawerLayout = findViewById(R.id.drawer_layout); // боковое меню
+        navigationView = findViewById(R.id.nav_view); // список пунктов меню
+        FrameLayout contentContainer = findViewById(R.id.main_container); // коробка для контента (фрагментов)
 
         // связываем боковое меню с гамбургером
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
@@ -68,8 +69,8 @@ public class MainActivity extends AppCompatActivity {
         // по умолчанию подсветка плана как выбранного
         navigationView.setCheckedItem(R.id.nav_plan);
 
-        if (savedInstanceState == null)
-        {
+        // если создается впервые
+        if (savedInstanceState == null) {
             showScreen(R.id.nav_plan);
         }
 
@@ -84,6 +85,7 @@ public class MainActivity extends AppCompatActivity {
         navigationView.setNavigationItemSelectedListener(item -> {
             int itemId = item.getItemId();
 
+            // не открывает никаких экранов, просто скачивает, поэтому живет отдельно
             if (itemId == R.id.download_db) {
                 BackupDatabase backup = new BackupDatabase(this);
                 backup.exportDatabase();
@@ -98,10 +100,10 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     Системные отступы
+     */
     public static void applySystemBarInsets(View view, boolean applyTop, boolean applyBottom) {
-        /**
-         Системные отступы
-         */
         final int baseLeft = view.getPaddingLeft();
         final int baseTop = view.getPaddingTop();
         final int baseRight = view.getPaddingRight();
