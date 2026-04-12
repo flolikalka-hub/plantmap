@@ -10,7 +10,7 @@ import java.io.*;
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DB_NAME = "PlantMap_DB.db";
-    private static final int DB_VERSION = 24;
+    private static final int DB_VERSION = 25;
     private final Context context;
     private String dbPath;
 
@@ -53,12 +53,16 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         // Миграции начинаются с версии, следующей за текущей актуальной.
         for (int v = oldVersion + 1; v <= newVersion; v++) {
             switch (v) {
-                // case 25: migrateTo25(db); break;
+                case 25: migrateTo25(db); break;
                 // case 26: migrateTo26(db); break;
                 default:
                     throw new IllegalStateException("Unknown migration from " + oldVersion + " to " + newVersion);
             }
         }
+    }
+
+    private void migrateTo25(SQLiteDatabase db) {
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_plants_variety_id ON plants(variety_id)");
     }
 
     private void createSchemaIfNeeded(SQLiteDatabase db) {
@@ -98,6 +102,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         /* индекс для plant_id таблицы points, ускоряет операции для join
         чтобы быстро находить все точки для конкретного растения.*/
         db.execSQL("CREATE INDEX IF NOT EXISTS idx_points_plant_id ON points(plant_id)");
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_plants_variety_id ON plants(variety_id)");
     }
 
     private boolean columnExists(SQLiteDatabase db, String tableName, String columnName) {
