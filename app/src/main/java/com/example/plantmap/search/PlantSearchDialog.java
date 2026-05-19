@@ -131,6 +131,7 @@ public class PlantSearchDialog {
                 SearchFilter filter = new SearchFilter();
 
                 // Значения из универсальной формы
+                /*
                 Plant selectedPlant = form.getSelectedPlant();
                 if (selectedPlant != null) {
                     filter.name = selectedPlant.name;
@@ -138,7 +139,17 @@ public class PlantSearchDialog {
                     filter.group = selectedPlant.group;
                     filter.flowerColor = selectedPlant.flowerColor;
                     filter.potVolume = selectedPlant.potVolume;
-                }
+                }*/
+                filter.name = form.nameInput.getText().toString().trim();
+                filter.type = form.typeInput.getText().toString().trim();
+                filter.group = form.groupInput.getText().toString().trim();
+                filter.flowerColor = form.flowerColorInput.getText().toString().trim();
+                filter.additionalInfo = form.additionalInfoInput.getText().toString().trim();
+
+                filter.potVolume = parseIntOrNull(
+                        form.potVolumeInput.getText().toString().trim()
+                );
+
 
                 // Дополнительные фильтры
                 filter.count = parseIntOrNull(countInput.getText().toString().trim());

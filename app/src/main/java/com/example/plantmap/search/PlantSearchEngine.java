@@ -1,5 +1,7 @@
 package com.example.plantmap.search;
 
+//import android.util.Log;
+
 import com.example.plantmap.model.Plant;
 import com.example.plantmap.model.PlantPoint;
 import com.example.plantmap.model.SearchFilter;
@@ -17,6 +19,8 @@ public class PlantSearchEngine {
         if (isFilterEmpty(filter)) {
             return result;
         }
+
+        //Log.d("SEARCH","PARAMS");
 
         for (PlantPoint p : points) {
             if (matchesFilter(p, filter)) {
