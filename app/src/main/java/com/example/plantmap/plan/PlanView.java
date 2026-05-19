@@ -35,7 +35,7 @@ public class PlanView extends View {
     private float planScale;               // масштаб плана относительно его оригинального размера
     private float planOriginalWidth, planOriginalHeight; // размеры Drawable
     private ArrayList<PlantPoint> points; // точки на плане
-    private static final float POINT_RADIUS = 7f; // константа радиуса для рисования
+    private static final float POINT_RADIUS = 4f; // константа радиуса для рисования
     private static final float HIT_RADIUS = POINT_RADIUS * 3f; // константа для попаданию в точку, чтобы не мучаться с "пиксель в пиксель"
     private EditMode currentMode = EditMode.VIEW; // режимы, по умолчанию ПРОСМОТР
     private PlantPoint draggedPoint = null; // перетаскивание (в режиме рпадактирования зажал - перетащил - отпустил)
@@ -48,7 +48,7 @@ public class PlanView extends View {
     private ScaleGestureDetector scaleDetector;
     private float scaleFactor = 1.0f;  // текущий масштаб
     private final float MIN_SCALE = 1.0f;  // минимальный масштаб
-    private final float MAX_SCALE = 5.0f;  // максимальный масштаб
+    private final float MAX_SCALE = 8.0f;  // максимальный масштаб
     private float offsetX = 0f; // смещение плана по X
     private float offsetY = 0f; // смещение плана по Y
     private boolean isDraggingPlan = false; // флаг движения плана
@@ -60,6 +60,9 @@ public class PlanView extends View {
     private final Set<PlantPoint> searchResultsSet = new HashSet<>();
     private Paint searchStrokePaint; // ободка для точек, чтобы не конфликтовать с режимными окрасами
     private Context contextColors;
+    private float textSize = 7f; //размер шрифта
+    private float strokeWidth = 3f; // толщина линии
+    private float indentStroke = 2f; // отступ обводки
 
     // а был ли поиск вообще
     public interface SearchStateListener {
@@ -93,11 +96,11 @@ public class PlanView extends View {
         // точки
         paint = new Paint();
         paint.setColor(ContextCompat.getColor(context, R.color.default_color));
-        paint.setStrokeWidth(5f);        // толщина линии 5 пикселей
+        paint.setStrokeWidth(strokeWidth);        // толщина линии 5 пикселей
         // обводка поиска
         searchStrokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         searchStrokePaint.setStyle(Paint.Style.STROKE);
-        searchStrokePaint.setStrokeWidth(5f);
+        searchStrokePaint.setStrokeWidth(strokeWidth);
         searchStrokePaint.setColor(ContextCompat.getColor(context, R.color.search_highlight));
 
         // план территории
@@ -191,7 +194,7 @@ public class PlanView extends View {
         // ТОЧКИ
         Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         textPaint.setColor(ContextCompat.getColor(contextColors, R.color.point_text_default));      // цвет текста
-        textPaint.setTextSize(10f * planScale);           // размер шрифта, можно масштабировать
+        textPaint.setTextSize(textSize * planScale);           // размер шрифта, можно масштабировать
         textPaint.setTextAlign(Paint.Align.LEFT); // центрирование далее вручную
 
         for (PlantPoint p : points) {
@@ -212,7 +215,7 @@ public class PlanView extends View {
                 float screenX = pl + p.x * planScale;
                 float screenY = pt + p.y * planScale;
                 //float screenRadius = pointRadius * planScale + 4f;
-                float screenRadius = POINT_RADIUS * planScale + 4f;
+                float screenRadius = POINT_RADIUS * planScale + indentStroke;
 
                 canvas.drawCircle(
                         screenX,
