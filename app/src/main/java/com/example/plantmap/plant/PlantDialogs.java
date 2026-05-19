@@ -41,9 +41,12 @@ public class PlantDialogs {
         EditText dateInput = new EditText(context);
         dateInput.setHint("Дата обработки");
 
+        final Long[] processingDate = {null};
+
         DateCheckBoxUtil processHelper = new DateCheckBoxUtil(
-                processedCheckBox, dateInput,
-                date -> point.processingDate = date
+                processedCheckBox,
+                dateInput,
+                date -> processingDate[0] = date
         );
 
         // Подкормка
@@ -52,9 +55,12 @@ public class PlantDialogs {
         EditText feedingDateInput = new EditText(context);
         feedingDateInput.setHint("Дата подкормки");
 
+        final Long[] feedingDate = {null};
+
         DateCheckBoxUtil feedingHelper = new DateCheckBoxUtil(
-                feedingCheckBox, feedingDateInput,
-                date -> point.feedingDate = date
+                feedingCheckBox,
+                feedingDateInput,
+                date -> feedingDate[0] = date
         );
 
         ImeActionUtil.setupImeChain(
@@ -133,6 +139,9 @@ public class PlantDialogs {
 
                 point.plant = plant;
                 point.count = count;
+
+                point.processingDate = processingDate[0];
+                point.feedingDate = feedingDate[0];
 
                 long newId = repository.addPoint(point);
                 point.id = (int) newId;
