@@ -12,4 +12,6 @@
     <color name="point_selected">#FFFF00</color>
 
     <color name="search_highlight">#FF00FF</color>
+
+    <color name="grid_color">#5954FD</color>
 </resources>

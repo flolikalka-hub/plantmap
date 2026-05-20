@@ -48,7 +48,7 @@ public class PlanView extends View {
     private ScaleGestureDetector scaleDetector;
     private float scaleFactor = 1.0f;  // текущий масштаб
     private final float MIN_SCALE = 1.0f;  // минимальный масштаб
-    private final float MAX_SCALE = 8.0f;  // максимальный масштаб
+    private final float MAX_SCALE = 10.0f;  // максимальный масштаб
     private float offsetX = 0f; // смещение плана по X
     private float offsetY = 0f; // смещение плана по Y
     private boolean isDraggingPlan = false; // флаг движения плана
@@ -63,6 +63,10 @@ public class PlanView extends View {
     private float textSize = 7f; //размер шрифта
     private float strokeWidth = 3f; // толщина линии
     private float indentStroke = 2f; // отступ обводки
+
+    private static final float GRID_STEP_X = POINT_RADIUS*2f;   // шаг сетки по X (в единицах плана)
+    private static final float GRID_STEP_Y = POINT_RADIUS*2f;   // шаг сетки по Y
+    private Paint gridPaint;                        // кисть для линий сетки
 
     // а был ли поиск вообще
     public interface SearchStateListener {
@@ -109,6 +113,12 @@ public class PlanView extends View {
         planOriginalWidth = planDrawable.getIntrinsicWidth();
         planOriginalHeight = planDrawable.getIntrinsicHeight();
 
+        // СЕТКА
+        gridPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        gridPaint.setStyle(Paint.Style.STROKE);
+        gridPaint.setStrokeWidth(1f);
+        gridPaint.setColor(ContextCompat.getColor(context, R.color.grid_color));
+
         // точки
         points = new ArrayList<>(); // инициализируем
         points.clear();
@@ -122,6 +132,7 @@ public class PlanView extends View {
     // РЕЖИМЫ
     public void setEditMode(EditMode mode) {
         this.currentMode = mode;
+        invalidate();
     }
 
     // считаем размеры один раз
@@ -191,6 +202,18 @@ public class PlanView extends View {
             planDrawable.draw(canvas);
         }
 
+        // СЕТКА
+        if (currentMode == EditMode.ADD_POINT || currentMode == EditMode.EDIT_POINT) {
+            for (float x = 0; x <= planOriginalWidth; x += GRID_STEP_X) {
+                float screenX = pl + x * planScale;
+                canvas.drawLine(screenX, pt, screenX, pt + planHeight, gridPaint);
+            }
+            for (float y = 0; y <= planOriginalHeight; y += GRID_STEP_Y) {
+                float screenY = pt + y * planScale;
+                canvas.drawLine(pl, screenY, pl + planWidth, screenY, gridPaint);
+            }
+        }
+
         // ТОЧКИ
         Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         textPaint.setColor(ContextCompat.getColor(contextColors, R.color.point_text_default));      // цвет текста
@@ -246,14 +269,24 @@ public class PlanView extends View {
         canvas.restore();
     }
 
-
     // Логика тапа
     private void handleTap(float x, float y) {
         if (currentMode == EditMode.ADD_POINT) {
+            // Привязка к ближайшему узлу сетки
+            float snappedX = Math.round(x / GRID_STEP_X) * GRID_STEP_X;
+            float snappedY = Math.round(y / GRID_STEP_Y) * GRID_STEP_Y;
+
             if (!isInsidePlan(x, y)) {
                 showOutOfPlanWarning();
                 return;
             }
+
+            // Проверяем, нет ли уже точки в этом узле (допустим небольшой радиус 0.5f)
+            if (isPointAt(snappedX, snappedY)) {
+                showNodeOccupiedWarning();
+                return;
+            }
+
             // создать точку и открыть ввод данных
             PlantPoint pendingPoint = new PlantPoint(x, y);
 
@@ -290,6 +323,35 @@ public class PlanView extends View {
             }
             // если isDragging == true — значит, это было перемещение
         }
+    }
+
+    private boolean isPointAt(float x, float y) {
+        float tolerance = 2f; // можно сделать меньше шага сетки
+        for (PlantPoint p : points) {
+            if (Math.abs(p.x - x) < tolerance && Math.abs(p.y - y) < tolerance) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isPointAt(float x, float y, PlantPoint exclude) {
+        float tolerance = 2f; // небольшой допуск, как и в обычном isPointAt
+        for (PlantPoint p : points) {
+            if (p == exclude) continue;          // пропускаем исключаемую точку
+            if (Math.abs(p.x - x) < tolerance && Math.abs(p.y - y) < tolerance) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void showNodeOccupiedWarning() {
+        new AlertDialog.Builder(getContext())
+                .setTitle("Невозможно создать точку")
+                .setMessage("В этом узле сетки уже есть точка. Выберите другой узел.")
+                .setPositiveButton("ОК", null)
+                .show();
     }
 
     // подтверждение удаления
@@ -432,9 +494,31 @@ public class PlanView extends View {
                         float[] p = screenToPlan(x, y);
                         handleTap(p[0], p[1]);
                     }
+                    /*
                 } else if (draggedPoint != null && draggedPoint.id != 0) {
                     // координаты изменились, сохраняем в базе
                     repository.updatePoint(draggedPoint.id, draggedPoint);
+                }*/
+                } else if (draggedPoint != null) {
+                    // Привязка к сетке после отпускания
+                    float snappedX = Math.round(draggedPoint.x / GRID_STEP_X) * GRID_STEP_X;
+                    float snappedY = Math.round(draggedPoint.y / GRID_STEP_Y) * GRID_STEP_Y;
+
+                    // Проверяем, что узел свободен (исключая текущую точку)
+                    if (isInsidePlan(snappedX, snappedY) && !isPointAt(snappedX, snappedY, draggedPoint)) {
+                        draggedPoint.setX(snappedX);
+                        draggedPoint.setY(snappedY);
+                    } else if (!isInsidePlan(snappedX, snappedY)) {
+                        // Если узел за границей, оставляем точку на месте (по желанию)
+                    } else {
+                        // Узел занят – можно показать предупреждение (опционально)
+                        // Здесь просто не применяем привязку, оставляем точку там, где отпустили
+                    }
+
+                    // Сохраняем в БД только если координаты изменились или id != 0
+                    if (draggedPoint.id != 0) {
+                        repository.updatePoint(draggedPoint.id, draggedPoint);
+                    }
                 }
                 draggedPoint = null;
                 pressedPoint = null;
