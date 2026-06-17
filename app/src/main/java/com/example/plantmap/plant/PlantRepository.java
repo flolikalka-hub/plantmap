@@ -1,27 +1,23 @@
 package com.example.plantmap.plant;
 
-import com.example.plantmap.db.ColorDataAccess;
 import com.example.plantmap.db.DatabaseHelper;
 import com.example.plantmap.db.PlantDataAccess;
 import com.example.plantmap.db.PointDataAccess;
+import com.example.plantmap.model.FlowerColor;
 import com.example.plantmap.model.Plant;
 import com.example.plantmap.model.PlantPoint;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class PlantRepository {
     private final PlantDataAccess plantDa;
     private final PointDataAccess pointDa;
-    private final ColorDataAccess colorDa;
 
     public PlantRepository(DatabaseHelper dbHelper) {
         plantDa = new PlantDataAccess(dbHelper);
         pointDa = new PointDataAccess(dbHelper);
-        colorDa = new ColorDataAccess(dbHelper);
-    }
-
-    public ColorDataAccess getColorDataAccess() {
-        return colorDa;
     }
 
     public List<PlantPoint> getAllPoints() {
@@ -69,7 +65,7 @@ public class PlantRepository {
             String plType,
             String plGroup,
             Integer potVolume,
-            String flowerColorInput,
+            Integer flowerColorInput,
             String addInput) {
         return plantDa.searchPlants(
                 plName,
@@ -80,10 +76,6 @@ public class PlantRepository {
                 addInput);
     }
 
-    public List<String> getAllColorNames() {
-        return colorDa.getAllColorNames();
-    }
-
     // для избегания дубликатов (был ли изменен автокомплит)
     public boolean isPlantModified(Plant original, Plant modified) {
         if (original == null || modified == null) return true;
@@ -92,7 +84,7 @@ public class PlantRepository {
                 !safeEquals(original.type, modified.type) ||
                 !safeEquals(original.group, modified.group) ||
                 !java.util.Objects.equals(original.potVolume, modified.potVolume) ||
-                !safeEquals(original.flowerColor, modified.flowerColor) ||
+                !java.util.Objects.equals(original.flowerColorId, modified.flowerColorId) ||
                 !safeEquals(original.additionalInfo, modified.additionalInfo);
     }
 
@@ -106,7 +98,7 @@ public class PlantRepository {
         return pointDa.getTotalPlantCount();
     }
 
-    public int getFilteredPlantCount(String name, String type, String group, String color, Integer potVolume) {
+    public int getFilteredPlantCount(String name, String type, String group, Integer color, Integer potVolume) {
         return pointDa.getFilteredPlantCount(name, type, group, color, potVolume);
     }
 
@@ -133,5 +125,31 @@ public class PlantRepository {
     }
     public String getTypeByGroup(String group) {
         return plantDa.getTypeByGroup(group);
+    }
+
+    public List<String> getAllColorNames() {
+        return plantDa.getAllColorNames();
+    }
+
+    public List<FlowerColor> getAllColors() {
+        return plantDa.getAllColors();
+    }
+
+    public Map<Integer, String> getColorIdToNameMap() {
+        List<FlowerColor> colors = getAllColors();
+        Map<Integer, String> map = new HashMap<>();
+        for (FlowerColor c : colors) {
+            map.put(c.getId(), c.getName());
+        }
+        return map;
+    }
+
+    public Map<Integer, String> getColorIdToHexMap() {
+        List<FlowerColor> colors = getAllColors();
+        Map<Integer, String> map = new HashMap<>();
+        for (FlowerColor c : colors) {
+            map.put(c.getId(), c.getHex());
+        }
+        return map;
     }
 }

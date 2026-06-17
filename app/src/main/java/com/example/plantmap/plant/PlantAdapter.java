@@ -12,11 +12,11 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.plantmap.R;
-import com.example.plantmap.colors.ColorResolver;
 import com.example.plantmap.model.Plant;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class PlantAdapter extends RecyclerView.Adapter<PlantAdapter.PlantViewHolder> {
 
@@ -27,16 +27,22 @@ public class PlantAdapter extends RecyclerView.Adapter<PlantAdapter.PlantViewHol
     private Context context;
     private List<Plant> plants;
     private OnEditClickListener listener;
-    private ColorResolver colorResolver;
+
+    // Карты для преобразования ID цвета в название и hex-код
+    private Map<Integer, String> colorIdToName;
+    private Map<Integer, String> colorIdToHex;
 
     public PlantAdapter(Context context,
                         List<Plant> plants,
-                        ColorResolver colorResolver,
-                        OnEditClickListener listener) {
+                        OnEditClickListener listener){
         this.context = context;
         this.plants = plants;
         this.listener = listener;
-        this.colorResolver = colorResolver;
+    }
+
+    public void setColorMaps(Map<Integer, String> idToName, Map<Integer, String> idToHex) {
+        this.colorIdToName = idToName;
+        this.colorIdToHex = idToHex;
     }
 
     @NonNull
@@ -61,11 +67,7 @@ public class PlantAdapter extends RecyclerView.Adapter<PlantAdapter.PlantViewHol
         }
 
         // цвет цветка
-        try {
-            applyColor(holder.colorView, plant.flowerColor);
-        } catch (IllegalArgumentException e) {
-            holder.colorView.setBackgroundColor(android.R.attr.windowBackground);
-        }
+        applyColor(holder.colorView, plant.flowerColorId);
 
         // кнопка редактирования
         holder.editBtn.setOnClickListener(v -> {
@@ -74,13 +76,14 @@ public class PlantAdapter extends RecyclerView.Adapter<PlantAdapter.PlantViewHol
     }
 
     private String formatPlantTitle(Plant plant) {
-        /**
-         Подпись карточки - заголовок
-         */
+        //Подпись карточки - заголовок
         StringBuilder sb = new StringBuilder(plant.name);
         List<String> extras = new ArrayList<>();
-        if (plant.flowerColor != null && !plant.flowerColor.isEmpty())
-            extras.add(plant.flowerColor);
+
+        String colorName = colorIdToName != null ? colorIdToName.get(plant.flowerColorId) : null;
+        if (colorName != null && !colorName.isEmpty()) {
+            extras.add(colorName);
+        }
         if (plant.potVolume != null)
             extras.add(plant.potVolume + "л");
         if (!extras.isEmpty())
@@ -107,33 +110,35 @@ public class PlantAdapter extends RecyclerView.Adapter<PlantAdapter.PlantViewHol
         }
     }
 
-    // делаем градиентики
-    private void applyColor(View view, String flowerColor) {
-        if (flowerColor == null || flowerColor.isEmpty()) {
+    // красим
+    private void applyColor(View view, int flowerColorId) {
+        if (flowerColorId == 9) {
             view.setBackgroundColor(Color.TRANSPARENT);
             return;
         }
 
-        List<Integer> colors = colorResolver.resolveColors(flowerColor);
+        if (flowerColorId == 8) {
+            int[] rainbowColors = {
+                    Color.RED, Color.rgb(255, 165, 0), Color.YELLOW,
+                    Color.GREEN, Color.CYAN, Color.BLUE, Color.MAGENTA
+            };
+            GradientDrawable gd = new GradientDrawable(
+                    GradientDrawable.Orientation.LEFT_RIGHT, rainbowColors);
+            view.setBackground(gd);
+            return;
+        }
 
-        if (colors.isEmpty()) {
+        String hex = colorIdToHex != null ? colorIdToHex.get(flowerColorId) : null;
+        if (hex == null || hex.isEmpty()) {
             view.setBackgroundColor(Color.TRANSPARENT);
             return;
         }
 
-        if (colors.size() == 1) {
-            view.setBackgroundColor(colors.get(0));
-        } else {
-            int[] gradientColors = new int[colors.size()];
-            for (int i = 0; i < colors.size(); i++) {
-                gradientColors[i] = colors.get(i);
-            }
-
-            GradientDrawable drawable = new GradientDrawable(
-                    GradientDrawable.Orientation.LEFT_RIGHT,
-                    gradientColors
-            );
-            view.setBackground(drawable);
+        try {
+            int color = Color.parseColor(hex);
+            view.setBackgroundColor(color);
+        } catch (IllegalArgumentException e) {
+            view.setBackgroundColor(Color.TRANSPARENT);
         }
     }
 

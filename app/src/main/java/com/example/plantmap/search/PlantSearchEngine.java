@@ -35,7 +35,7 @@ public class PlantSearchEngine {
         return (f.name == null || f.name.isEmpty())
                 && (f.type == null || f.type.isEmpty())
                 && (f.group == null || f.group.isEmpty())
-                && (f.flowerColor == null || f.flowerColor.isEmpty())
+                && f.flowerColorId == null
                 && (f.additionalInfo == null || f.additionalInfo.isEmpty())
                 && f.potVolume == null
                 && f.count == null
@@ -84,7 +84,9 @@ public class PlantSearchEngine {
         if (!matchesText(plant.name, f.name)) return false;
         if (!matchesText(plant.type, f.type)) return false;
         if (!matchesText(plant.group, f.group)) return false;
-        if (!matchesText(plant.flowerColor, f.flowerColor)) return false;
+
+        if (f.flowerColorId != null && plant.flowerColorId != f.flowerColorId) return false;
+
         if (!matchesText(plant.additionalInfo, f.additionalInfo)) return false;
 
         if (f.potVolume != null && plant.potVolume != f.potVolume) return false;

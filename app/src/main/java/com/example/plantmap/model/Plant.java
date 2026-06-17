@@ -5,9 +5,9 @@ public class Plant {
     public String name;
     public String type;
     public Integer potVolume;
-    public String flowerColor;
-    public String group;            // plant_group
-    public String additionalInfo;   // additional_info
+    public String group;
+    public String additionalInfo;
+    public Integer flowerColorId;
 
     public Plant() {}
     @Override
@@ -17,13 +17,13 @@ public class Plant {
     public Plant(String name,
                  String type,
                  Integer potVolume,
-                 String flowerColor,
+                 Integer flowerColorId,
                  String group,
                  String additionalInfo) {
         this.name = name;
         this.type = type;
         this.potVolume = potVolume;
-        this.flowerColor = flowerColor;
+        this.flowerColorId = flowerColorId;
         this.group = group;
         this.additionalInfo = additionalInfo;
     }

@@ -156,7 +156,7 @@ public class StatisticsView {
                     String name = form.getNameInput().getText().toString();
                     String type = form.getTypeInput().getText().toString();
                     String group = form.getGroupInput().getText().toString();
-                    String color = form.getFlowerColorInput().getText().toString();
+                    Integer color = null;
                     Integer potVolume = null;
                     String potVolumeStr = form.getPotVolumeInput().getText().toString();
                     if (!potVolumeStr.isEmpty()) {
@@ -167,7 +167,7 @@ public class StatisticsView {
                             name.isEmpty() &&
                                     type.isEmpty() &&
                                     group.isEmpty() &&
-                                    color.isEmpty() &&
+                                    color == null &&
                                     potVolume == null;
 
                     if (allEmpty) {

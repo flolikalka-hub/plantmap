@@ -88,7 +88,9 @@ public class PointDataAccess {
         int pvIndex = c.getColumnIndexOrThrow("pot_volume");
         plant.potVolume = c.isNull(pvIndex) ? null : c.getInt(pvIndex);
 
-        plant.flowerColor = c.getString(c.getColumnIndexOrThrow("flower_color"));
+        int colorIndex = c.getColumnIndexOrThrow("flower_color");
+        plant.flowerColorId = c.isNull(colorIndex) ? 9 : c.getInt(colorIndex);
+
         plant.additionalInfo = c.getString(c.getColumnIndexOrThrow("additional_info"));
 
         PlantPoint point = new PlantPoint(
@@ -157,7 +159,7 @@ public class PointDataAccess {
         return total;
     }
 
-    public int getFilteredPlantCount(String name, String type, String group, String color, Integer potVolume) {
+    public int getFilteredPlantCount(String name, String type, String group, Integer color, Integer potVolume) {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
         StringBuilder sql = new StringBuilder(
@@ -179,9 +181,9 @@ public class PointDataAccess {
             sql.append(" AND v.plant_group = ?");
             args.add(group);
         }
-        if (color != null && !color.isEmpty()) {
+        if (color != null) {
             sql.append(" AND pl.flower_color = ?");
-            args.add(color);
+            args.add(String.valueOf(color));
         }
         if (potVolume != null) {
             sql.append(" AND pl.pot_volume = ?");

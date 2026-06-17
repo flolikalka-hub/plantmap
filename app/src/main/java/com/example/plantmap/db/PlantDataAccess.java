@@ -4,6 +4,7 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
+import com.example.plantmap.model.FlowerColor;
 import com.example.plantmap.model.Plant;
 
 import java.util.ArrayList;
@@ -13,6 +14,7 @@ public class PlantDataAccess {
     private final DatabaseHelper dbHelper;
 
     public PlantDataAccess(DatabaseHelper dbHelper) {
+
         this.dbHelper = dbHelper;
     }
 
@@ -26,7 +28,7 @@ public class PlantDataAccess {
         cv.put("name", plant.name);
         cv.put("variety_id", varietyId);
         cv.put("pot_volume", plant.potVolume);
-        cv.put("flower_color", plant.flowerColor);
+        cv.put("flower_color", plant.flowerColorId);
         cv.put("additional_info", plant.additionalInfo);
 
         return db.insert("plants", null, cv);
@@ -42,7 +44,7 @@ public class PlantDataAccess {
         cv.put("name", plant.name);
         cv.put("variety_id", varietyId);
         cv.put("pot_volume", plant.potVolume);
-        cv.put("flower_color", plant.flowerColor);
+        cv.put("flower_color", plant.flowerColorId);
         cv.put("additional_info", plant.additionalInfo);
 
         db.update("plants", cv, "id=?", new String[]{String.valueOf(plant.id)});
@@ -68,9 +70,15 @@ public class PlantDataAccess {
             p.group = c.getString(c.getColumnIndexOrThrow("plant_group"));
 
             int pvIndex = c.getColumnIndexOrThrow("pot_volume");
-            p.potVolume = c.isNull(pvIndex) ? null : c.getInt(pvIndex);
+            p.potVolume = c.isNull(pvIndex)
+                    ? null
+                    : c.getInt(pvIndex);
 
-            p.flowerColor = c.getString(c.getColumnIndexOrThrow("flower_color"));
+            int colorIndex = c.getColumnIndexOrThrow("flower_color");
+            p.flowerColorId = c.isNull(colorIndex)
+                    ? 9
+                    : c.getInt(colorIndex);
+
             p.additionalInfo = c.getString(c.getColumnIndexOrThrow("additional_info"));
             plants.add(p);
         }
@@ -100,7 +108,7 @@ public class PlantDataAccess {
         return canDelete;
     }
 
-    // Для проверки наличия растения, чтобы создавалось ноое растение при новом цвете цветка например
+    // Для проверки наличия растения, чтобы создавалось новое растение при новом цвете цветка например
     public Plant findPlantByAllFields(Plant plant) {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
         Plant result = null;
@@ -111,7 +119,7 @@ public class PlantDataAccess {
                         "COALESCE(name, '')=? AND " +
                         "COALESCE(type, '')=? AND " +
                         "COALESCE(plant_group, '')=? AND " +
-                        "COALESCE(flower_color, '')=? AND " +
+                        "flower_color=? AND " +
                         "COALESCE(additional_info, '')=?"
         );
 
@@ -119,7 +127,9 @@ public class PlantDataAccess {
         args.add(plant.name != null ? plant.name : "");
         args.add(plant.type != null ? plant.type : "");
         args.add(plant.group != null ? plant.group : "");
-        args.add(plant.flowerColor != null ? plant.flowerColor : "");
+
+        args.add(String.valueOf(plant.flowerColorId));
+
         args.add(plant.additionalInfo != null ? plant.additionalInfo : "");
 
         if (plant.potVolume == null) {
@@ -139,10 +149,15 @@ public class PlantDataAccess {
             result.group = cursor.getString(cursor.getColumnIndexOrThrow("v.plant_group"));
 
             int pvIndex = cursor.getColumnIndexOrThrow("pot_volume");
-            result.potVolume = cursor.isNull(pvIndex) ? null : cursor.getInt(pvIndex);
+            result.potVolume = cursor.isNull(pvIndex)
+                    ? null
+                    : cursor.getInt(pvIndex);
 
+            int colorIndex = cursor.getColumnIndexOrThrow("flower_color");
+            result.flowerColorId = cursor.isNull(colorIndex)
+                    ? 9
+                    : cursor.getInt(colorIndex);
 
-            result.flowerColor = cursor.getString(cursor.getColumnIndexOrThrow("flower_color"));
             result.additionalInfo = cursor.getString(cursor.getColumnIndexOrThrow("additional_info"));
         }
 
@@ -156,7 +171,7 @@ public class PlantDataAccess {
             String type,
             String group,
             Integer potVolume,
-            String flowerColor,
+            Integer flowerColorId,
             String additionalInfo
     ) {
         List<Plant> plants = new ArrayList<>();
@@ -185,9 +200,9 @@ public class PlantDataAccess {
             args.add(String.valueOf(potVolume));
         }
 
-        if (flowerColor != null && !flowerColor.isEmpty()) {
-            where.append(" AND flower_color LIKE ?");
-            args.add("%" + flowerColor + "%");
+        if (flowerColorId != null) {
+            where.append(" AND flower_color = ?");
+            args.add(String.valueOf(flowerColorId));
         }
 
         if (additionalInfo != null && !additionalInfo.isEmpty()) {
@@ -212,10 +227,15 @@ public class PlantDataAccess {
             p.group = c.getString(c.getColumnIndexOrThrow("plant_group"));
 
             int pvIndex = c.getColumnIndexOrThrow("pot_volume");
-            p.potVolume = c.isNull(pvIndex) ? null : c.getInt(pvIndex);
+            p.potVolume = c.isNull(pvIndex)
+                    ? null
+                    : c.getInt(pvIndex);
 
+            int colorIndex = c.getColumnIndexOrThrow("flower_color");
+            p.flowerColorId = c.isNull(colorIndex)
+                    ? 9
+                    : c.getInt(colorIndex);
 
-            p.flowerColor = c.getString(c.getColumnIndexOrThrow("flower_color"));
             p.additionalInfo = c.getString(c.getColumnIndexOrThrow("additional_info"));
             plants.add(p);
         }
@@ -292,5 +312,36 @@ public class PlantDataAccess {
         }
         c.close();
         return result;
+    }
+
+    // Простой контейнер для строки таблицы colors
+    public static class ColorInfo {
+        public int id;
+        public String name;
+        public String hex;
+    }
+
+    // Получить все цвета (id, name, hex)
+    public List<FlowerColor> getAllColors() {
+        List<FlowerColor> colors = new ArrayList<>();
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor c = db.rawQuery("SELECT id, name, hex FROM colors ORDER BY id", null);
+        while (c.moveToNext()) {
+            colors.add(new FlowerColor(c.getInt(0), c.getString(1), c.getString(2)));
+        }
+        c.close();
+        return colors;
+    }
+
+    // Только названия (для адаптера AutoCompleteTextView)
+    public List<String> getAllColorNames() {
+        List<String> names = new ArrayList<>();
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor c = db.rawQuery("SELECT name FROM colors ORDER BY id", null);
+        while (c.moveToNext()) {
+            names.add(c.getString(0));
+        }
+        c.close();
+        return names;
     }
 }

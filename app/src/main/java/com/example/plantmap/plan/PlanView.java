@@ -553,8 +553,8 @@ public class PlanView extends View {
                 : "";
 
         // для цвета (убираем null)
-        String colorStr = (point.plant.flowerColor != null)
-                ? point.plant.flowerColor.toString()
+        String colorStr = (point.plant.flowerColorId != null)
+                ? point.plant.flowerColorId.toString()
                 : "";
 
         // для доп инфы (убираем null)

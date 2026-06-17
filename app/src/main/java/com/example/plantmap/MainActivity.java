@@ -17,7 +17,6 @@ import androidx.fragment.app.Fragment;
 import com.example.plantmap.db.BackupDatabase;
 import com.example.plantmap.model.PlantPoint;
 import com.example.plantmap.plant.PlantRepository;
-import com.example.plantmap.ui.ColorsFragment;
 import com.example.plantmap.ui.DbFragment;
 import com.example.plantmap.ui.StatsFragment;
 import com.example.plantmap.ui.PlanFragment;
@@ -154,10 +153,6 @@ public class MainActivity extends AppCompatActivity {
             fragment = new DbFragment();
             tag = "db_fragment";
             toolbar.setTitle("Растения");
-        } else if (menuItemId == R.id.nav_colors) {
-            fragment = new ColorsFragment();
-            tag = "colors_fragment";
-            toolbar.setTitle("Цвета");
         } else if (menuItemId == R.id.nav_stats) {
             fragment = new StatsFragment();
             tag = "stats_fragment";

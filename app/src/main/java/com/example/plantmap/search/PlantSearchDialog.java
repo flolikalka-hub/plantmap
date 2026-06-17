@@ -131,19 +131,13 @@ public class PlantSearchDialog {
                 SearchFilter filter = new SearchFilter();
 
                 // Значения из универсальной формы
-                /*
-                Plant selectedPlant = form.getSelectedPlant();
-                if (selectedPlant != null) {
-                    filter.name = selectedPlant.name;
-                    filter.type = selectedPlant.type;
-                    filter.group = selectedPlant.group;
-                    filter.flowerColor = selectedPlant.flowerColor;
-                    filter.potVolume = selectedPlant.potVolume;
-                }*/
                 filter.name = form.nameInput.getText().toString().trim();
                 filter.type = form.typeInput.getText().toString().trim();
                 filter.group = form.groupInput.getText().toString().trim();
-                filter.flowerColor = form.flowerColorInput.getText().toString().trim();
+
+                String colorText = form.flowerColorInput.getText().toString().trim();
+                filter.flowerColorId = colorText.isEmpty() ? null : form.getSelectedFlowerColorId();
+
                 filter.additionalInfo = form.additionalInfoInput.getText().toString().trim();
 
                 filter.potVolume = parseIntOrNull(

@@ -10,7 +10,7 @@ import java.io.*;
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DB_NAME = "PlantMap_DB.db";
-    private static final int DB_VERSION = 26;
+    private static final int DB_VERSION = 27;
     private final Context context;
     private String dbPath;
 
@@ -27,7 +27,18 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     private void copyDatabaseIfNeeded() throws IOException {
         File dbFile = new File(dbPath);
-        if (dbFile.exists()) return; // БД уже скопирована
+
+        if (dbFile.exists()) {
+            SQLiteDatabase db = SQLiteDatabase.openDatabase(dbPath, null, SQLiteDatabase.OPEN_READONLY);
+            int version = db.getVersion();
+            db.close();
+
+            if (version >= DB_VERSION) {
+                return;
+            }
+
+            dbFile.delete();
+        }
 
         dbFile.getParentFile().mkdirs();
 
@@ -54,7 +65,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         for (int v = oldVersion + 1; v <= newVersion; v++) {
             switch (v) {
                 case 25: migrateTo25(db); break;
-                // case 26: migrateTo26(db); break;
                 default:
                     throw new IllegalStateException("Unknown migration from " + oldVersion + " to " + newVersion);
             }
@@ -75,14 +85,23 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         );
 
         db.execSQL(
+                "CREATE TABLE IF NOT EXISTS colors (" +
+                        "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                        "name TEXT, " +
+                        "hex TEXT" +
+                        ")"
+        );
+
+        db.execSQL(
                 "CREATE TABLE IF NOT EXISTS plants (" +
                         "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
                         "name TEXT NOT NULL, " +
                         "variety_id INTEGER NOT NULL, " +
                         "pot_volume INTEGER, " +
-                        "flower_color TEXT, " +
+                        "flower_color INTEGER DEFAULT 9, " +
                         "additional_info TEXT, " +
                         "is_builtin INTEGER NOT NULL DEFAULT 0, " +
+                        "FOREIGN KEY(flower_color) REFERENCES colors(id)," +
                         "FOREIGN KEY (variety_id) REFERENCES variety(id) ON DELETE CASCADE" +
                         ")"
         );

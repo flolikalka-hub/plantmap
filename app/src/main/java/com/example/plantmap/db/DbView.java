@@ -6,14 +6,16 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
 
+import java.util.Comparator;
+
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.plantmap.R;
-import com.example.plantmap.colors.ColorResolver;
-import com.example.plantmap.plant.PlantAdapter;
+import com.example.plantmap.model.FlowerColor;
 import com.example.plantmap.model.Plant;
+import com.example.plantmap.plant.PlantAdapter;
 import com.example.plantmap.plant.PlantRepository;
 import com.example.plantmap.plant.PlantUniversalForm;
 import com.example.plantmap.util.ImeActionUtil;
@@ -22,8 +24,10 @@ import com.example.plantmap.plan.PlanView;
 import com.example.plantmap.util.SoftInputUtil;
 
 import java.util.Collections;
-import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
 /**
  Экран со списком растений в виде карточек
  planView               ссылка на карту (чтобы обновлять после изменений)
@@ -44,7 +48,6 @@ public class DbView {
     private SearchStateListener searchListener;
 
     private PlantRepository repository;
-    private ColorResolver colorResolver;
 
     public DbView(Context context,
                   PlanView planView,
@@ -52,9 +55,6 @@ public class DbView {
         this.context = context;
         this.planView = planView;
         this.repository = repository;
-
-        ColorDataAccess colorDa = repository.getColorDataAccess();
-        colorResolver = new ColorResolver(colorDa);
     }
 
     public View createDbView() {
@@ -102,7 +102,6 @@ public class DbView {
         PlantAdapter adapter = new PlantAdapter(
                 context,
                 plants,
-                colorResolver,
                 plant -> showPlantDialog(plant, recyclerView));
         recyclerView.setAdapter(adapter);
         if (searchListener != null) {
@@ -222,8 +221,11 @@ public class DbView {
     public void showSearchDialog() {
         // Создаем форму поиска (используем ту же PlantUniversalForm)
         PlantUniversalForm form = new PlantUniversalForm(context, repository);
-        // Очищаем поля, если они заполнились предыдущими значениями
-        form.fillFromPlant(new Plant());
+
+        Plant emptyPlant = new Plant();
+        emptyPlant.flowerColorId = 9; // любое валидное значение, форма не упадет
+        form.fillFromPlant(emptyPlant);
+        form.getFlowerColorInput().setText(""); // для поиска цвет не выбран - любой цвет
 
         AlertDialog dialog = new AlertDialog.Builder(context)
                 .setTitle("Поиск растений")
@@ -241,7 +243,17 @@ public class DbView {
                 String name = form.getNameInput().getText().toString().trim();
                 String type = form.getTypeInput().getText().toString().trim();
                 String group = form.getGroupInput().getText().toString().trim();
-                String flowerColor = form.getFlowerColorInput().getText().toString().trim();
+
+                Integer flowerColorId = null;
+                String flowerColorStr = form.getFlowerColorInput().getText().toString().trim();
+                if (!flowerColorStr.isEmpty()) {
+                    Map<String, Integer> nameToId = new HashMap<>();
+                    for (FlowerColor c : repository.getAllColors()) {
+                        nameToId.put(c.getName(), c.getId());
+                    }
+                    flowerColorId = nameToId.get(flowerColorStr); // останется null, если не найдено
+                }
+
                 String addInfo = form.getAdditionalInfoInput().getText().toString().trim();
 
                 Integer potVolume = null;
@@ -254,7 +266,12 @@ public class DbView {
 
                 // Выполняем поиск
                 List<Plant> result = repository.searchPlants(
-                        name, type, group, potVolume, flowerColor, addInfo
+                        name,
+                        type,
+                        group,
+                        potVolume,
+                        flowerColorId,
+                        addInfo
                 );
 
                 if (searchListener != null) {
@@ -264,7 +281,6 @@ public class DbView {
                 PlantAdapter adapter = new PlantAdapter(
                         context,
                         result,
-                        colorResolver,
                         plant -> showPlantDialog(plant, recyclerView)
                 );
                 recyclerView.setAdapter(adapter);

@@ -16,7 +16,7 @@ android {
         applicationId = "com.example.plantmap"
         minSdk = 29 // android 10
         targetSdk = 36
-        versionCode = 45
+        versionCode = 46
         versionName = "Release-2.3.7"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -63,5 +63,4 @@ dependencies {
     testImplementation(libs.junit) // тесты комп
     androidTestImplementation(libs.ext.junit) // тесты тел
     androidTestImplementation(libs.espresso.core) // имитация действий пользователя
-    implementation(libs.colorpickerview) // палитра для выбора цвета
 }

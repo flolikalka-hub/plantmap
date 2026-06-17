@@ -10,11 +10,15 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.view.inputmethod.InputMethodManager;
 
+import com.example.plantmap.model.FlowerColor;
 import com.example.plantmap.model.Plant;
 import com.example.plantmap.util.ImeActionUtil;
 import com.example.plantmap.util.LayoutUtils;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class PlantUniversalForm {
 
@@ -28,8 +32,12 @@ public class PlantUniversalForm {
     private LinearLayout rootLayout;
     private ScrollView scrollContainer;
     private Plant selectedPlantFromAutocomplete;
-
+    private int selectedFlowerColorId = 9; // по умолчанию «неизвестный»
+    // Карты для конвертации название ↔ ID
+    private Map<String, Integer> colorNameToIdMap = new HashMap<>();
+    private Map<Integer, String> idToColorNameMap = new HashMap<>();
     public Plant getSelectedPlant() {
+
         return selectedPlantFromAutocomplete;
     }
 
@@ -61,6 +69,31 @@ public class PlantUniversalForm {
         additionalInfoInput.setHint("Дополнительная информация");
 
         // адаптеры
+        // Получаем все цвета из репозитория
+        List<FlowerColor> allColors = repository.getAllColors();
+        List<String> colorNames = new ArrayList<>();
+        for (FlowerColor c : allColors) {
+            colorNames.add(c.getName());
+            colorNameToIdMap.put(c.getName(), c.getId());
+            idToColorNameMap.put(c.getId(), c.getName());
+        }
+
+        ArrayAdapter<String> colorAdapter =
+                new ArrayAdapter<>(
+                        context,
+                        android.R.layout.simple_dropdown_item_1line,
+                        colorNames
+                );
+        flowerColorInput.setAdapter(colorAdapter);
+        flowerColorInput.setThreshold(1);
+
+        // При выборе цвета из выпадающего списка запоминаем его ID
+        flowerColorInput.setOnItemClickListener((parent, view, position, id) -> {
+            String selectedName = (String) parent.getItemAtPosition(position);
+            Integer colorId = colorNameToIdMap.get(selectedName);
+            selectedFlowerColorId = (colorId != null) ? colorId : 9;
+        });
+
         List<Plant> plants = repository.getAllPlants();
         ArrayAdapter<Plant> plantAdapter =
                 new ArrayAdapter<>(
@@ -71,17 +104,6 @@ public class PlantUniversalForm {
 
         nameInput.setAdapter(plantAdapter);
         nameInput.setThreshold(1);
-
-        List<String> colorNames = repository.getAllColorNames();
-        ArrayAdapter<String> colorAdapter =
-                new ArrayAdapter<>(
-                        context,
-                        android.R.layout.simple_dropdown_item_1line,
-                        colorNames
-                );
-
-        flowerColorInput.setAdapter(colorAdapter);
-        flowerColorInput.setThreshold(1);
 
         List<String> types = repository.getAllTypes();
         ArrayAdapter<String> typeAdapter =
@@ -152,7 +174,7 @@ public class PlantUniversalForm {
         potVolumeInput.setText(plant.potVolume != null && plant.potVolume > 0
                 ? String.valueOf(plant.potVolume)
                 : "");
-        flowerColorInput.setText(plant.flowerColor != null ? plant.flowerColor : "");
+        flowerColorInput.setText(getColorNameById(plant.flowerColorId));
         additionalInfoInput.setText(plant.additionalInfo != null ? plant.additionalInfo : "");
     }
 
@@ -174,10 +196,30 @@ public class PlantUniversalForm {
             }
         }
 
-        p.flowerColor = flowerColorInput.getText().toString().trim();
+        p.flowerColorId = getColorIdFromInput();
         p.additionalInfo = additionalInfoInput.getText().toString().trim();
 
         return p;
+    }
+
+    // Вспомогательные методы для работы с цветом
+    private String getColorNameById(int colorId) {
+        String name = idToColorNameMap.get(colorId);
+        return name != null ? name : "";
+    }
+
+    private int getColorIdFromInput() {
+        String input = flowerColorInput.getText().toString().trim();
+        if (input.isEmpty()) {
+            return 9;
+        }
+        Integer id = colorNameToIdMap.get(input);
+        return id != null ? id : 9;
+    }
+
+    // Метод для получения текущего выбранного ID цвета (можно использовать извне)
+    public int getSelectedFlowerColorId() {
+        return getColorIdFromInput();
     }
 
     // чтобы получать все эти поля
