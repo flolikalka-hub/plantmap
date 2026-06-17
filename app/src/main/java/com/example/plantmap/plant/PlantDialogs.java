@@ -68,7 +68,6 @@ public class PlantDialogs {
                 form.typeInput,
                 form.groupInput,
                 form.potVolumeInput,
-                form.flowerColorInput,
                 form.additionalInfoInput,
                 countInput);
 

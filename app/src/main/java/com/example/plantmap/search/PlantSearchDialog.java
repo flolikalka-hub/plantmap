@@ -8,6 +8,7 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
 
+import com.example.plantmap.model.FlowerColor;
 import com.example.plantmap.model.Plant;
 import com.example.plantmap.model.PlantPoint;
 import com.example.plantmap.model.SearchFilter;
@@ -19,8 +20,10 @@ import com.example.plantmap.util.SoftInputUtil;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 public class PlantSearchDialog {
@@ -41,6 +44,7 @@ public class PlantSearchDialog {
 
         // Универсальная форма для выбора/автокомплита растения
         PlantUniversalForm form = new PlantUniversalForm(context, repository);
+        form.setShowAllColorsOption(true);  // для поиска добавляем "Ллбой"
 
         // Количество
         EditText countInput = new EditText(context);
@@ -104,7 +108,6 @@ public class PlantSearchDialog {
                 form.typeInput,
                 form.groupInput,
                 form.potVolumeInput,
-                form.flowerColorInput,
                 form.additionalInfoInput,
                 countInput);
 
@@ -136,7 +139,14 @@ public class PlantSearchDialog {
                 filter.group = form.groupInput.getText().toString().trim();
 
                 String colorText = form.flowerColorInput.getText().toString().trim();
-                filter.flowerColorId = colorText.isEmpty() ? null : form.getSelectedFlowerColorId();
+                filter.flowerColorId = null;
+                if (!colorText.isEmpty() && !"любой".equals(colorText)) {
+                    Map<String, Integer> nameToId = new HashMap<>();
+                    for (FlowerColor c : repository.getAllColors()) {
+                        nameToId.put(c.getName(), c.getId());
+                    }
+                    filter.flowerColorId = nameToId.get(colorText);
+                }
 
                 filter.additionalInfo = form.additionalInfoInput.getText().toString().trim();
 

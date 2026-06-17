@@ -7,8 +7,10 @@ import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.app.AlertDialog;
 import android.widget.ScrollView;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.TextView;
 
 import com.example.plantmap.model.FlowerColor;
 import com.example.plantmap.model.Plant;
@@ -26,7 +28,7 @@ public class PlantUniversalForm {
     public AutoCompleteTextView typeInput;
     public AutoCompleteTextView groupInput;
     public EditText potVolumeInput;
-    public AutoCompleteTextView flowerColorInput;
+    public TextView flowerColorInput;
     public EditText additionalInfoInput;
 
     private LinearLayout rootLayout;
@@ -36,6 +38,8 @@ public class PlantUniversalForm {
     // Карты для конвертации название ↔ ID
     private Map<String, Integer> colorNameToIdMap = new HashMap<>();
     private Map<Integer, String> idToColorNameMap = new HashMap<>();
+    private boolean showAllColorsOption = false;
+    private List<String> originalColorNames; // сохраним исходный список
     public Plant getSelectedPlant() {
 
         return selectedPlantFromAutocomplete;
@@ -62,8 +66,12 @@ public class PlantUniversalForm {
         potVolumeInput.setHint("Литраж горшка");
         potVolumeInput.setInputType(InputType.TYPE_CLASS_NUMBER);
 
-        flowerColorInput = new AutoCompleteTextView(context);
+        flowerColorInput = new TextView(context);
         flowerColorInput.setHint("Цвет цветка");
+        flowerColorInput.setClickable(true);
+        flowerColorInput.setFocusable(true);
+        flowerColorInput.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
+        flowerColorInput.setPadding(16, 16, 0, 16);
 
         additionalInfoInput = new EditText(context);
         additionalInfoInput.setHint("Дополнительная информация");
@@ -77,22 +85,13 @@ public class PlantUniversalForm {
             colorNameToIdMap.put(c.getName(), c.getId());
             idToColorNameMap.put(c.getId(), c.getName());
         }
+        this.originalColorNames = new ArrayList<>(colorNames);
 
-        ArrayAdapter<String> colorAdapter =
-                new ArrayAdapter<>(
-                        context,
-                        android.R.layout.simple_dropdown_item_1line,
-                        colorNames
-                );
-        flowerColorInput.setAdapter(colorAdapter);
-        flowerColorInput.setThreshold(1);
+        // По умолчанию устанавливаем "неизвестный"
+        selectedFlowerColorId = 9;
 
-        // При выборе цвета из выпадающего списка запоминаем его ID
-        flowerColorInput.setOnItemClickListener((parent, view, position, id) -> {
-            String selectedName = (String) parent.getItemAtPosition(position);
-            Integer colorId = colorNameToIdMap.get(selectedName);
-            selectedFlowerColorId = (colorId != null) ? colorId : 9;
-        });
+        // При клике показываем диалог выбора
+        flowerColorInput.setOnClickListener(v -> showColorPickerDialog(context));
 
         List<Plant> plants = repository.getAllPlants();
         ArrayAdapter<Plant> plantAdapter =
@@ -149,7 +148,6 @@ public class PlantUniversalForm {
                 typeInput,
                 groupInput,
                 potVolumeInput,
-                flowerColorInput,
                 additionalInfoInput);
 
         // сборка
@@ -165,6 +163,43 @@ public class PlantUniversalForm {
         return scrollContainer;
     }
 
+    private void showColorPickerDialog(Context context) {
+        List<String> items = new ArrayList<>();
+        if (showAllColorsOption) {
+            items.add("любой");
+        }
+        items.addAll(originalColorNames);
+
+        new AlertDialog.Builder(context)
+                .setTitle("Выберите цвет")
+                .setItems(items.toArray(new String[0]), (dialog, which) -> {
+                    String selected = items.get(which);
+                    flowerColorInput.setText(selected);
+                    // запоминаем ID
+                    if ("любой".equals(selected)) {
+                        selectedFlowerColorId = 9; // или специальное значение? Для поиска оно не используется.
+                        // Оставим 9, но при getColorIdFromInput() пустая строка даст 9.
+                    } else {
+                        Integer colorId = colorNameToIdMap.get(selected);
+                        selectedFlowerColorId = (colorId != null) ? colorId : 9;
+                    }
+                })
+                .show();
+    }
+
+    // Метод setShowAllColorsOption теперь только переключает флаг и, если нужно, сбрасывает текст
+    public void setShowAllColorsOption(boolean show) {
+        if (show == showAllColorsOption) return;
+        showAllColorsOption = show;
+        if (!show) {
+            // если отключаем опцию, возвращаем "неизвестный", если был "Любой"
+            if ("любой".equals(flowerColorInput.getText().toString())) {
+                flowerColorInput.setText("неизвестный");
+                selectedFlowerColorId = 9;
+            }
+        }
+    }
+
     public void fillFromPlant(Plant plant) {
         if (plant == null) return;
 
@@ -174,7 +209,10 @@ public class PlantUniversalForm {
         potVolumeInput.setText(plant.potVolume != null && plant.potVolume > 0
                 ? String.valueOf(plant.potVolume)
                 : "");
-        flowerColorInput.setText(getColorNameById(plant.flowerColorId));
+
+        int colorId = plant.flowerColorId != null ? plant.flowerColorId : 9;
+        flowerColorInput.setText(getColorNameById(colorId));
+
         additionalInfoInput.setText(plant.additionalInfo != null ? plant.additionalInfo : "");
     }
 
@@ -239,7 +277,7 @@ public class PlantUniversalForm {
         return potVolumeInput;
     }
 
-    public AutoCompleteTextView getFlowerColorInput() {
+    public TextView getFlowerColorInput() {
         return flowerColorInput;
     }
 

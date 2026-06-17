@@ -221,11 +221,8 @@ public class DbView {
     public void showSearchDialog() {
         // Создаем форму поиска (используем ту же PlantUniversalForm)
         PlantUniversalForm form = new PlantUniversalForm(context, repository);
-
-        Plant emptyPlant = new Plant();
-        emptyPlant.flowerColorId = 9; // любое валидное значение, форма не упадет
-        form.fillFromPlant(emptyPlant);
-        form.getFlowerColorInput().setText(""); // для поиска цвет не выбран - любой цвет
+        form.fillFromPlant(new Plant());
+        form.setShowAllColorsOption(true); // включаем пункт "любой"
 
         AlertDialog dialog = new AlertDialog.Builder(context)
                 .setTitle("Поиск растений")
@@ -246,12 +243,12 @@ public class DbView {
 
                 Integer flowerColorId = null;
                 String flowerColorStr = form.getFlowerColorInput().getText().toString().trim();
-                if (!flowerColorStr.isEmpty()) {
+                if (!flowerColorStr.isEmpty() && !"любой".equals(flowerColorStr)) {
                     Map<String, Integer> nameToId = new HashMap<>();
                     for (FlowerColor c : repository.getAllColors()) {
                         nameToId.put(c.getName(), c.getId());
                     }
-                    flowerColorId = nameToId.get(flowerColorStr); // останется null, если не найдено
+                    flowerColorId = nameToId.get(flowerColorStr);
                 }
 
                 String addInfo = form.getAdditionalInfoInput().getText().toString().trim();
@@ -283,6 +280,7 @@ public class DbView {
                         result,
                         plant -> showPlantDialog(plant, recyclerView)
                 );
+                adapter.setColorMaps(repository.getColorIdToNameMap(), repository.getColorIdToHexMap());
                 recyclerView.setAdapter(adapter);
 
                 dialog.dismiss();
