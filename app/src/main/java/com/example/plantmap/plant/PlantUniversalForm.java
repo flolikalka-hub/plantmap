@@ -194,7 +194,6 @@ public class PlantUniversalForm {
         if (!show) {
             // если отключаем опцию, возвращаем "неизвестный", если был "Любой"
             if ("любой".equals(flowerColorInput.getText().toString())) {
-                flowerColorInput.setText("неизвестный");
                 selectedFlowerColorId = 9;
             }
         }

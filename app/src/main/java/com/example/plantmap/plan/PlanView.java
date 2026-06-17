@@ -553,9 +553,11 @@ public class PlanView extends View {
                 : "";
 
         // для цвета (убираем null)
-        String colorStr = (point.plant.flowerColorId != null)
-                ? point.plant.flowerColorId.toString()
-                : "";
+        String colorStr = "";
+        if (point.plant.flowerColorId != null) {
+            String colorName = repository.getColorIdToNameMap().get(point.plant.flowerColorId);
+            colorStr = (colorName != null) ? colorName : "";
+        }
 
         // для доп инфы (убираем null)
         String addInfoStr = (point.plant.additionalInfo != null)
