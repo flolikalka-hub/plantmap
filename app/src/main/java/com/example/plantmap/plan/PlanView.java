@@ -6,14 +6,20 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View; //базовый визуальный элемент
 import android.view.ViewConfiguration;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 import androidx.core.content.ContextCompat;
 
 import com.example.plantmap.R;
+import com.example.plantmap.db.yandex.PlantPhotoLoader;
 import com.example.plantmap.plant.PlantRepository;
 import com.example.plantmap.model.PlantPoint;
 import com.example.plantmap.search.PlantSearchDialog;
@@ -564,21 +570,54 @@ public class PlanView extends View {
                 ? point.plant.additionalInfo.toString()
                 : "";
 
-        String message = "Название сорта: " + point.plant.name + "\n" +
-                "Тип растения: " + point.plant.type + "\n" +
-                "Группа: " + point.plant.group + "\n" +
-                "Литраж горшка: " + potVolumeStr  + "\n" +
-                "Цвет цветка: " + colorStr + "\n" +
-                "Дополнительно: " + addInfoStr + "\n" +
-                "Количество в точке: " + point.count + "\n" +
-                "Дата обработки: " + dateStr + "\n" +
-                "Дата подкормки: " + feedingDateStr;
+        // макет
+        LayoutInflater inflater = LayoutInflater.from(context);
+        View dialogView = inflater.inflate(R.layout.dialog_plant_info, null);
 
-        new AlertDialog.Builder(context)
+        // Элементы
+        TextView tvName = dialogView.findViewById(R.id.tv_name);
+        TextView tvType = dialogView.findViewById(R.id.tv_type);
+        TextView tvGroup = dialogView.findViewById(R.id.tv_group);
+        TextView tvPotVolume = dialogView.findViewById(R.id.tv_pot_volume);
+        TextView tvColor = dialogView.findViewById(R.id.tv_color);
+        TextView tvAdditional = dialogView.findViewById(R.id.tv_additional);
+        TextView tvCount = dialogView.findViewById(R.id.tv_count);
+        TextView tvProcessingDate = dialogView.findViewById(R.id.tv_processing_date);
+        TextView tvFeedingDate = dialogView.findViewById(R.id.tv_feeding_date);
+        ImageView ivPhoto = dialogView.findViewById(R.id.iv_plant_photo);
+        Button btnClose = dialogView.findViewById(R.id.btn_close);
+
+        // Заполняем данными
+        tvName.append(point.plant.name);
+        tvType.append(point.plant.type);
+        tvGroup.append(point.plant.group);
+        tvPotVolume.append(potVolumeStr);
+        tvColor.append(colorStr);
+        tvAdditional.append(addInfoStr);
+        tvCount.append(String.valueOf(point.count));
+        tvProcessingDate.append(dateStr);
+        tvFeedingDate.append(feedingDateStr);
+
+        // Загрузка фото
+        if (point.plant.imagePublicKey != null && !point.plant.imagePublicKey.isEmpty()) {
+            Log.d("PLANT_DEBUG", "Ключ: " + point.plant.imagePublicKey);
+            ivPhoto.setVisibility(View.VISIBLE);
+            PlantPhotoLoader.loadPlantPhoto(context, point.plant, ivPhoto, null);
+        } else {
+        Log.d("PLANT_DEBUG", "Ключ отсутствует или пуст");
+        Log.d("PLANT_KEY", String.valueOf(point.plant.imagePublicKey));
+        }
+
+        // Создаём диалог без стандартных кнопок
+        AlertDialog dialog = new AlertDialog.Builder(context)
                 .setTitle("Информация о растении")
-                .setMessage(message)
-                .setPositiveButton("OK", null)
-                .show();
+                .setView(dialogView)
+                .create();   // не show()
+
+        // Обработчик для нашей кнопки
+        btnClose.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
     }
 
     // Понять, что попали в существующую точку

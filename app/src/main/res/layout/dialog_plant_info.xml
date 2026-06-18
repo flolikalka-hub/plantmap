@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:fillViewport="true"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Поля с данными -->
+        <TextView
+            android:id="@+id/tv_name"
+            style="@style/PlantInfoLine"
+            android:text="Название сорта: "/>
+
+        <TextView
+            android:id="@+id/tv_type"
+            style="@style/PlantInfoLine"
+            android:text="Тип растения: "/>
+
+        <TextView
+            android:id="@+id/tv_group"
+            style="@style/PlantInfoLine"
+            android:text="Группа: "/>
+
+        <TextView
+            android:id="@+id/tv_pot_volume"
+            style="@style/PlantInfoLine"
+            android:text="Литраж горшка: "/>
+
+        <TextView
+            android:id="@+id/tv_color"
+            style="@style/PlantInfoLine"
+            android:text="Цвет цветка: "/>
+
+        <TextView
+            android:id="@+id/tv_additional"
+            style="@style/PlantInfoLine"
+            android:text="Дополнительно: "/>
+
+        <TextView
+            android:id="@+id/tv_count"
+            style="@style/PlantInfoLine"
+            android:textStyle="bold"
+            android:text="Количество в точке: "/>
+
+        <TextView
+            android:id="@+id/tv_processing_date"
+            style="@style/PlantInfoLine"
+            android:textStyle="bold"
+            android:text="Дата обработки: "/>
+
+        <TextView
+            android:id="@+id/tv_feeding_date"
+            style="@style/PlantInfoLine"
+            android:textStyle="bold"
+            android:text="Дата подкормки: "/>
+
+        <!-- Картинка -->
+        <ImageView
+            android:id="@+id/iv_plant_photo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:adjustViewBounds="true"
+            android:layout_marginTop="12dp"
+            android:scaleType="fitCenter"
+            android:contentDescription="Фото растения"
+            android:visibility="gone"/>
+
+        <!-- Кнопка "Закрыть" -->
+        <Button
+            android:id="@+id/btn_close"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="ОК"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/btn_add_plant"
+            android:textColor="@color/btn_add_plant_txt"/>
+
+    </LinearLayout>
+</ScrollView>

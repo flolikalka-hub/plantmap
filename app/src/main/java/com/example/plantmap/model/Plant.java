@@ -8,6 +8,7 @@ public class Plant {
     public String group;
     public String additionalInfo;
     public Integer flowerColorId;
+    public String imagePublicKey;
 
     public Plant() {}
     @Override
@@ -19,12 +20,21 @@ public class Plant {
                  Integer potVolume,
                  Integer flowerColorId,
                  String group,
-                 String additionalInfo) {
+                 String additionalInfo,
+                 String imagePublicKey) {
         this.name = name;
         this.type = type;
         this.potVolume = potVolume;
         this.flowerColorId = flowerColorId;
         this.group = group;
         this.additionalInfo = additionalInfo;
+        this.imagePublicKey = imagePublicKey;
+    }
+    public String getImagePublicKey() {
+        return imagePublicKey;
+    }
+
+    public void setImagePublicKey(String imagePublicKey) {
+        this.imagePublicKey = imagePublicKey;
     }
 }

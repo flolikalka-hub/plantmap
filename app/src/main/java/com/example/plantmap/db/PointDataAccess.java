@@ -93,6 +93,9 @@ public class PointDataAccess {
 
         plant.additionalInfo = c.getString(c.getColumnIndexOrThrow("additional_info"));
 
+        int keyIndex = c.getColumnIndexOrThrow("public_key");
+        plant.imagePublicKey = c.isNull(keyIndex) ? null : c.getString(keyIndex);
+
         PlantPoint point = new PlantPoint(
                 c.getFloat(c.getColumnIndexOrThrow("x")),
                 c.getFloat(c.getColumnIndexOrThrow("y"))
@@ -124,7 +127,8 @@ public class PointDataAccess {
                         "v.plant_group, " +
                         "pl.pot_volume, " +
                         "pl.flower_color, " +
-                        "pl.additional_info " +
+                        "pl.additional_info, " +
+                        "pl.public_key " +
                         "FROM points p " +
                         "JOIN plants pl ON p.plant_id = pl.id " +
                         "LEFT JOIN variety v ON pl.variety_id = v.id";
@@ -215,7 +219,8 @@ public class PointDataAccess {
                         "v.plant_group, " +
                         "pl.pot_volume, " +
                         "pl.flower_color, " +
-                        "pl.additional_info " +
+                        "pl.additional_info, " +
+                        "pl.public_key " +
                         "FROM points p " +
                         "JOIN plants pl ON p.plant_id = pl.id " +
                         "LEFT JOIN variety v ON pl.variety_id = v.id " +
@@ -251,7 +256,8 @@ public class PointDataAccess {
                         "v.plant_group, " +
                         "pl.pot_volume, " +
                         "pl.flower_color, " +
-                        "pl.additional_info " +
+                        "pl.additional_info, " +
+                        "pl.public_key " +
                         "FROM points p " +
                         "JOIN plants pl ON p.plant_id = pl.id " +
                         "LEFT JOIN variety v ON pl.variety_id = v.id " +
@@ -284,7 +290,8 @@ public class PointDataAccess {
                         "v.plant_group, " +
                         "pl.pot_volume, " +
                         "pl.flower_color, " +
-                        "pl.additional_info " +
+                        "pl.additional_info, " +
+                        "pl.public_key " +
                         "FROM points p " +
                         "JOIN plants pl ON p.plant_id = pl.id " +
                         "LEFT JOIN variety v ON pl.variety_id = v.id " +
@@ -320,7 +327,8 @@ public class PointDataAccess {
                         "v.plant_group, " +
                         "pl.pot_volume, " +
                         "pl.flower_color, " +
-                        "pl.additional_info " +
+                        "pl.additional_info, " +
+                        "pl.public_key " +
                         "FROM points p " +
                         "JOIN plants pl ON p.plant_id = pl.id " +
                         "LEFT JOIN variety v ON pl.variety_id = v.id " +

@@ -10,7 +10,7 @@ import java.io.*;
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DB_NAME = "PlantMap_DB.db";
-    private static final int DB_VERSION = 27;
+    private static final int DB_VERSION = 28;
     private final Context context;
     private String dbPath;
 
@@ -101,6 +101,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                         "flower_color INTEGER DEFAULT 9, " +
                         "additional_info TEXT, " +
                         "is_builtin INTEGER NOT NULL DEFAULT 0, " +
+                        "public_key TEXT, " +
                         "FOREIGN KEY(flower_color) REFERENCES colors(id)," +
                         "FOREIGN KEY (variety_id) REFERENCES variety(id) ON DELETE CASCADE" +
                         ")"

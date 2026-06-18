@@ -30,6 +30,7 @@ public class PlantDataAccess {
         cv.put("pot_volume", plant.potVolume);
         cv.put("flower_color", plant.flowerColorId);
         cv.put("additional_info", plant.additionalInfo);
+        cv.put("image_public_key", plant.imagePublicKey);
 
         return db.insert("plants", null, cv);
     }
@@ -46,6 +47,7 @@ public class PlantDataAccess {
         cv.put("pot_volume", plant.potVolume);
         cv.put("flower_color", plant.flowerColorId);
         cv.put("additional_info", plant.additionalInfo);
+        cv.put("image_public_key", plant.imagePublicKey);
 
         db.update("plants", cv, "id=?", new String[]{String.valueOf(plant.id)});
     }
@@ -80,6 +82,9 @@ public class PlantDataAccess {
                     : c.getInt(colorIndex);
 
             p.additionalInfo = c.getString(c.getColumnIndexOrThrow("additional_info"));
+
+            p.imagePublicKey = c.getString(c.getColumnIndexOrThrow("public_key"));
+
             plants.add(p);
         }
 
@@ -159,6 +164,8 @@ public class PlantDataAccess {
                     : cursor.getInt(colorIndex);
 
             result.additionalInfo = cursor.getString(cursor.getColumnIndexOrThrow("additional_info"));
+
+            result.imagePublicKey = cursor.getString(cursor.getColumnIndexOrThrow("public_key"));
         }
 
         cursor.close();
@@ -237,6 +244,9 @@ public class PlantDataAccess {
                     : c.getInt(colorIndex);
 
             p.additionalInfo = c.getString(c.getColumnIndexOrThrow("additional_info"));
+
+            p.imagePublicKey = c.getString(c.getColumnIndexOrThrow("public_key"));
+
             plants.add(p);
         }
 
