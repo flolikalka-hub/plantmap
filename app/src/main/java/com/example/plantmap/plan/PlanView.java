@@ -600,12 +600,12 @@ public class PlanView extends View {
 
         // Загрузка фото
         if (point.plant.imagePublicKey != null && !point.plant.imagePublicKey.isEmpty()) {
-            Log.d("PLANT_DEBUG", "Ключ: " + point.plant.imagePublicKey);
+            //Log.d("PLANT_DEBUG", "Ключ: " + point.plant.imagePublicKey);
             ivPhoto.setVisibility(View.VISIBLE);
             PlantPhotoLoader.loadPlantPhoto(context, point.plant, ivPhoto, null);
         } else {
-        Log.d("PLANT_DEBUG", "Ключ отсутствует или пуст");
-        Log.d("PLANT_KEY", String.valueOf(point.plant.imagePublicKey));
+        //Log.d("PLANT_DEBUG", "Ключ отсутствует или пуст");
+        //Log.d("PLANT_KEY", String.valueOf(point.plant.imagePublicKey));
         }
 
         // Создаём диалог без стандартных кнопок
