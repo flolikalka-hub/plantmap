@@ -288,7 +288,7 @@ public class PlanView extends View {
             }
 
             // создать точку и открыть ввод данных
-            PlantPoint pendingPoint = new PlantPoint(x, y);
+            PlantPoint pendingPoint = new PlantPoint(snappedX, snappedY);
 
             PlantDialogs.showNewPlantDialog(
                     getContext(),
