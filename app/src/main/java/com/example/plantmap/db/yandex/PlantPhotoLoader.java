@@ -16,21 +16,15 @@ public class PlantPhotoLoader {
     private static final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     public static void loadPlantPhoto(Context context, Plant plant, ImageView imageView, Runnable onError) {
-        // 1. Проверяем интернет
-        if (!isNetworkAvailable(context)) {
-            imageView.setImageResource(R.drawable.loading_error); // заглушка
-            return;
-        }
-
-        // 2. Ставим плейсхолдер на время загрузки
+        // Ставим плейсхолдер на время загрузки
         Glide.with(context)
                 .load(R.drawable.loading)
                 .into(imageView);
 
-        // 3. Получаем прямую ссылку в фоновом потоке
+        // Получаем прямую ссылку в фоновом потоке
         executor.execute(() -> {
             String directUrl = YandexDiskHelper.getDirectUrl(plant.getImagePublicKey());
-            // 4. Возвращаемся в UI-поток
+            // Возвращаемся в UI-поток
             imageView.post(() -> {
                 if (directUrl != null) {
                     Glide.with(context)
