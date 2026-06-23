@@ -14,5 +14,9 @@
             android:id="@+id/download_db"
             android:title="Скачать базу"
             android:checkable="false"/>
+        <item
+            android:id="@+id/update_db"
+            android:title="Обновить растения"
+            android:checkable="false"/>
     </group>
 </menu>
