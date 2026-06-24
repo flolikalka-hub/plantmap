@@ -16,7 +16,7 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 
 import com.example.plantmap.db.BackupDatabase;
-import com.example.plantmap.db.UpdateDatabase;
+import com.example.plantmap.db.yandex.UpdateDatabase;
 import com.example.plantmap.model.PlantPoint;
 import com.example.plantmap.plant.PlantRepository;
 import com.example.plantmap.ui.DbFragment;

@@ -1,9 +1,10 @@
-package com.example.plantmap.db;
+package com.example.plantmap.db.dataaccess;
 
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
+import com.example.plantmap.db.DatabaseHelper;
 import com.example.plantmap.model.Plant;
 import com.example.plantmap.model.PlantPoint;
 

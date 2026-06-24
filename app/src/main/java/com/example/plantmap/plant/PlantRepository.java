@@ -1,8 +1,8 @@
 package com.example.plantmap.plant;
 
 import com.example.plantmap.db.DatabaseHelper;
-import com.example.plantmap.db.PlantDataAccess;
-import com.example.plantmap.db.PointDataAccess;
+import com.example.plantmap.db.dataaccess.PlantDataAccess;
+import com.example.plantmap.db.dataaccess.PointDataAccess;
 import com.example.plantmap.model.FlowerColor;
 import com.example.plantmap.model.Plant;
 import com.example.plantmap.model.PlantPoint;

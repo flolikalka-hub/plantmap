@@ -1,11 +1,11 @@
-package com.example.plantmap.db;
+package com.example.plantmap.db.yandex;
 
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.widget.Toast;
 
-import com.example.plantmap.db.yandex.YandexDiskHelper;
+import com.example.plantmap.db.DatabaseHelper;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
