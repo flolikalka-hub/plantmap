@@ -1,5 +1,6 @@
 package com.example.plantmap;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -24,6 +25,7 @@ import com.example.plantmap.ui.PlanFragment;
 import com.google.android.material.navigation.NavigationView;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 /**
  Главный экран, запускаемый первым
@@ -39,6 +41,9 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         repository = App.getInstance().getRepository();
+
+        // Однократная миграция координат
+        migratePointsIfNeeded();
 
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);/* запрет
         на автоматическое расставление отступов, далее настроено вручную */
@@ -174,5 +179,22 @@ public class MainActivity extends AppCompatActivity {
                 .beginTransaction()
                 .replace(R.id.main_container, fragment, tag)
                 .commit();
+    }
+    private void migratePointsIfNeeded() {
+        SharedPreferences prefs = getSharedPreferences("migration", MODE_PRIVATE);
+        if (prefs.getBoolean("density_migrated", false)) return;
+
+        float oldDensity = 2.8125f;   // плотность A16
+        float scale = 1f / oldDensity; // коэффициент приведения к эталону
+
+        List<PlantPoint> allPoints = repository.getAllPoints();
+        for (PlantPoint p : allPoints) {
+            p.setX(p.x * scale);
+            p.setY(p.y * scale);
+            repository.updatePoint(p.id, p);
+        }
+
+        // помечаем, что миграция выполнена
+        prefs.edit().putBoolean("density_migrated", true).apply();
     }
 }

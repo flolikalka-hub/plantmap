@@ -1,5 +1,6 @@
 package com.example.plantmap.ui;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -18,6 +19,7 @@ import com.example.plantmap.model.PlantPoint;
 import com.example.plantmap.plan.EditMode;
 import com.example.plantmap.plan.PlanView;
 
+import java.util.List;
 import java.util.Set;
 
 public class PlanFragment extends BaseFragment {
@@ -180,5 +182,4 @@ public class PlanFragment extends BaseFragment {
             pendingSearchResults = points;
         }
     }
-
 }

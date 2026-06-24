@@ -30,6 +30,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
@@ -41,7 +42,8 @@ public class PlanView extends View {
     private float planScale;               // масштаб плана относительно его оригинального размера
     private float planOriginalWidth, planOriginalHeight; // размеры Drawable
     private ArrayList<PlantPoint> points; // точки на плане
-    private static final float POINT_RADIUS = 4f; // константа радиуса для рисования
+    private static float density = 2.8125f;
+    private static final float POINT_RADIUS = 4f / density; // константа радиуса для рисования
     private static final float HIT_RADIUS = POINT_RADIUS * 3f; // константа для попаданию в точку, чтобы не мучаться с "пиксель в пиксель"
     private EditMode currentMode = EditMode.VIEW; // режимы, по умолчанию ПРОСМОТР
     private PlantPoint draggedPoint = null; // перетаскивание (в режиме рпадактирования зажал - перетащил - отпустил)
@@ -66,9 +68,9 @@ public class PlanView extends View {
     private final Set<PlantPoint> searchResultsSet = new HashSet<>();
     private Paint searchStrokePaint; // ободка для точек, чтобы не конфликтовать с режимными окрасами
     private Context contextColors;
-    private float textSize = 7f; //размер шрифта
-    private float strokeWidth = 3f; // толщина линии
-    private float indentStroke = 2f; // отступ обводки
+    private float textSize = 7f / density; //размер шрифта
+    private float strokeWidth = 3f / density; // толщина линии
+    private float indentStroke = 2f / density; // отступ обводки
 
     private static final float GRID_STEP_X = POINT_RADIUS*2f;   // шаг сетки по X (в единицах плана)
     private static final float GRID_STEP_Y = POINT_RADIUS*2f;   // шаг сетки по Y
@@ -116,8 +118,10 @@ public class PlanView extends View {
         // план территории
         planDrawable = ContextCompat.getDrawable(context, R.drawable.terr_plan);
         // получаем оригинальные размеры
-        planOriginalWidth = planDrawable.getIntrinsicWidth();
-        planOriginalHeight = planDrawable.getIntrinsicHeight();
+//        planOriginalWidth = planDrawable.getIntrinsicWidth();
+//        planOriginalHeight = planDrawable.getIntrinsicHeight();
+        planOriginalWidth = 453f;
+        planOriginalHeight = 687f;
 
         // СЕТКА
         gridPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -731,5 +735,4 @@ public class PlanView extends View {
     public boolean isSearchActive() {
         return searchActive;
     }
-
 }
