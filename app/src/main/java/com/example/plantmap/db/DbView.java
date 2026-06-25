@@ -103,6 +103,7 @@ public class DbView {
                 context,
                 plants,
                 plant -> showPlantDialog(plant, recyclerView));
+        adapter.setColorMaps(repository.getColorIdToNameMap(), repository.getColorIdToHexMap());
         recyclerView.setAdapter(adapter);
         if (searchListener != null) {
             searchListener.onSearchCleared();
