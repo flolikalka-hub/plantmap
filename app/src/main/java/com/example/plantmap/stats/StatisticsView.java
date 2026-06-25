@@ -19,6 +19,7 @@ import com.example.plantmap.model.StatItem;
 import com.example.plantmap.plant.PlantRepository;
 import com.example.plantmap.plant.PlantUniversalForm;
 import com.example.plantmap.plan.PlanView;
+import com.example.plantmap.util.InputValidators;
 import com.example.plantmap.util.LayoutUtils;
 
 import java.util.ArrayList;
@@ -144,6 +145,8 @@ public class StatisticsView {
     private  void  showFilteredCountDialog() {
         PlantUniversalForm form = new PlantUniversalForm(context, plantRepository);
 
+        form.setMode(PlantUniversalForm.MODE_SEARCH);
+
         LayoutUtils.ScrollableLayout scrollableLayout = LayoutUtils.createVerticalScrollView(context);
         scrollableLayout.layout.addView(form.getView());
 
@@ -156,11 +159,11 @@ public class StatisticsView {
                     String name = form.getNameInput().getText().toString();
                     String type = form.getTypeInput().getText().toString();
                     String group = form.getGroupInput().getText().toString();
+
                     Integer color = null;
-                    Integer potVolume = null;
-                    String potVolumeStr = form.getPotVolumeInput().getText().toString();
-                    if (!potVolumeStr.isEmpty()) {
-                        potVolume = Integer.parseInt(potVolumeStr);
+                    Integer potVolume = InputValidators.validatePositiveOptionalInt(form.getPotVolumeInput());
+                    if (potVolume == null && !form.getPotVolumeInput().getText().toString().trim().isEmpty()) {
+                        return; // ошибка уже показана валидатором
                     }
 
                     boolean allEmpty =

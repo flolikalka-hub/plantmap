@@ -9,13 +9,14 @@ public class PlantPoint {
     public int count;
     public Long processingDate;
     public Long feedingDate;
+    public Integer potVolume;
     public PlantPoint(float x, float y) {
         this.x = x;
         this.y = y;
         this.plant = new Plant();
 
         // по умолчанию — сегодня
-        this.processingDate = System.currentTimeMillis();
+        //this.processingDate = System.currentTimeMillis();
     }
     public float getX() {
         return x;
@@ -40,6 +41,9 @@ public class PlantPoint {
     public long getFeedingDate() {
         return feedingDate;
     }
+    public Integer getPotVolume() {
+        return potVolume;
+    }
 
     public void setProcessingDate(long processingDate) {
         this.processingDate = processingDate;
@@ -47,6 +51,9 @@ public class PlantPoint {
 
     public void setFeedingDate(long feedingDate) {
         this.feedingDate = feedingDate;
+    }
+    public void setPotVolume(Integer potVolume) {
+        this.potVolume = potVolume;
     }
 
     // для подсветки

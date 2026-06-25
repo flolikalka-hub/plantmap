@@ -84,8 +84,13 @@ public class PlantAdapter extends RecyclerView.Adapter<PlantAdapter.PlantViewHol
         if (colorName != null && !colorName.isEmpty()) {
             extras.add(colorName);
         }
-        if (plant.potVolume != null)
-            extras.add(plant.potVolume + "л");
+        if (plant.availablePotVolumes != null && !plant.availablePotVolumes.isEmpty()) {
+            List<String> volStrings = new ArrayList<>();
+            for (Integer vol : plant.availablePotVolumes) {
+                volStrings.add(vol + "л");
+            }
+            extras.add(String.join(", ", volStrings));
+        }
         if (!extras.isEmpty())
             sb.append(" (").append(String.join(", ", extras)).append(")");
         return sb.toString();

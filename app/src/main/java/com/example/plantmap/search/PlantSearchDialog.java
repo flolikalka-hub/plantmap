@@ -44,7 +44,8 @@ public class PlantSearchDialog {
 
         // Универсальная форма для выбора/автокомплита растения
         PlantUniversalForm form = new PlantUniversalForm(context, repository);
-        form.setShowAllColorsOption(true);  // для поиска добавляем "Ллбой"
+        form.setMode(PlantUniversalForm.MODE_SEARCH);
+        form.setShowAllColorsOption(true);  // для поиска добавляем "Любой"
 
         // Количество
         EditText countInput = new EditText(context);

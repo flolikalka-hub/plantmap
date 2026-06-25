@@ -42,8 +42,16 @@ public class PointDataAccess {
 
         cv.put("plant_id", point.plant.id);
 
-        long id = db.insert("points", null, cv); // insert возвращает id новой записи
-        return id; // метод возвращает id
+        // сохраняем выбранный объём горшка для точки
+        if (point.potVolume == null) {
+            cv.putNull("pot_volume");
+        } else {
+            cv.put("pot_volume", point.potVolume);
+        }
+
+        // insert возвращает id новой записи
+        long id = db.insert("points", null, cv);
+        return id;
     }
 
     // Обновление точки
@@ -69,6 +77,12 @@ public class PointDataAccess {
 
         cv.put("plant_id", point.plant.id);
 
+        if (point.potVolume == null) {
+            cv.putNull("pot_volume");
+        } else {
+            cv.put("pot_volume", point.potVolume);
+        }
+
         db.update("points", cv, "id=?", new String[]{String.valueOf(id)});
     }
 
@@ -78,16 +92,34 @@ public class PointDataAccess {
         db.delete("points", "id=?", new String[]{String.valueOf(id)});
     }
 
-    // убираем дублирование кода
+    // универсальное преобразование курсора в PlantPoint
     private PlantPoint mapFromCursor(Cursor c) {
+        // данные точки
+        float x = c.getFloat(c.getColumnIndexOrThrow("x"));
+        float y = c.getFloat(c.getColumnIndexOrThrow("y"));
+        PlantPoint point = new PlantPoint(x, y);
+
+        point.id = c.getInt(c.getColumnIndexOrThrow("id"));
+        point.count = c.getInt(c.getColumnIndexOrThrow("count"));
+
+        // processing_date
+        int pdIndex = c.getColumnIndexOrThrow("processing_date");
+        point.processingDate = c.isNull(pdIndex) ? null : c.getLong(pdIndex);
+
+        // feeding_date
+        int fdIndex = c.getColumnIndexOrThrow("feeding_date");
+        point.feedingDate = c.isNull(fdIndex) ? null : c.getLong(fdIndex);
+
+        // pot_volume – теперь из таблицы points
+        int pvIndex = c.getColumnIndexOrThrow("pot_volume");
+        point.potVolume = c.isNull(pvIndex) ? null : c.getInt(pvIndex);
+
+        // данные растения
         Plant plant = new Plant();
         plant.id = c.getInt(c.getColumnIndexOrThrow("plant_id"));
         plant.name = c.getString(c.getColumnIndexOrThrow("name"));
         plant.type = c.getString(c.getColumnIndexOrThrow("type"));
         plant.group = c.getString(c.getColumnIndexOrThrow("plant_group"));
-
-        int pvIndex = c.getColumnIndexOrThrow("pot_volume");
-        plant.potVolume = c.isNull(pvIndex) ? null : c.getInt(pvIndex);
 
         int colorIndex = c.getColumnIndexOrThrow("flower_color");
         plant.flowerColorId = c.isNull(colorIndex) ? 9 : c.getInt(colorIndex);
@@ -97,21 +129,10 @@ public class PointDataAccess {
         int keyIndex = c.getColumnIndexOrThrow("public_key");
         plant.imagePublicKey = c.isNull(keyIndex) ? null : c.getString(keyIndex);
 
-        PlantPoint point = new PlantPoint(
-                c.getFloat(c.getColumnIndexOrThrow("x")),
-                c.getFloat(c.getColumnIndexOrThrow("y"))
-        );
-        point.id = c.getInt(c.getColumnIndexOrThrow("id"));
-        point.count = c.getInt(c.getColumnIndexOrThrow("count"));
-
-        int pdIndex = c.getColumnIndexOrThrow("processing_date");
-        point.processingDate = c.isNull(pdIndex) ? null : c.getLong(pdIndex);
-
-        int fdIndex = c.getColumnIndexOrThrow("feeding_date");
-        point.feedingDate = c.isNull(fdIndex) ? null : c.getLong(fdIndex);
+        // availablePotVolumes пока оставляем пустым (будет заполняться отдельно при необходимости)
+        plant.availablePotVolumes = null;
 
         point.plant = plant;
-
         return point;
     }
 
@@ -121,17 +142,14 @@ public class PointDataAccess {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
         String sql =
-                "SELECT p.id, p.x, p.y, p.count, p.processing_date, p.feeding_date, " +
-                        "pl.id AS plant_id, " +
+                "SELECT p.*, pl.id AS plant_id, " +
                         "pl.name, " +
                         "v.type, " +
                         "v.plant_group, " +
-                        "pl.pot_volume, " +
                         "pl.flower_color, " +
                         "pl.additional_info, " +
                         "pl.public_key " +
-                        "FROM points p " +
-                        "JOIN plants pl ON p.plant_id = pl.id " +
+                        "FROM points p JOIN plants pl ON p.plant_id = pl.id " +
                         "LEFT JOIN variety v ON pl.variety_id = v.id";
 
         Cursor c = db.rawQuery(sql, null);
@@ -191,7 +209,7 @@ public class PointDataAccess {
             args.add(String.valueOf(color));
         }
         if (potVolume != null) {
-            sql.append(" AND pl.pot_volume = ?");
+            sql.append(" AND p.pot_volume = ?");
             args.add(String.valueOf(potVolume));
         }
 
@@ -213,17 +231,14 @@ public class PointDataAccess {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
         String sql =
-                "SELECT p.id, p.x, p.y, p.count, p.processing_date, p.feeding_date, " +
-                        "pl.id AS plant_id, " +
+                "SELECT p.*, pl.id AS plant_id, " +
                         "pl.name, " +
                         "v.type, " +
                         "v.plant_group, " +
-                        "pl.pot_volume, " +
                         "pl.flower_color, " +
                         "pl.additional_info, " +
                         "pl.public_key " +
-                        "FROM points p " +
-                        "JOIN plants pl ON p.plant_id = pl.id " +
+                        "FROM points p JOIN plants pl ON p.plant_id = pl.id " +
                         "LEFT JOIN variety v ON pl.variety_id = v.id " +
                         "WHERE p.processing_date IS NULL";
 
@@ -250,12 +265,10 @@ public class PointDataAccess {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
         String query =
-                "SELECT p.id, p.x, p.y, p.count, p.processing_date, p.feeding_date, " +
-                        "pl.id AS plant_id, " +
+                "SELECT p.*, pl.id AS plant_id, " +
                         "pl.name, " +
                         "v.type, " +
                         "v.plant_group, " +
-                        "pl.pot_volume, " +
                         "pl.flower_color, " +
                         "pl.additional_info, " +
                         "pl.public_key " +
@@ -284,12 +297,10 @@ public class PointDataAccess {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
         String sql =
-                "SELECT p.id, p.x, p.y, p.count, p.processing_date, p.feeding_date, " +
-                        "pl.id AS plant_id, " +
+                "SELECT p.*, pl.id AS plant_id, " +
                         "pl.name, " +
                         "v.type, " +
                         "v.plant_group, " +
-                        "pl.pot_volume, " +
                         "pl.flower_color, " +
                         "pl.additional_info, " +
                         "pl.public_key " +
@@ -321,12 +332,10 @@ public class PointDataAccess {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
         String query =
-                "SELECT p.id, p.x, p.y, p.count, p.processing_date, p.feeding_date, " +
-                        "pl.id AS plant_id, " +
+                "SELECT p.*, pl.id AS plant_id, " +
                         "pl.name, " +
                         "v.type, " +
                         "v.plant_group, " +
-                        "pl.pot_volume, " +
                         "pl.flower_color, " +
                         "pl.additional_info, " +
                         "pl.public_key " +

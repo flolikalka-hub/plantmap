@@ -89,7 +89,7 @@ public class PlantSearchEngine {
 
         if (!matchesText(plant.additionalInfo, f.additionalInfo)) return false;
 
-        if (f.potVolume != null && plant.potVolume != f.potVolume) return false;
+        if (f.potVolume != null && !f.potVolume.equals(p.potVolume)) return false;
 
         return true;
     }

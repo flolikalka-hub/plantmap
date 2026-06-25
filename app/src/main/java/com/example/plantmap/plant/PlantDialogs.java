@@ -3,6 +3,7 @@ package com.example.plantmap.plant;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.text.InputType;
+import android.util.Log;
 import android.view.LayoutInflater;
 import com.example.plantmap.R;
 import android.view.View;
@@ -21,6 +22,8 @@ import com.example.plantmap.util.InputValidators;
 import com.example.plantmap.util.LayoutUtils;
 import com.example.plantmap.util.SoftInputUtil;
 
+import java.util.ArrayList;
+
 public class PlantDialogs {
     // ввод данных о растении, когда НОВАЯ ТОЧКА
     public static void showNewPlantDialog(
@@ -29,6 +32,8 @@ public class PlantDialogs {
             PlantRepository repository,
             Runnable onSaved) {
         PlantUniversalForm form = new PlantUniversalForm(context, repository);
+
+        form.setMode(PlantUniversalForm.MODE_POINT);
 
         // count отдельно, в универсальной болванке его нет
         EditText countInput = new EditText(context);
@@ -95,7 +100,6 @@ public class PlantDialogs {
 
             Button saveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
             saveButton.setOnClickListener(v -> {
-
                 Plant modifiedPlant = form.buildPlantFromInputs();
                 Plant originalPlant = form.getSelectedPlant();
 
@@ -109,41 +113,56 @@ public class PlantDialogs {
                 Integer count = InputValidators.validatePositiveCount(countInput);
                 if (count == null) return;
 
+                // получаем выбранный литраж для точки
                 Integer potVolume = InputValidators.validatePositiveOptionalInt(form.potVolumeInput);
-                if (form.potVolumeInput.getError() != null) return;
-                modifiedPlant.potVolume = potVolume;
+                if (potVolume == null && !form.potVolumeInput.getText().toString().trim().isEmpty()) {
+                    // ошибка уже установлена валидатором
+                    return;
+                }
 
                 // поиск полного совпадения
                 Plant plant;
-
-                if (originalPlant != null &&
+                if (
+                        originalPlant != null &&
                         !repository.isPlantModified(originalPlant, modifiedPlant)) {
-
                     // выбрали существующее и ничего не изменили
                     plant = originalPlant;
-
                 } else {
-
                     Plant existing = repository.findPlantByAllFields(modifiedPlant);
-
                     if (existing != null) {
                         plant = existing;
                     } else {
                         long plantId = repository.addPlant(modifiedPlant);
+
+                        if (plantId == -1) {
+                            //Log.e("NEW_PLANT", "Failed to insert plant");
+                            return;  // не сохраняем точку без растения
+                        }
+
                         modifiedPlant.id = (int) plantId;
                         plant = modifiedPlant;
                     }
                 }
 
+                // Если выбран литраж, добавляем его в доступные, если ещё нет
+                if (potVolume != null) {
+                    if (plant.availablePotVolumes == null || !plant.availablePotVolumes.contains(potVolume)) {
+                        repository.addPlantVolume(plant.id, potVolume);
+                    }
+                }
 
                 point.plant = plant;
                 point.count = count;
+                point.potVolume = potVolume;
 
                 point.processingDate = processingDate[0];
                 point.feedingDate = feedingDate[0];
 
                 long newId = repository.addPoint(point);
                 point.id = (int) newId;
+
+                //Log.d("NEW_PLANT", "Plant ID: " + plant.id + ", Name: " + plant.name);
+                //Log.d("NEW_POINT", "Point plant_id: " + point.plant.id);
 
                 // callback для добавления точки и перерисовки
                 if (onSaved != null) onSaved.run();
@@ -242,7 +261,18 @@ public class PlantDialogs {
             PlantRepository repository,
             Runnable onChanged) {
         PlantUniversalForm form = new PlantUniversalForm(context, repository);
+        form.setMode(PlantUniversalForm.MODE_POINT);
         form.fillFromPlant(point.plant);
+
+        // отображаем текущий литраж точки
+        if (point.potVolume != null) {
+            form.potVolumeInput.setText(String.valueOf(point.potVolume));
+        }
+        if (point.plant.availablePotVolumes != null) {
+            form.setVolumeSuggestions(point.plant.availablePotVolumes);
+        } else {
+            form.setVolumeSuggestions(new ArrayList<>());
+        }
 
         // диалог
         AlertDialog changeDialog = new AlertDialog.Builder(context)
@@ -268,9 +298,10 @@ public class PlantDialogs {
 
                 // обработка валидатором по условиям
                 Integer potVolume = InputValidators.validatePositiveOptionalInt(form.potVolumeInput);
-                if (form.potVolumeInput.getError() != null) return;
+                if (potVolume == null && !form.potVolumeInput.getText().toString().trim().isEmpty()) {
+                    return;
+                }
 
-                tempPlant.potVolume = potVolume;
                 Plant selectedPlant = form.getSelectedPlant();
                 Plant plant;
 
@@ -290,8 +321,16 @@ public class PlantDialogs {
                     }
                 }
 
+                // добавляем новый литраж, если его нет
+                if (potVolume != null) {
+                    if (plant.availablePotVolumes == null || !plant.availablePotVolumes.contains(potVolume)) {
+                        repository.addPlantVolume(plant.id, potVolume);
+                    }
+                }
+
                 // смена растения в точке непосредственная
                 point.plant = plant;
+                point.potVolume = potVolume;
                 repository.updatePoint(point.id, point);
 
                 // callback обновления

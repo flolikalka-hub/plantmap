@@ -558,8 +558,8 @@ public class PlanView extends View {
                 : "";
 
         // для литража (убираем null)
-        String potVolumeStr = (point.plant.potVolume != null)
-                ? point.plant.potVolume.toString()
+        String potVolumeStr = (point.potVolume != null)
+                ? point.potVolume.toString()
                 : "";
 
         // для цвета (убираем null)

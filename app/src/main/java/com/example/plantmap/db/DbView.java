@@ -163,16 +163,11 @@ public class DbView {
                     form.getNameInput().requestFocus();
                     return;
                 }
-                Integer potVolume = InputValidators.validatePositiveOptionalInt(form.getPotVolumeInput());
-                if (potVolume == null && !form.getPotVolumeInput().getText().toString().trim().isEmpty()) {
-                    form.getPotVolumeInput().requestFocus();
-                    return;
-                }
 
+                // получаем список введённых объёмов из формы
+                List<Integer> potVolumes = form.getPotVolumes();
                 // построить Plant из формы
                 Plant updatedPlant = form.buildPlantFromInputs();
-                // Присваиваем проверенное значение, чтобы быть уверенным
-                updatedPlant.potVolume = potVolume;
 
                 // Проверка на существование такого же растения
                 Plant existingPlant = repository.findPlantByAllFields(updatedPlant);
@@ -198,16 +193,39 @@ public class DbView {
                     }
                 }
 
+                long savedPlantId;
                 if (isNew) {
                     // Если plantToSave — существующее, то addPlant не нужен, оно уже есть
                     if (existingPlant != null) {
                         // Ничего не добавляем, просто используем существующее
+                        savedPlantId = existingPlant.id;
                     } else {
-                        repository.addPlant(plantToSave);
+                        savedPlantId = repository.addPlant(plantToSave);
                     }
                 } else {
                     repository.updatePlant(plantToSave);
+                    savedPlantId = originalPlant.id;
                 }
+
+                // Получаем старые объёмы
+                List<Integer> oldVolumes = repository.getPotVolumesForPlant((int) savedPlantId);
+
+                // Проверяем, какие объёмы удаляются
+                for (Integer oldVol : oldVolumes) {
+                    if (!potVolumes.contains(oldVol)) {
+                        if (!repository.canDeleteVolume((int) savedPlantId, oldVol)) {
+                            new AlertDialog.Builder(context)
+                                    .setTitle("Нельзя удалить объём")
+                                    .setMessage("Объём " + oldVol + "л используется в точках на плане. Сначала удалите эти точки.")
+                                    .setPositiveButton("ОК", null)
+                                    .show();
+                            return; // прерываем сохранение
+                        }
+                    }
+                }
+
+                // Если проверки пройдены — заменяем объёмы
+                repository.replacePlantVolumes((int) savedPlantId, potVolumes);
 
                 if (planView != null) planView.reloadPoints();
                 refreshPlantList(recyclerView);
@@ -221,6 +239,9 @@ public class DbView {
     public void showSearchDialog() {
         // Создаем форму поиска (используем ту же PlantUniversalForm)
         PlantUniversalForm form = new PlantUniversalForm(context, repository);
+
+        form.setMode(PlantUniversalForm.MODE_SEARCH);
+
         form.fillFromPlant(new Plant());
         form.setShowAllColorsOption(true); // включаем пункт "любой"
 

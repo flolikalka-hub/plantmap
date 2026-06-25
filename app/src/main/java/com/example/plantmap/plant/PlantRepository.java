@@ -83,7 +83,6 @@ public class PlantRepository {
         return !original.name.equals(modified.name) ||
                 !safeEquals(original.type, modified.type) ||
                 !safeEquals(original.group, modified.group) ||
-                !java.util.Objects.equals(original.potVolume, modified.potVolume) ||
                 !java.util.Objects.equals(original.flowerColorId, modified.flowerColorId) ||
                 !safeEquals(original.additionalInfo, modified.additionalInfo);
     }
@@ -151,5 +150,21 @@ public class PlantRepository {
             map.put(c.getId(), c.getHex());
         }
         return map;
+    }
+
+    public void replacePlantVolumes(int plantId, List<Integer> volumes) {
+        plantDa.replacePlantVolumes(plantId, volumes);
+    }
+
+    public void addPlantVolume(int plantId, int volume) {
+        plantDa.addPlantVolume(plantId, volume);
+    }
+
+    public List<Integer> getPotVolumesForPlant(int plantId) {
+        return plantDa.getPotVolumesForPlant(plantId);
+    }
+
+    public boolean canDeleteVolume(int plantId, int potVolume) {
+        return plantDa.canDeleteVolume(plantId, potVolume);
     }
 }

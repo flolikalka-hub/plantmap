@@ -2,6 +2,7 @@ package com.example.plantmap.db.yandex;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.widget.Toast;
 
@@ -96,16 +97,6 @@ public class UpdateDatabase {
                 cv.put("name", obj.optString("name"));
                 cv.put("variety_id", obj.optInt("variety_id"));
 
-                Integer potVolume = null;
-                if (obj.has("pot_volume") && !obj.isNull("pot_volume")) {
-                    try {
-                        potVolume = obj.getInt("pot_volume");
-                    } catch (Exception e) {
-                        potVolume = null;
-                    }
-                }
-                cv.put("pot_volume", potVolume);
-
                 cv.put("flower_color", obj.optInt("flower_color", 9));
 
                 String additionalInfo = obj.isNull("additional_info")
@@ -146,10 +137,30 @@ public class UpdateDatabase {
 
         db.beginTransaction();
         try {
-            // Для каждого растения из JSON: обновить, если существует, иначе вставить
+            // Временно отключаем внешние ключи, чтобы избежать каскадного удаления
+            db.execSQL("PRAGMA foreign_keys = OFF");
+
             for (ContentValues cv : plantsData) {
-                db.insertWithOnConflict("plants", null, cv, SQLiteDatabase.CONFLICT_REPLACE);
+                int id = cv.getAsInteger("id");
+                // Проверяем, существует ли запись с таким id
+                Cursor c = db.rawQuery("SELECT id FROM plants WHERE id=?",
+                        new String[]{String.valueOf(id)});
+                boolean exists = c.moveToFirst();
+                c.close();
+
+                if (exists) {
+                    // Обновляем существующую запись
+                    db.update("plants", cv, "id=?", new String[]{String.valueOf(id)});
+                } else {
+                    // Вставляем новую запись
+                    cv.put("id", id); // убедимся, что id установлен
+                    db.insert("plants", null, cv);
+                }
             }
+
+            // Включаем внешние ключи обратно
+            db.execSQL("PRAGMA foreign_keys = ON");
+
             db.setTransactionSuccessful();
         } finally {
             db.endTransaction();
