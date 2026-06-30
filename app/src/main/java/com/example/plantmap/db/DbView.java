@@ -2,6 +2,7 @@ package com.example.plantmap.db;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
@@ -107,6 +108,13 @@ public class DbView {
         recyclerView.setAdapter(adapter);
         if (searchListener != null) {
             searchListener.onSearchCleared();
+        }
+    }
+
+    // для обновления извне
+    public void refresh() {
+        if (recyclerView != null) {
+            refreshPlantList(recyclerView);
         }
     }
 
@@ -244,6 +252,11 @@ public class DbView {
         form.setMode(PlantUniversalForm.MODE_SEARCH);
 
         form.fillFromPlant(new Plant());
+
+        // Сбрасываем предустановленный цвет "неизвестный", чтобы поиск был по всем цветам
+        form.getFlowerColorInput().setText("");
+        form.setShowAllColorsOption(true);
+
         form.setShowAllColorsOption(true); // включаем пункт "любой"
 
         AlertDialog dialog = new AlertDialog.Builder(context)
@@ -292,6 +305,11 @@ public class DbView {
                         flowerColorId,
                         addInfo
                 );
+
+//                Log.d("SEARCH_DB", "Поиск: name='" + name + "', найдено растений: " + result.size());
+//                for (Plant p : result) {
+//                    Log.d("SEARCH_DB", "  -> " + p.id + " " + p.name);
+//                }
 
                 if (searchListener != null) {
                     searchListener.onSearchApplied();

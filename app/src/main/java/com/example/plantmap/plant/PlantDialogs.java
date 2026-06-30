@@ -122,23 +122,47 @@ public class PlantDialogs {
 
                 // поиск полного совпадения
                 Plant plant;
-                if (
-                        originalPlant != null &&
-                        !repository.isPlantModified(originalPlant, modifiedPlant)) {
-                    // выбрали существующее и ничего не изменили
-                    plant = originalPlant;
+                if (originalPlant != null) {
+                    // выбрали существующее
+                    boolean nameChanged = !originalPlant.name.equals(modifiedPlant.name);
+                    boolean typeChanged = !originalPlant.type.equals(modifiedPlant.type);
+                    boolean nameOrTypeChanged = nameChanged || typeChanged;
+                    if (nameOrTypeChanged) {
+                        // Имя/тип изменились — считаем, что это другое растение.
+                        // Пытаемся найти уже существующее с такими же полями (вдруг оно есть).
+                        Plant existing = repository.findPlantByAllFields(modifiedPlant);
+                        if (existing != null) {
+                            plant = existing;
+                        } else {
+                            // Создаём новое растение
+                            long plantId = repository.addPlant(modifiedPlant);
+
+                            if (plantId == -1) {
+                                //Log.e("NEW_PLANT", "Failed to insert plant");
+                                return;  // не сохраняем точку без растения
+                            }
+
+                            modifiedPlant.id = (int) plantId;
+                            plant = modifiedPlant;
+                        }
+                    } else {
+                        // Ни имя ни тип не изменились.
+                        // Если другие поля отличаются — обновляем originalPlant.
+                        if (repository.isPlantModified(originalPlant, modifiedPlant)) {
+                            repository.updatePlant(originalPlant, modifiedPlant);
+                        }
+                        plant = originalPlant;
+                    }
                 } else {
+                    // Растение не выбрано (ввод вручную) — логика как раньше
                     Plant existing = repository.findPlantByAllFields(modifiedPlant);
                     if (existing != null) {
                         plant = existing;
                     } else {
                         long plantId = repository.addPlant(modifiedPlant);
-
                         if (plantId == -1) {
-                            //Log.e("NEW_PLANT", "Failed to insert plant");
-                            return;  // не сохраняем точку без растения
+                            return;
                         }
-
                         modifiedPlant.id = (int) plantId;
                         plant = modifiedPlant;
                     }
@@ -276,7 +300,7 @@ public class PlantDialogs {
 
         // диалог
         AlertDialog changeDialog = new AlertDialog.Builder(context)
-                .setTitle("Сменить растение")
+                .setTitle("Изменить растение")
                 .setView(form.getView())
                 .setPositiveButton("Сохранить", null)
                 .setNegativeButton("Отмена", null)
@@ -288,7 +312,6 @@ public class PlantDialogs {
 
             Button saveButton = changeDialog.getButton(AlertDialog.BUTTON_POSITIVE);
             saveButton.setOnClickListener(v -> {
-
                 Plant tempPlant = form.buildPlantFromInputs();
                 if (tempPlant.name.isEmpty()) {
                     form.nameInput.setError("Название обязательно");
@@ -302,22 +325,45 @@ public class PlantDialogs {
                     return;
                 }
 
-                Plant selectedPlant = form.getSelectedPlant();
+                Plant selectedFromList = form.getSelectedPlant();
+                Plant originalPlant = selectedFromList != null ? selectedFromList : point.plant;
                 Plant plant;
 
-                if (selectedPlant != null
-                        && !repository.isPlantModified(selectedPlant, tempPlant)) {
-                    // выбрали из автокомплита и ничего не меняли в автозаполненных полях
-                    plant = selectedPlant;
+                if (originalPlant != null) {
+                    boolean nameChanged = !originalPlant.name.equals(tempPlant.name);
+                    boolean typeChanged = !originalPlant.type.equals(tempPlant.type);
+                    boolean nameOrTypeChanged = nameChanged || typeChanged;
+                    if (nameOrTypeChanged) {
+                        // имя или тип изменились — ищем/создаём новое
+                        Plant existing = repository.findPlantByAllFields(tempPlant);
+                        if (existing != null) {
+                            plant = existing;
+                        } else {
+                            long plantId = repository.addPlant(tempPlant);
+                            if (plantId == -1) {
+                                return; // ошибка, диалог не закрываем
+                            }
+                            tempPlant.id = (int) plantId;
+                            plant = tempPlant;
+                        }
+                    } else {
+                        if (repository.isPlantModified(originalPlant, tempPlant)) {
+                            repository.updatePlant(originalPlant, tempPlant);
+                        }
+                        plant = originalPlant;
+                    }
                 } else {
-                    // поиск полного совпадения
-                    Plant existingPlant = repository.findPlantByAllFields(tempPlant);
-                    if (existingPlant == null) {
+                    // растение не выбрано (ввод вручную)
+                    Plant existing = repository.findPlantByAllFields(tempPlant);
+                    if (existing != null) {
+                        plant = existing;
+                    } else {
                         long plantId = repository.addPlant(tempPlant);
+                        if (plantId == -1) {
+                            return;
+                        }
                         tempPlant.id = (int) plantId;
                         plant = tempPlant;
-                    } else {
-                        plant = existingPlant;
                     }
                 }
 

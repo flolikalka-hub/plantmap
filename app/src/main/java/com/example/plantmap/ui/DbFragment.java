@@ -20,7 +20,6 @@ public class DbFragment extends BaseFragment {
     protected int getHelpTextResId() {
         return R.string.help_db;
     }
-
     private DbView dbView;
     private boolean dbSearchActive = false;
 
@@ -49,6 +48,14 @@ public class DbFragment extends BaseFragment {
             }
         });
         return dbView.createDbView();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (dbView != null) {
+            dbView.refresh();
+        }
     }
 
     @Override

@@ -16,8 +16,8 @@ android {
         applicationId = "com.example.plantmap"
         minSdk = 29 // android 10
         targetSdk = 36
-        versionCode = 52
-        versionName = "Release-3.2.2"
+        versionCode = 53
+        versionName = "Release-3.2.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

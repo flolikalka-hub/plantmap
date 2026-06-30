@@ -11,7 +11,7 @@ import java.io.*;
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DB_NAME = "PlantMap_DB.db";
-    private static final int DB_VERSION = 31;
+    private static final int DB_VERSION = 32;
     private final Context context;
     private String dbPath;
 
@@ -30,7 +30,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         File dbFile = new File(dbPath);
 
         if (dbFile.exists()) {
-            return;
+            int existingVersion = getDatabaseVersionFromFile(dbFile);
+            if (existingVersion >= 32) {
+                return; // файл актуален
+            }
+            // Удаляем устаревший файл БД и связанные журналы
+            context.deleteDatabase(DB_NAME);
         }
 
         dbFile.getParentFile().mkdirs();
@@ -45,6 +50,33 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             }
             os.flush();
         }
+    }
+
+    /**
+     * Считывает user_version из существующего файла БД без привлечения SQLiteOpenHelper.
+     * Возвращает -1, если файл повреждён или версию не удалось прочитать.
+     */
+    private int getDatabaseVersionFromFile(File dbFile) {
+        SQLiteDatabase tempDb = null;
+        try {
+            tempDb = SQLiteDatabase.openDatabase(
+                    dbFile.getAbsolutePath(),
+                    null,
+                    SQLiteDatabase.OPEN_READONLY
+            );
+            try (Cursor cursor = tempDb.rawQuery("PRAGMA user_version", null)) {
+                if (cursor.moveToFirst()) {
+                    return cursor.getInt(0);
+                }
+            }
+        } catch (Exception e) {
+            Log.e("DBHelper", "Failed to read DB version, will replace", e);
+        } finally {
+            if (tempDb != null && tempDb.isOpen()) {
+                tempDb.close();
+            }
+        }
+        return -1;
     }
 
     @Override

@@ -52,6 +52,18 @@ public class PlantRepository {
         plantDa.updatePlant(plant);
     }
 
+    public void updatePlant(Plant original, Plant modified) {
+        // Копируем изменяемые поля из modified в original,
+        // кроме id, name и type (по условию не менялись имя и тип растения)
+        original.group = modified.group;
+        original.flowerColorId = modified.flowerColorId;
+        original.additionalInfo = modified.additionalInfo;
+        // original.varietyId будет пересчитан внутри updatePlant
+
+        // Вызываем существующий метод, который сохранит original в БД
+        updatePlant(original);
+    }
+
     public boolean canDeletePlant(int id) {
         return plantDa.canDeletePlant(id);
     }
