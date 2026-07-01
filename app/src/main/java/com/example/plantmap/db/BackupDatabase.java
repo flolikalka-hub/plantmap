@@ -1,3 +1,7 @@
+/*  TODO
+     MediaStore.Downloads
+     ProGuard для FileProvider
+*/
 package com.example.plantmap.db;
 
 import android.content.Context;
@@ -19,26 +23,35 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
+/**
+ * Экспорт базы данных в папку Downloads с возможностью поделиться.
+ * Файл получает имя с временной меткой в формате "PlantMap_дд-ММ-гггг_ЧЧ-мм.db".
+ * После копирования запускается стандартный Intent.ACTION_SEND.
+ */
 public class BackupDatabase {
 
     private Context context;
     private File dbFile;
+
     public BackupDatabase(Context context) {
         this.context = context;
         this.dbFile = context.getDatabasePath("PlantMap_DB.db");
     }
 
+    /**
+     * Копирует текущую БД в общедоступную папку Downloads.
+     * При успехе показывает Toast с путём и вызывает диалог "Поделиться".
+     */
     public void exportDatabase() {
-
         try {
-            // в общую папку загрузок
+            // Папка для сохранения
             File downloads = Environment.getExternalStoragePublicDirectory(
                     Environment.DIRECTORY_DOWNLOADS);
-
             if (!downloads.exists()) {
                 downloads.mkdirs();
             }
-            // файл с подписью день-месяц-год_час-минута
+
+            // Формирование имени с датой и временем
             String timestamp = new SimpleDateFormat(
                     "dd-MM-yyyy_HH-mm",
                     Locale.getDefault()
@@ -49,29 +62,29 @@ public class BackupDatabase {
                     "PlantMap_" + timestamp + ".db"
             );
 
-            // копирование
+            // Простое побайтовое копирование
             try (InputStream in = new FileInputStream(dbFile);
                  OutputStream out = new FileOutputStream(exportFile)) {
 
                 byte[] buffer = new byte[4096];
                 int length;
-
                 while ((length = in.read(buffer)) > 0) {
                     out.write(buffer, 0, length);
                 }
             }
-            // маленькое всплывающее окно внизу экрана
+
             Toast.makeText(context,
                     "БД сохранена: " + exportFile.getAbsolutePath(),
                     Toast.LENGTH_LONG).show();
 
-            // показываем меню «Поделиться»
+            // Предлагаем отправить файл
             shareExportedFile(exportFile);
 
         } catch (IOException e) {
             Toast.makeText(context, "Ошибка сохранения БД", Toast.LENGTH_LONG).show();
         }
     }
+
     /**
      * Отправляет Intent.ACTION_SEND для экспортированного файла.
      * Пользователь увидит стандартное окно «Поделиться».
@@ -89,7 +102,7 @@ public class BackupDatabase {
             }
 
             Intent shareIntent = new Intent(Intent.ACTION_SEND);
-            shareIntent.setType("application/octet-stream");  // для .db файла
+            shareIntent.setType("application/octet-stream");  // универсальный MIME-тип для .db
             shareIntent.putExtra(Intent.EXTRA_STREAM, fileUri);
             shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
 

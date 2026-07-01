@@ -1,6 +1,5 @@
 package com.example.plantmap.ui;
 
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -19,10 +18,15 @@ import com.example.plantmap.model.PlantPoint;
 import com.example.plantmap.plan.EditMode;
 import com.example.plantmap.plan.PlanView;
 
-import java.util.List;
 import java.util.Set;
 
+/**
+ * Фрагмент с планом территории (картой с растениями).
+ * Поддерживает режимы добавления/редактирования точек, поиск растений
+ * и передачу результатов поиска с других экранов.
+ */
 public class PlanFragment extends BaseFragment {
+
     @Override
     protected int getHelpTextResId() {
         return R.string.help_plan;
@@ -31,6 +35,7 @@ public class PlanFragment extends BaseFragment {
     private PlanView planView;
     private boolean addActive = false;
     private boolean editActive = false;
+    /** Ожидающие результаты поиска (если PlanView ещё не создан). */
     private Set<PlantPoint> pendingSearchResults;
     private ImageButton btnAdd, btnEdit;
 
@@ -55,6 +60,7 @@ public class PlanFragment extends BaseFragment {
                 )
         );
 
+        // Контейнер для кнопок управления (поиск, добавить, редактировать)
         LinearLayout btnCont = new LinearLayout(requireContext());
         FrameLayout.LayoutParams contParams =
                 new FrameLayout.LayoutParams(
@@ -79,6 +85,7 @@ public class PlanFragment extends BaseFragment {
         btnCont.addView(btnAdd);
         btnCont.addView(btnEdit);
 
+        // Переключение режима добавления
         btnAdd.setOnClickListener(v -> {
             addActive = toggleEditMode(
                     EditMode.ADD_POINT,
@@ -89,6 +96,7 @@ public class PlanFragment extends BaseFragment {
             );
         });
 
+        // Переключение режима редактирования
         btnEdit.setOnClickListener(v -> {
             editActive = toggleEditMode(
                     EditMode.EDIT_POINT,
@@ -99,6 +107,7 @@ public class PlanFragment extends BaseFragment {
             );
         });
 
+        // Слушатель состояния поиска для смены иконки
         planView.setSearchStateListener(new PlanView.SearchStateListener() {
             @Override
             public void onSearchApplied() {
@@ -108,13 +117,14 @@ public class PlanFragment extends BaseFragment {
             @Override
             public void onSearchCleared() {
                 btnSearch.setImageResource(R.drawable.btn_find);
-                // сбрасываем аргументы полностью
+                // Полностью сбрасываем аргументы, чтобы поиск не восстанавливался
                 if (getArguments() != null) {
                     getArguments().remove("search_points");
                 }
             }
         });
 
+        // Кнопка поиска: включает/выключает режим поиска на карте
         btnSearch.setOnClickListener(v -> {
             if (planView.isSearchActive()) {
                 planView.clearSearch();
@@ -125,19 +135,18 @@ public class PlanFragment extends BaseFragment {
 
         root.addView(btnCont, contParams);
 
+        // Применяем ожидающие результаты поиска, если они были заданы до создания view
         if (pendingSearchResults != null) {
             planView.setSearchResults(pendingSearchResults);
             pendingSearchResults = null;
         }
 
+        // Если фрагмент запущен с аргументами поиска, сразу показываем результаты
         if (getArguments() != null) {
             Set<PlantPoint> points =
                     (Set<PlantPoint>) getArguments().getSerializable("search_points");
-
             if (points != null) {
                 planView.setSearchResults(points);
-                // очищаем, чтобы не восстанавливалось после поворота
-                //getArguments().remove("search_points");
             }
         }
 
@@ -145,25 +154,29 @@ public class PlanFragment extends BaseFragment {
     }
 
     /**
-     Переключает указанный режим редактирования
-     mode               режим (ADD_POINT или EDIT_POINT)
-     isActive           текущее состояние активности этого режима
-     activeIcon         ресурс иконки для активного состояния
-     inactiveIcon       ресурс иконки для неактивного состояния
-     button             кнопка, на которой меняется иконка
-     return             новое состояние активности режима (true — включен, false — выключен)
+     * Переключает указанный режим редактирования (добавление или редактирование точек).
+     * При активации одного режима автоматически деактивирует противоположный.
+     *
+     * @param mode         режим (ADD_POINT или EDIT_POINT)
+     * @param isActive     текущее состояние активности этого режима
+     * @param activeIcon   ресурс иконки для активного состояния
+     * @param inactiveIcon ресурс иконки для неактивного состояния
+     * @param button       кнопка, на которой меняется иконка
+     * @return новое состояние активности режима (true — включен, false — выключен)
      */
     private boolean toggleEditMode(EditMode mode, boolean isActive,
                                    int activeIcon, int inactiveIcon,
                                    ImageButton button) {
         if (isActive) {
+            // Выключаем режим — возвращаемся в режим просмотра
             planView.setEditMode(EditMode.VIEW);
             button.setImageResource(inactiveIcon);
             return false;
         } else {
+            // Включаем режим
             planView.setEditMode(mode);
             button.setImageResource(activeIcon);
-            // Деактивируем противоположный режим, если он был активен
+            // Автоматически выключаем противоположный режим, если он был активен
             if (mode == EditMode.ADD_POINT && editActive) {
                 editActive = false;
                 btnEdit.setImageResource(R.drawable.btn_edit_point);
@@ -175,6 +188,11 @@ public class PlanFragment extends BaseFragment {
         }
     }
 
+    /**
+     * Устанавливает результаты поиска для отображения на плане.
+     * Может быть вызван до того, как PlanView создан — тогда результаты
+     * будут применены позже при создании view.
+     */
     public void setSearchResults(Set<PlantPoint> points) {
         if (planView != null) {
             planView.setSearchResults(points);

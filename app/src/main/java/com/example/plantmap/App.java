@@ -5,27 +5,51 @@ import com.example.plantmap.db.DatabaseHelper;
 import com.example.plantmap.plant.PlantRepository;
 
 /**
-синглтоны на уровне приложения - БД (временно) и репозиторий
-запускается самым первым, ещё до того, как появится первый экран
-*/
+ * Пользовательский класс приложения.
+ * Создаётся раньше любого Activity/Service и живёт на протяжении всего процесса.
+ * Здесь инициализируются глобальные синглтоны:
+ * - DatabaseHelper — доступ к локальной БД (SQLite)
+ * - PlantRepository — единая точка доступа к данным о растениях
+ *
+ * Внимание: статическая ссылка instance может сохранять состояние
+ * между тестовыми запусками. При инструментальном тестировании рекомендуется
+ * пересоздавать Application или использовать DI-фреймворк (Hilt/Koin) для
+ * управления временем жизни зависимостей.
+ */
 public class App extends Application {
-    private static App instance; /** общая для всего приложения, единственный экземпляр
-    статическая переменная может запомнить старые данные от предыдущего теста, приходится чистить руками*/
-    private DatabaseHelper dbHelper; //помощник, который умеет разговаривать с базой данных
-    private PlantRepository repository; //склад, который знает, как правильно брать растения из помощника и отдавать их экранам
+
+    /** Единственный экземпляр приложения (доступен через getInstance()). */
+    private static App instance;
+
+    /** Помощник для работы с базой данных. */
+    private DatabaseHelper dbHelper;
+
+    /** Репозиторий растений (абстракция над dbHelper). */
+    private PlantRepository repository;
 
     @Override
     public void onCreate() {
         super.onCreate();
         instance = this;
+
+        // Инициализация слоя данных
         dbHelper = new DatabaseHelper(this);
         repository = new PlantRepository(dbHelper);
     }
 
+    /**
+     * Возвращает глобальный экземпляр приложения.
+     * Используется для получения репозитория из любого места,
+     * где недоступен Context (например, в утилитах).
+     */
     public static App getInstance() {
         return instance;
     }
 
+    /**
+     * Возвращает репозиторий растений.
+     * Через него Activity и Fragment'ы получают данные, не зная о БД.
+     */
     public PlantRepository getRepository() {
         return repository;
     }

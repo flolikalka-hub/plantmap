@@ -1,48 +1,77 @@
+// =============================================================================
+// Главный сборочный скрипт приложения PlantMap
+// Версия 3.3 (Release)
+// =============================================================================
+
 plugins {
-    /**
-    Version Catalog (libs.versions.toml)
-    современный и рекомендуемый способ
-    централизованного управления версиями плагинов и зависимостей.
-    Упрощает обновление и обеспечивает консистентность между модулями.
-     */
+    // Современный способ подключения плагинов через Version Catalog
     alias(libs.plugins.android.application)
 }
 
 android {
+    // Пространство имён приложения (должно совпадать с package в манифесте)
     namespace = "com.example.plantmap"
-    compileSdk = 36 // android 16
+
+    // Уровень API для компиляции — Android 16 (Baklava) Developer Preview
+    // Обеспечивает доступ к новейшим API и оптимизациям компилятора
+    compileSdk = 36
 
     defaultConfig {
+        // Уникальный идентификатор приложения
         applicationId = "com.example.plantmap"
-        minSdk = 29 // android 10
-        targetSdk = 36
-        versionCode = 53
-        versionName = "Release-3.2.3"
 
+        // Минимальная поддерживаемая версия — Android 10 (API 29)
+        minSdk = 29
+
+        // Целевая версия SDK, на которой тестировалось приложение
+        targetSdk = 36
+
+        // Версия для внутреннего учёта (код версии)
+        versionCode = 54
+
+        // Публичная версия для пользователей
+        versionName = "Release-3.3"
+
+        // Стандартный раннер для инструментальных тестов
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
+        // ---------------------------------------------------------------------
+        // Релизная сборка — для публикации и финальной демонстрации
         release {
-            /**
-            обфускация, оптимизация и удаление неиспользуемого кода
-            Снижает размер APK и повышает безопасность
-             */
+            // Включаем минификацию (обфускацию) и оптимизацию кода
+            // Это уменьшает размер APK и защищает код от обратной разработки
             isMinifyEnabled = true
-            /**
-            удаляет неиспользуемые ресурсы (картинки, строки и т.д.)
-             */
+
+            // Удаление неиспользуемых ресурсов (изображений, строк, макетов)
+            // Работает только при включённой минификации
             isShrinkResources = true
+
+            // Стандартные правила ProGuard + наш файл с кастомными правилами
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
         }
+
+        // ---------------------------------------------------------------------
+        // Отладочная сборка — для разработки и тестирования
         debug {
-            applicationIdSuffix = ".dev" // отдельный ID
-            versionNameSuffix = "-dev"   // чтобы отличать версии
+            // Добавляем суффикс к applicationId, чтобы debug и release
+            // версии можно было установить на одно устройство одновременно
+            applicationIdSuffix = ".dev"
+
+            // Суффикс в имени версии, чтобы визуально отличать сборки
+            versionNameSuffix = "-dev"
+
+            // Отключаем минификацию для ускорения сборки и удобства отладки
+            isMinifyEnabled = false
         }
     }
+
+    // Настройка совместимости с Java 11
+    // Позволяет использовать современные конструкции языка (var, лямбды и т.д.)
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -50,24 +79,43 @@ android {
 }
 
 dependencies {
+    // ========================
+    // AndroidX UI
+    // ========================
+    // Обеспечивает единый внешний вид компонентов на старых версиях Android
+    implementation(libs.appcompat)
+    // Компоненты Material Design 3 (красивые кнопки, меню, диалоги)
+    implementation(libs.material)
+    // Упрощённая работа с Activity и её жизненным циклом
+    implementation(libs.activity)
+    // Мощный менеджер размещения элементов интерфейса
+    implementation(libs.constraintlayout)
 
-    implementation(libs.appcompat) //для старых телефонов, чтобы новые фишки выглядели на них одинаково
-    implementation(libs.material) // красивые кнопки и менюшки от Google
-    implementation(libs.activity) // для создания окон (экранов)
-    implementation(libs.constraintlayout) // для расстановки кнопок и картинок на экране
+    // ========================
+    // Архитектурные компоненты
+    // ========================
+    // Хранение данных, устойчивое к повороту экрана (ViewModel)
+    implementation(libs.lifecycle.viewmodel)
+    // LiveData — наблюдаемые данные, которые автоматически уведомляют UI об изменениях
+    implementation(libs.lifecycle.livedata)
+    // Навигация между экранами (Fragment) без ручного управления транзакциями
+    implementation(libs.navigation.fragment)
 
-    implementation(libs.navigation.fragment) // для переключения между экранами
-    implementation(libs.lifecycle.viewmodel) // для хранения данных, которые не теряются при повороте телефона
-    implementation(libs.lifecycle.livedata) // сам сообщает экрану, что данные обновились
-
-    testImplementation(libs.junit) // тесты комп
-    androidTestImplementation(libs.ext.junit) // тесты тел
-    androidTestImplementation(libs.espresso.core) // имитация действий пользователя
-
-    // Glide для загрузки и кэширования изображений
+    // ========================
+    // Изображения и сеть
+    // ========================
+    // Glide — эффективная загрузка, кэширование и отображение изображений
     implementation(libs.glide)
+    // Процессор аннотаций Glide (генерирует код для ускорения работы)
     annotationProcessor(libs.compiler)
 
-    // OkHttp (для запроса к API Яндекса)
+    // OkHttp — надёжный HTTP-клиент для запросов к API Яндекс.Карт
     implementation(libs.okhttp)
+
+    // ========================
+    // Тестирование
+    // ========================
+    testImplementation(libs.junit)                  // Модульные тесты (JVM)
+    androidTestImplementation(libs.ext.junit)       // Инструментальные тесты (Android)
+    androidTestImplementation(libs.espresso.core)   // UI-тесты (имитация кликов, свайпов)
 }

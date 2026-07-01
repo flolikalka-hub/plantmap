@@ -8,7 +8,6 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.cardview.widget.CardView;
@@ -18,7 +17,6 @@ import com.example.plantmap.model.PlantPoint;
 import com.example.plantmap.model.StatItem;
 import com.example.plantmap.plant.PlantRepository;
 import com.example.plantmap.plant.PlantUniversalForm;
-import com.example.plantmap.plan.PlanView;
 import com.example.plantmap.util.InputValidators;
 import com.example.plantmap.util.LayoutUtils;
 
@@ -27,11 +25,26 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Представление раздела статистики (StatsFragment).
+ * Строит интерфейс с карточками StatItem: секции можно раскрывать,
+ * конечные пункты запускают диалоги с результатами.
+ *
+ * Результаты (списки точек) можно отобразить на плане через
+ * {@link OnShowOnPlanListener}.
+ */
 public class StatisticsView {
     private Context context;
     private PlantRepository plantRepository;
-    private PlanView planView;
     private OnShowOnPlanListener showOnPlanListener;
+
+    /**
+     * Слушатель для отображения набора точек на плане.
+     * Вызывается, когда пользователь нажимает "Показать на плане" в диалоге результата.
+     */
+    public interface OnShowOnPlanListener {
+        void onShowOnPlan(Set<PlantPoint> points);
+    }
 
     public StatisticsView(Context context,
                           PlantRepository plantRepository,
@@ -41,6 +54,9 @@ public class StatisticsView {
         this.showOnPlanListener = listener;
     }
 
+    /**
+     * Создаёт корневое View со списком карточек статистики.
+     */
     public View createView() {
         LayoutUtils.ScrollableLayout scrollableLayout = LayoutUtils.createVerticalScrollView(context);
         List<StatItem> stats = new ArrayList<>();
@@ -62,7 +78,6 @@ public class StatisticsView {
                                 "Введите количество дней",
                                 true,
                                 () -> showFeedingDaysDialog()),
-
                         new StatItem("Не подкармливались никогда",
                                 "",
                                 false,
@@ -87,10 +102,13 @@ public class StatisticsView {
         ));
 
         addStatItems(scrollableLayout.layout, stats);
-
         return scrollableLayout.scrollView;
     }
 
+    /**
+     * Рекурсивно добавляет элементы StatItem в контейнер.
+     * Секции отрисовываются как раскрывающиеся карточки со стрелкой.
+     */
     private void addStatItems(LinearLayout parent, List<StatItem> items) {
         for (StatItem item : items) {
             CardView card = (CardView) LayoutInflater.from(context)
@@ -131,7 +149,9 @@ public class StatisticsView {
         }
     }
 
-    // потом добавить "Подробнее", где будет список всех этих растений (т.е. какое растение и количество)
+    /**
+     * Показывает общее количество растений на плане.
+     */
     private void showResultAllPlantsDialog() {
         int total = plantRepository.getTotalPlantCount();
         new AlertDialog.Builder(context)
@@ -141,21 +161,20 @@ public class StatisticsView {
                 .show();
     }
 
-    // по фильтрам подсчет растений
-    private  void  showFilteredCountDialog() {
+    /**
+     * Открывает форму фильтрации и выводит количество растений по параметрам.
+     */
+    private void showFilteredCountDialog() {
         PlantUniversalForm form = new PlantUniversalForm(context, plantRepository);
-
         form.setMode(PlantUniversalForm.MODE_SEARCH);
 
         LayoutUtils.ScrollableLayout scrollableLayout = LayoutUtils.createVerticalScrollView(context);
         scrollableLayout.layout.addView(form.getView());
 
-        // диалог
         new AlertDialog.Builder(context)
                 .setTitle("Фильтры растений")
                 .setView(scrollableLayout.scrollView)
                 .setPositiveButton("Применить", (dialog, which) -> {
-                    // собираем параметры
                     String name = form.getNameInput().getText().toString();
                     String type = form.getTypeInput().getText().toString();
                     String group = form.getGroupInput().getText().toString();
@@ -163,25 +182,15 @@ public class StatisticsView {
                     Integer color = null;
                     Integer potVolume = InputValidators.validatePositiveOptionalInt(form.getPotVolumeInput());
                     if (potVolume == null && !form.getPotVolumeInput().getText().toString().trim().isEmpty()) {
-                        return; // ошибка уже показана валидатором
-                    }
-
-                    boolean allEmpty =
-                            name.isEmpty() &&
-                                    type.isEmpty() &&
-                                    group.isEmpty() &&
-                                    color == null &&
-                                    potVolume == null;
-
-                    if (allEmpty) {
-                        // просто ничего не делаем
                         return;
                     }
 
-                    // вызываем метод репозитория для подсчета
+                    boolean allEmpty = name.isEmpty() && type.isEmpty() && group.isEmpty()
+                            && color == null && potVolume == null;
+                    if (allEmpty) return;
+
                     int count = plantRepository.getFilteredPlantCount(name, type, group, color, potVolume);
 
-                    // показываем результат
                     new AlertDialog.Builder(context)
                             .setTitle("Количество растений:")
                             .setMessage(String.valueOf(count))
@@ -192,11 +201,11 @@ public class StatisticsView {
                 .show();
     }
 
+    /**
+     * Показывает список растений, которые ни разу не обрабатывались.
+     */
     private void showResultNeverProcDialog() {
-
-        List<PlantPoint> neverProcessed =
-                plantRepository.getNeverProcessedPoints();
-
+        List<PlantPoint> neverProcessed = plantRepository.getNeverProcessedPoints();
         if (neverProcessed.isEmpty()) {
             new AlertDialog.Builder(context)
                     .setTitle("Не обработанные растения")
@@ -205,16 +214,14 @@ public class StatisticsView {
                     .show();
             return;
         }
-
-        String dialogTitle = "Не обрабатывались никогда";
-        showResultDialog(dialogTitle, neverProcessed);
+        showResultDialog("Не обрабатывались никогда", neverProcessed);
     }
 
+    /**
+     * Показывает список растений, которые ни разу не подкармливались.
+     */
     private void showResultNeverFeedingDialog() {
-
-        List<PlantPoint> neverFeeding =
-                plantRepository.getNeverFeedingPoints();
-
+        List<PlantPoint> neverFeeding = plantRepository.getNeverFeedingPoints();
         if (neverFeeding.isEmpty()) {
             new AlertDialog.Builder(context)
                     .setTitle("Не подкармливались растения")
@@ -223,12 +230,13 @@ public class StatisticsView {
                     .show();
             return;
         }
-
-        String dialogTitle = "Не подкармливались никогда";
-        showResultDialog(dialogTitle, neverFeeding);
+        showResultDialog("Не подкармливались никогда", neverFeeding);
     }
 
-    private  void  showDaysDialog() {
+    /**
+     * Запрашивает количество дней и показывает растения, не обрабатывавшиеся дольше этого срока.
+     */
+    private void showDaysDialog() {
         EditText input = new EditText(context);
         input.setInputType(InputType.TYPE_CLASS_NUMBER);
         input.setHint("Количество дней");
@@ -237,20 +245,18 @@ public class StatisticsView {
                 .setTitle("Не обрабатывались более...")
                 .setView(input)
                 .setPositiveButton("Показать", (dialog, which) -> {
-
                     String text = input.getText().toString();
-
                     if (text.isEmpty()) return;
-
                     int days = Integer.parseInt(text);
-
                     showOldProcessedPoints(days);
-
                 })
                 .setNegativeButton("Отмена", null)
                 .show();
     }
 
+    /**
+     * Запрашивает количество дней и показывает растения, не подкармливавшиеся дольше этого срока.
+     */
     private void showFeedingDaysDialog() {
         EditText input = new EditText(context);
         input.setInputType(InputType.TYPE_CLASS_NUMBER);
@@ -260,25 +266,17 @@ public class StatisticsView {
                 .setTitle("Не подкармливались более...")
                 .setView(input)
                 .setPositiveButton("Показать", (dialog, which) -> {
-
                     String text = input.getText().toString();
-
                     if (text.isEmpty()) return;
-
                     int days = Integer.parseInt(text);
-
                     showOldFeedingPoints(days);
-
                 })
                 .setNegativeButton("Отмена", null)
                 .show();
     }
 
     private void showOldProcessedPoints(int days) {
-
-        List<PlantPoint> oldPoints =
-                plantRepository.getNotProcessedMoreThanDays(days);
-
+        List<PlantPoint> oldPoints = plantRepository.getNotProcessedMoreThanDays(days);
         if (oldPoints.isEmpty()) {
             new AlertDialog.Builder(context)
                     .setTitle("Не обрабатывались более " + days + " дней")
@@ -287,16 +285,11 @@ public class StatisticsView {
                     .show();
             return;
         }
-
-        String dialogTitle = "Не обрабатывались более " + days + " дней";
-        showResultDialog(dialogTitle, oldPoints);
+        showResultDialog("Не обрабатывались более " + days + " дней", oldPoints);
     }
 
     private void showOldFeedingPoints(int days) {
-
-        List<PlantPoint> oldPoints =
-                plantRepository.getNotFeedingMoreThanDays(days);
-
+        List<PlantPoint> oldPoints = plantRepository.getNotFeedingMoreThanDays(days);
         if (oldPoints.isEmpty()) {
             new AlertDialog.Builder(context)
                     .setTitle("Не подкармливались более " + days + " дней")
@@ -305,17 +298,16 @@ public class StatisticsView {
                     .show();
             return;
         }
-
-        String dialogTitle = "Не подкармливались более " + days + " дней";
-        showResultDialog(dialogTitle, oldPoints);
+        showResultDialog("Не подкармливались более " + days + " дней", oldPoints);
     }
 
-    private void showResultDialog(
-            String dialogTitle,
-            List<PlantPoint> resPoints
-    ) {
+    /**
+     * Показывает диалог со списком растений (название + количество).
+     * Предлагает кнопку "Показать на плане", которая вызывает
+     * {@link OnShowOnPlanListener#onShowOnPlan(Set)}.
+     */
+    private void showResultDialog(String dialogTitle, List<PlantPoint> resPoints) {
         StringBuilder sb = new StringBuilder();
-
         for (PlantPoint p : resPoints) {
             sb.append(p.plant.name)
                     .append(" (")
@@ -328,18 +320,11 @@ public class StatisticsView {
                 .setMessage(sb.toString())
                 .setPositiveButton("Закрыть", null)
                 .setNeutralButton("Показать на плане", (d, w) -> {
-
-                    Set<PlantPoint> resultSet =
-                            new HashSet<>(resPoints);
-
+                    Set<PlantPoint> resultSet = new HashSet<>(resPoints);
                     if (showOnPlanListener != null) {
                         showOnPlanListener.onShowOnPlan(resultSet);
                     }
                 })
                 .show();
-    }
-
-    public interface OnShowOnPlanListener {
-        void onShowOnPlan(Set<PlantPoint> points);
     }
 }
