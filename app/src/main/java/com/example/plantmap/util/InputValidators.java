@@ -2,16 +2,20 @@ package com.example.plantmap.util;
 
 import android.widget.EditText;
 
+/**
+ * Статические методы для валидации ввода в EditText.
+ */
 public class InputValidators {
 
     /**
-     Универсальный валидатор положительного целого числа.
-     input              поле ввода
-     required           true — поле обязательно, false — можно оставить пустым (вернет null без ошибки)
-     errorEmpty         текст ошибки при пустом поле (если required = true)
-     errorInvalid       текст ошибки при неверном формате числа
-     errorNotPositive   текст ошибки, если число <= 0
-     return             значение числа или null, если не прошло валидацию (ошибка уже установлена в поле)
+     * Универсальный валидатор положительного целого числа.
+     *
+     * @param input          поле ввода
+     * @param required       true — поле обязательно, false — можно оставить пустым (вернёт null без ошибки)
+     * @param errorEmpty     сообщение при пустом обязательном поле
+     * @param errorInvalid   сообщение при нечисловом значении
+     * @param errorNotPositive сообщение при числе <= 0
+     * @return значение числа или null, если валидация не пройдена (ошибка уже установлена в поле)
      */
     public static Integer validatePositiveInt(EditText input,
                                               boolean required,
@@ -19,17 +23,14 @@ public class InputValidators {
                                               String errorInvalid,
                                               String errorNotPositive) {
         String text = input.getText().toString().trim();
-        // проверка на пустое поле
         if (text.isEmpty()) {
             if (required) {
                 input.setError(errorEmpty);
             }
             return null;
         }
-        // отлов "не числа"
         try {
             int value = Integer.parseInt(text);
-            // проверка положительности
             if (value <= 0) {
                 input.setError(errorNotPositive);
                 return null;
@@ -42,14 +43,14 @@ public class InputValidators {
     }
 
     /**
-     обертки для сохранения обратной совместимости.
-     переводят фокус на ошибку
+     * Валидатор для опционального целого числа (обычно для литража).
+     * При ошибке запрашивает фокус.
      */
     public static Integer validatePositiveOptionalInt(EditText input) {
         Integer result = validatePositiveInt(
                 input,
-                false,      // не обязательно
-                "",                 // errorEmpty не используется
+                false,
+                "", // не используется
                 "Неверное число",
                 "Литраж должен быть больше 0"
         );
@@ -59,10 +60,14 @@ public class InputValidators {
         return result;
     }
 
+    /**
+     * Валидатор для обязательного положительного числа (обычно для количества).
+     * При ошибке запрашивает фокус.
+     */
     public static Integer validatePositiveCount(EditText input) {
         Integer result = validatePositiveInt(
                 input,
-                true,       // обязательно
+                true,
                 "Количество обязательно",
                 "Неверное число",
                 "Количество должно быть больше 0"

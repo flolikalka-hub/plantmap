@@ -4,12 +4,10 @@ import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.content.Context;
 import android.text.InputType;
-import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
 
 import com.example.plantmap.model.FlowerColor;
-import com.example.plantmap.model.Plant;
 import com.example.plantmap.model.PlantPoint;
 import com.example.plantmap.model.SearchFilter;
 import com.example.plantmap.plant.PlantRepository;
@@ -26,13 +24,28 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Диалог расширенного поиска точек на плане.
+ * Позволяет задать фильтры по растению (через PlantUniversalForm),
+ * количеству, датам обработки/подкормки и передать их в PlantSearchEngine.
+ */
 public class PlantSearchDialog {
+
+    /** Слушатель результата поиска. */
     public interface OnSearchListener {
         void onSearchApplied(Set<PlantPoint> result);
-
         void onSearchCleared();
     }
 
+    /**
+     * Отображает диалог расширенного поиска.
+     *
+     * @param context    контекст
+     * @param allPoints  список всех точек для поиска
+     * @param engine     поисковый движок
+     * @param repository репозиторий (для получения цветов и т.д.)
+     * @param listener   слушатель результатов
+     */
     public static void showAdvancedSearchDialog(
             Context context,
             List<PlantPoint> allPoints,
@@ -45,7 +58,7 @@ public class PlantSearchDialog {
         // Универсальная форма для выбора/автокомплита растения
         PlantUniversalForm form = new PlantUniversalForm(context, repository);
         form.setMode(PlantUniversalForm.MODE_SEARCH);
-        form.setShowAllColorsOption(true);  // для поиска добавляем "Любой"
+        form.setShowAllColorsOption(true);  // добавляем "Любой" в выбор цвета
 
         // Количество
         EditText countInput = new EditText(context);
@@ -55,14 +68,13 @@ public class PlantSearchDialog {
         // Дата обработки
         EditText dateInput = new EditText(context);
         dateInput.setHint("Дата обработки");
-        dateInput.setFocusable(false); // клавиатура не нужна
-        final Long[] processingDateMillis = {null}; // null = дата не выбрана
+        dateInput.setFocusable(false); // клавиатура не нужна, будет DatePicker
+        final Long[] processingDateMillis = {null}; // null — дата не выбрана
 
         SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
 
         dateInput.setOnClickListener(v -> {
             Calendar calendar = Calendar.getInstance();
-
             DatePickerDialog picker = new DatePickerDialog(
                     context,
                     (view, year, month, dayOfMonth) -> {
@@ -87,7 +99,6 @@ public class PlantSearchDialog {
 
         feedingDateInput.setOnClickListener(v -> {
             Calendar calendar = Calendar.getInstance();
-
             DatePickerDialog picker = new DatePickerDialog(
                     context,
                     (view, year, month, dayOfMonth) -> {
@@ -104,6 +115,7 @@ public class PlantSearchDialog {
             picker.show();
         });
 
+        // Настройка переходов по клавише "Далее"
         ImeActionUtil.setupImeChain(
                 form.nameInput,
                 form.typeInput,
@@ -150,11 +162,9 @@ public class PlantSearchDialog {
                 }
 
                 filter.additionalInfo = form.additionalInfoInput.getText().toString().trim();
-
                 filter.potVolume = parseIntOrNull(
                         form.potVolumeInput.getText().toString().trim()
                 );
-
 
                 // Дополнительные фильтры
                 filter.count = parseIntOrNull(countInput.getText().toString().trim());
@@ -171,6 +181,9 @@ public class PlantSearchDialog {
         dialog.show();
     }
 
+    /**
+     * Безопасный парсинг Integer. Пустая строка или ошибка — null.
+     */
     private static Integer parseIntOrNull(String s) {
         try {
             return s.isEmpty() ? null : Integer.parseInt(s);

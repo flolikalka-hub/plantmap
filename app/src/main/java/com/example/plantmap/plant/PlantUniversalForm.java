@@ -11,7 +11,6 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.app.AlertDialog;
 import android.widget.ScrollView;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.TextView;
 
 import com.example.plantmap.model.FlowerColor;
@@ -24,42 +23,57 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Универсальная форма для работы с растением.
+ * Поддерживает три режима:
+ * - MODE_PLANT — редактирование растения со списком объёмов горшков
+ * - MODE_POINT  — создание/редактирование точки (один объём)
+ * - MODE_SEARCH — поиск растений (один объём, опция "любой" для цвета)
+ *
+ * Все элементы интерфейса создаются программно и размещаются в вертикальном LinearLayout
+ * внутри ScrollView. Форма может быть использована в диалогах.
+ */
 public class PlantUniversalForm {
-    public static final int MODE_PLANT = 0;      // редактирование растения (список объёмов)
-    public static final int MODE_POINT = 1;      // создание/редактирование точки (один объём)
-    public static final int MODE_SEARCH = 2;     // поиск (один объём)
+
+    public static final int MODE_PLANT = 0;
+    public static final int MODE_POINT = 1;
+    public static final int MODE_SEARCH = 2;
 
     private int currentMode = MODE_PLANT;
+
     public AutoCompleteTextView nameInput;
     public AutoCompleteTextView typeInput;
     public AutoCompleteTextView groupInput;
-    public AutoCompleteTextView potVolumeInput;
+    public AutoCompleteTextView potVolumeInput;   // одиночное поле (для MODE_POINT / MODE_SEARCH)
     public TextView flowerColorInput;
     public EditText additionalInfoInput;
-    // Новые элементы для списка объёмов
-    private LinearLayout potVolumesContainer; // контейнер, куда добавляются строки ввода
-    private Button addVolumeButton;          // кнопка "Добавить объём"
+
+    /** Контейнер для динамических полей объёмов (MODE_PLANT). */
+    private LinearLayout potVolumesContainer;
+    /** Кнопка добавления поля объёма (MODE_PLANT). */
+    private Button addVolumeButton;
+
     private LinearLayout rootLayout;
     private ScrollView scrollContainer;
+
+    /** Растение, выбранное из автокомплита (если есть). */
     private Plant selectedPlantFromAutocomplete;
-    private int selectedFlowerColorId = 9; // по умолчанию «неизвестный»
-    // Карты для конвертации название ↔ ID
+
+    private int selectedFlowerColorId = 9; // по умолчанию "неизвестный"
+
     private Map<String, Integer> colorNameToIdMap = new HashMap<>();
     private Map<Integer, String> idToColorNameMap = new HashMap<>();
     private boolean showAllColorsOption = false;
-    private List<String> originalColorNames; // сохраним исходный список
-    private boolean isSearchMode = false;    // флаг режима поиска для объемов
-    public Plant getSelectedPlant() {
+    private List<String> originalColorNames;
 
-        return selectedPlantFromAutocomplete;
-    }
+    // --- Конструктор ---
 
     public PlantUniversalForm(Context context, PlantRepository repository) {
         LayoutUtils.ScrollableLayout scrollableLayout = LayoutUtils.createVerticalScrollView(context);
         rootLayout = scrollableLayout.layout;
         scrollContainer = scrollableLayout.scrollView;
 
-        // поля
+        // Основные поля
         nameInput = new AutoCompleteTextView(context);
         nameInput.setHint("Название сорта");
         nameInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
@@ -70,27 +84,26 @@ public class PlantUniversalForm {
         groupInput = new AutoCompleteTextView(context);
         groupInput.setHint("Группа растения");
 
-        // одиночное поле для поиска (по умолчанию скрыто)
+        // Одиночное поле объёма (скрыто по умолчанию)
         potVolumeInput = new AutoCompleteTextView(context);
         potVolumeInput.setHint("Литраж горшка");
         potVolumeInput.setInputType(InputType.TYPE_CLASS_NUMBER);
-        potVolumeInput.setVisibility(View.GONE); // будет показано только в режиме поиска
+        potVolumeInput.setVisibility(View.GONE);
 
-        // контейнер для списка объёмов (обычный режим)
+        // Контейнер для нескольких объёмов (MODE_PLANT)
         potVolumesContainer = new LinearLayout(context);
         potVolumesContainer.setOrientation(LinearLayout.VERTICAL);
 
         addVolumeButton = new Button(context);
         addVolumeButton.setText("+ Добавить объём");
-        // добавление пустого поля
         addVolumeButton.setOnClickListener(v -> addVolumeField(null));
 
-        // обёртка для контейнера + кнопка
         LinearLayout volumesWrapper = new LinearLayout(context);
         volumesWrapper.setOrientation(LinearLayout.VERTICAL);
         volumesWrapper.addView(potVolumesContainer);
         volumesWrapper.addView(addVolumeButton);
 
+        // Цвет цветка (кликабельный TextView)
         flowerColorInput = new TextView(context);
         flowerColorInput.setHint("Цвет цветка");
         flowerColorInput.setClickable(true);
@@ -101,8 +114,7 @@ public class PlantUniversalForm {
         additionalInfoInput = new EditText(context);
         additionalInfoInput.setHint("Дополнительная информация");
 
-        // адаптеры
-        // Получаем все цвета из репозитория
+        // Инициализация адаптеров
         List<FlowerColor> allColors = repository.getAllColors();
         List<String> colorNames = new ArrayList<>();
         for (FlowerColor c : allColors) {
@@ -110,81 +122,55 @@ public class PlantUniversalForm {
             colorNameToIdMap.put(c.getName(), c.getId());
             idToColorNameMap.put(c.getId(), c.getName());
         }
-        this.originalColorNames = new ArrayList<>(colorNames);
+        originalColorNames = new ArrayList<>(colorNames);
 
-        // По умолчанию устанавливаем "неизвестный"
-        selectedFlowerColorId = 9;
-
-        // При клике показываем диалог выбора
         flowerColorInput.setOnClickListener(v -> showColorPickerDialog(context));
 
+        // Адаптер для названий растений (автокомплит)
         List<Plant> plants = repository.getAllPlants();
-        ArrayAdapter<Plant> plantAdapter =
-                new ArrayAdapter<>(
-                        context,
-                        android.R.layout.simple_dropdown_item_1line,
-                        plants
-                );
-
+        ArrayAdapter<Plant> plantAdapter = new ArrayAdapter<>(
+                context, android.R.layout.simple_dropdown_item_1line, plants);
         nameInput.setAdapter(plantAdapter);
         nameInput.setThreshold(1);
 
+        // Адаптер типов
         List<String> types = repository.getAllTypes();
-        ArrayAdapter<String> typeAdapter =
-                new ArrayAdapter<>(
-                        context,
-                        android.R.layout.simple_dropdown_item_1line,
-                        types
-                );
-
-        typeInput.setAdapter(typeAdapter);
+        typeInput.setAdapter(new ArrayAdapter<>(
+                context, android.R.layout.simple_dropdown_item_1line, types));
         typeInput.setThreshold(1);
 
-
+        // Адаптер групп
         List<String> groups = repository.getAllGroups();
-        ArrayAdapter<String> groupAdapter =
-                new ArrayAdapter<>(
-                        context,
-                        android.R.layout.simple_dropdown_item_1line,
-                        groups
-                );
-
-        groupInput.setAdapter(groupAdapter);
+        groupInput.setAdapter(new ArrayAdapter<>(
+                context, android.R.layout.simple_dropdown_item_1line, groups));
         groupInput.setThreshold(1);
 
-        // автозаполнение остальных полей (по сорту)
+        // При выборе растения — автозаполнение остальных полей
         nameInput.setOnItemClickListener((parent, view, position, id) -> {
             Plant selectedPlant = (Plant) parent.getItemAtPosition(position);
             fillFromPlant(selectedPlant);
             selectedPlantFromAutocomplete = selectedPlant;
-            // подгружаем подсказки литража для выбранного растения
             setVolumeSuggestions(selectedPlant.availablePotVolumes);
         });
+
+        // При выборе группы — подстановка типа
         groupInput.setOnItemClickListener((parent, view, position, id) -> {
             String selectedGroup = (String) parent.getItemAtPosition(position);
-
             String type = repository.getTypeByGroup(selectedGroup);
             if (type != null) {
                 typeInput.setText(type);
             }
         });
 
-        // перевод фокусов полей
         ImeActionUtil.setupImeChain(
-                nameInput,
-                typeInput,
-                groupInput,
-                potVolumeInput,
-                additionalInfoInput);
+                nameInput, typeInput, groupInput, potVolumeInput, additionalInfoInput);
 
-        // сборка
+        // Сборка layout
         rootLayout.addView(nameInput);
         rootLayout.addView(typeInput);
         rootLayout.addView(groupInput);
-
-        rootLayout.addView(potVolumeInput);        // одиночное поле (GONE по умолчанию)
-        rootLayout.addView(volumesWrapper);        // контейнер с динамическими полями
-
+        rootLayout.addView(potVolumeInput);
+        rootLayout.addView(volumesWrapper);
         rootLayout.addView(flowerColorInput);
         rootLayout.addView(additionalInfoInput);
     }
@@ -193,19 +179,19 @@ public class PlantUniversalForm {
         return scrollContainer;
     }
 
-    // Переключение режима: поиск или обычное редактирование
+    /**
+     * Переключает режим формы: скрывает/показывает нужные элементы управления объёмами.
+     */
     public void setMode(int mode) {
         this.currentMode = mode;
         switch (mode) {
             case MODE_PLANT:
-                // Показываем контейнер с кнопкой "Добавить объём"
                 potVolumesContainer.setVisibility(View.VISIBLE);
                 addVolumeButton.setVisibility(View.VISIBLE);
                 potVolumeInput.setVisibility(View.GONE);
                 break;
             case MODE_POINT:
             case MODE_SEARCH:
-                // Показываем одно поле выбора
                 potVolumesContainer.setVisibility(View.GONE);
                 addVolumeButton.setVisibility(View.GONE);
                 potVolumeInput.setVisibility(View.VISIBLE);
@@ -213,7 +199,9 @@ public class PlantUniversalForm {
         }
     }
 
-    // Добавление поля для объёма (с кнопкой удаления)
+    /**
+     * Добавляет строку для ввода объёма горшка с кнопкой удаления.
+     */
     private void addVolumeField(Integer value) {
         LinearLayout row = new LinearLayout(potVolumesContainer.getContext());
         row.setOrientation(LinearLayout.HORIZONTAL);
@@ -223,7 +211,8 @@ public class PlantUniversalForm {
         volumeEdit.setHint("Объём");
         volumeEdit.setInputType(InputType.TYPE_CLASS_NUMBER);
         if (value != null) volumeEdit.setText(String.valueOf(value));
-        LinearLayout.LayoutParams editParams = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        LinearLayout.LayoutParams editParams = new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
         volumeEdit.setLayoutParams(editParams);
 
         Button removeBtn = new Button(potVolumesContainer.getContext());
@@ -235,55 +224,55 @@ public class PlantUniversalForm {
         potVolumesContainer.addView(row);
     }
 
-    // Метод setShowAllColorsOption теперь только переключает флаг и, если нужно, сбрасывает текст
+    /**
+     * Управляет опцией "любой" в диалоге выбора цвета (для режима поиска).
+     */
     public void setShowAllColorsOption(boolean show) {
         if (show == showAllColorsOption) return;
         showAllColorsOption = show;
-        if (!show) {
-            // если отключаем опцию, возвращаем "неизвестный", если был "Любой"
-            if ("любой".equals(flowerColorInput.getText().toString())) {
-                selectedFlowerColorId = 9;
-            }
+        if (!show && "любой".equals(flowerColorInput.getText().toString())) {
+            selectedFlowerColorId = 9;
         }
     }
 
+    /**
+     * Заполняет поля формы данными из объекта Plant.
+     */
     public void fillFromPlant(Plant plant) {
         if (plant == null) return;
-
         nameInput.setText(plant.name != null ? plant.name : "");
         typeInput.setText(plant.type != null ? plant.type : "");
         groupInput.setText(plant.group != null ? plant.group : "");
 
-        // очищаем старые поля объёмов
         potVolumesContainer.removeAllViews();
-        // заполняем из availablePotVolumes
         if (plant.availablePotVolumes != null) {
             for (Integer vol : plant.availablePotVolumes) {
                 addVolumeField(vol);
             }
         }
-        // одиночное поле в поиске оставляем пустым
         potVolumeInput.setText("");
 
         int colorId = plant.flowerColorId != null ? plant.flowerColorId : 9;
         flowerColorInput.setText(getColorNameById(colorId));
-
         additionalInfoInput.setText(plant.additionalInfo != null ? plant.additionalInfo : "");
     }
 
+    /**
+     * Создаёт объект Plant на основе введённых данных.
+     */
     public Plant buildPlantFromInputs() {
         Plant p = new Plant();
-
         p.name = nameInput.getText().toString().trim();
         p.type = typeInput.getText().toString().trim();
         p.group = groupInput.getText().toString().trim();
         p.flowerColorId = getColorIdFromInput();
         p.additionalInfo = additionalInfoInput.getText().toString().trim();
-
         return p;
     }
 
-    // Собрать список введённых объёмов из контейнера
+    /**
+     * Собирает список объёмов горшков из динамических полей (для MODE_PLANT).
+     */
     public List<Integer> getPotVolumes() {
         List<Integer> volumes = new ArrayList<>();
         for (int i = 0; i < potVolumesContainer.getChildCount(); i++) {
@@ -301,13 +290,14 @@ public class PlantUniversalForm {
         return volumes;
     }
 
+    /**
+     * Устанавливает подсказки для поля объёма (автокомплит).
+     */
     public void setVolumeSuggestions(List<Integer> volumes) {
         List<String> items = new ArrayList<>();
         if (volumes != null) {
             for (Integer v : volumes) {
-                if (v != null) {
-                    items.add(String.valueOf(v));
-                }
+                if (v != null) items.add(String.valueOf(v));
             }
         }
         ArrayAdapter<String> adapter = new ArrayAdapter<>(
@@ -318,7 +308,8 @@ public class PlantUniversalForm {
         potVolumeInput.setThreshold(1);
     }
 
-    // Вспомогательные методы для работы с цветом
+    // --- Внутренние методы для цвета ---
+
     private void showColorPickerDialog(Context context) {
         List<String> items = new ArrayList<>();
         if (showAllColorsOption) {
@@ -331,10 +322,8 @@ public class PlantUniversalForm {
                 .setItems(items.toArray(new String[0]), (dialog, which) -> {
                     String selected = items.get(which);
                     flowerColorInput.setText(selected);
-                    // запоминаем ID
                     if ("любой".equals(selected)) {
-                        selectedFlowerColorId = 9; // или специальное значение? Для поиска оно не используется.
-                        // Оставим 9, но при getColorIdFromInput() пустая строка даст 9.
+                        selectedFlowerColorId = 9;
                     } else {
                         Integer colorId = colorNameToIdMap.get(selected);
                         selectedFlowerColorId = (colorId != null) ? colorId : 9;
@@ -350,19 +339,17 @@ public class PlantUniversalForm {
 
     private int getColorIdFromInput() {
         String input = flowerColorInput.getText().toString().trim();
-        if (input.isEmpty()) {
-            return 9;
-        }
+        if (input.isEmpty()) return 9;
         Integer id = colorNameToIdMap.get(input);
         return id != null ? id : 9;
     }
 
-    // Метод для получения текущего выбранного ID цвета (можно использовать извне)
     public int getSelectedFlowerColorId() {
         return getColorIdFromInput();
     }
 
-    // чтобы получать все эти поля
+    // --- Геттеры для доступа к полям ---
+
     public AutoCompleteTextView getNameInput() {
         return nameInput;
     }
@@ -385,5 +372,9 @@ public class PlantUniversalForm {
 
     public EditText getAdditionalInfoInput() {
         return additionalInfoInput;
+    }
+
+    public Plant getSelectedPlant() {
+        return selectedPlantFromAutocomplete;
     }
 }

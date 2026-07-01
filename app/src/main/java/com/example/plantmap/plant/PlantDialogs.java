@@ -3,12 +3,9 @@ package com.example.plantmap.plant;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.text.InputType;
-import android.util.Log;
 import android.view.LayoutInflater;
 import com.example.plantmap.R;
 import android.view.View;
-import android.view.WindowManager;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -24,50 +21,65 @@ import com.example.plantmap.util.SoftInputUtil;
 
 import java.util.ArrayList;
 
+/**
+ * Статические методы для построения диалогов работы с точками и растениями.
+ * Все диалоги создаются программно (не используют XML-макеты, кроме edit_point_dialog).
+ *
+ * Основные сценарии:
+ * - showNewPlantDialog — создание новой точки с новым или существующим растением
+ * - showEditPointDialog — редактирование существующей точки (количество, даты, смена растения)
+ * - showChangePlantDialog — замена растения в точке (без изменения координат)
+ */
 public class PlantDialogs {
-    // ввод данных о растении, когда НОВАЯ ТОЧКА
+
+    /**
+     * Диалог добавления новой точки.
+     * Позволяет выбрать/создать растение, указать количество, даты обработки/подкормки и объём горшка.
+     *
+     * @param context    контекст
+     * @param point      объект PlantPoint, в который будут записаны координаты (уже заданы) и остальные данные
+     * @param repository репозиторий для сохранения
+     * @param onSaved    колбэк после успешного сохранения (обновляет список точек и карту)
+     */
     public static void showNewPlantDialog(
             Context context,
             PlantPoint point,
             PlantRepository repository,
             Runnable onSaved) {
-        PlantUniversalForm form = new PlantUniversalForm(context, repository);
 
+        PlantUniversalForm form = new PlantUniversalForm(context, repository);
         form.setMode(PlantUniversalForm.MODE_POINT);
 
-        // count отдельно, в универсальной болванке его нет
+        // Поле для количества (не входит в универсальную форму)
         EditText countInput = new EditText(context);
         countInput.setHint("Количество");
         countInput.setInputType(InputType.TYPE_CLASS_NUMBER);
 
-        // Обработка
+        // Дата обработки
         CheckBox processedCheckBox = new CheckBox(context);
         processedCheckBox.setText("Уже обрабатывалось");
         EditText dateInput = new EditText(context);
         dateInput.setHint("Дата обработки");
-
         final Long[] processingDate = {null};
-
         DateCheckBoxUtil processHelper = new DateCheckBoxUtil(
                 processedCheckBox,
                 dateInput,
                 date -> processingDate[0] = date
         );
 
-        // Подкормка
+        // Дата подкормки
         CheckBox feedingCheckBox = new CheckBox(context);
         feedingCheckBox.setText("Уже подкармливалось");
         EditText feedingDateInput = new EditText(context);
         feedingDateInput.setHint("Дата подкормки");
-
         final Long[] feedingDate = {null};
-
         DateCheckBoxUtil feedingHelper = new DateCheckBoxUtil(
                 feedingCheckBox,
                 feedingDateInput,
                 date -> feedingDate[0] = date
         );
 
+        // Порядок перехода между полями
         ImeActionUtil.setupImeChain(
                 form.nameInput,
                 form.typeInput,
@@ -76,18 +88,15 @@ public class PlantDialogs {
                 form.additionalInfoInput,
                 countInput);
 
-        // сборка
+        // Компоновка
         LayoutUtils.ScrollableLayout scrollableLayout = LayoutUtils.createVerticalScrollView(context);
         scrollableLayout.layout.addView(form.getView());
         scrollableLayout.layout.addView(countInput);
-
         scrollableLayout.layout.addView(processedCheckBox);
         scrollableLayout.layout.addView(dateInput);
-
         scrollableLayout.layout.addView(feedingCheckBox);
         scrollableLayout.layout.addView(feedingDateInput);
 
-        // стандартное диалоговое окно, не xml
         AlertDialog dialog = new AlertDialog.Builder(context)
                 .setTitle("Новое растение")
                 .setView(scrollableLayout.scrollView)
@@ -109,98 +118,88 @@ public class PlantDialogs {
                     return;
                 }
 
-                // валидаторные обработки
+                // Валидация количества и объёма
                 Integer count = InputValidators.validatePositiveCount(countInput);
                 if (count == null) return;
 
-                // получаем выбранный литраж для точки
                 Integer potVolume = InputValidators.validatePositiveOptionalInt(form.potVolumeInput);
                 if (potVolume == null && !form.potVolumeInput.getText().toString().trim().isEmpty()) {
-                    // ошибка уже установлена валидатором
-                    return;
+                    return; // ошибка уже показана валидатором
                 }
 
-                // поиск полного совпадения
+                // Определяем конечное растение для точки
                 Plant plant;
                 if (originalPlant != null) {
-                    // выбрали существующее
-                    boolean nameChanged = !originalPlant.name.equals(modifiedPlant.name);
-                    boolean typeChanged = !originalPlant.type.equals(modifiedPlant.type);
-                    boolean nameOrTypeChanged = nameChanged || typeChanged;
+                    // Выбрано из автокомплита
+                    boolean nameOrTypeChanged = !originalPlant.name.equals(modifiedPlant.name)
+                            || !originalPlant.type.equals(modifiedPlant.type);
                     if (nameOrTypeChanged) {
-                        // Имя/тип изменились — считаем, что это другое растение.
-                        // Пытаемся найти уже существующее с такими же полями (вдруг оно есть).
+                        // Имя/тип изменились — ищем или создаём новое
                         Plant existing = repository.findPlantByAllFields(modifiedPlant);
                         if (existing != null) {
                             plant = existing;
                         } else {
-                            // Создаём новое растение
                             long plantId = repository.addPlant(modifiedPlant);
-
-                            if (plantId == -1) {
-                                //Log.e("NEW_PLANT", "Failed to insert plant");
-                                return;  // не сохраняем точку без растения
-                            }
-
+                            if (plantId == -1) return;
                             modifiedPlant.id = (int) plantId;
                             plant = modifiedPlant;
                         }
                     } else {
-                        // Ни имя ни тип не изменились.
-                        // Если другие поля отличаются — обновляем originalPlant.
+                        // Только остальные поля — обновляем оригинал
                         if (repository.isPlantModified(originalPlant, modifiedPlant)) {
                             repository.updatePlant(originalPlant, modifiedPlant);
                         }
                         plant = originalPlant;
                     }
                 } else {
-                    // Растение не выбрано (ввод вручную) — логика как раньше
+                    // Ввод вручную
                     Plant existing = repository.findPlantByAllFields(modifiedPlant);
                     if (existing != null) {
                         plant = existing;
                     } else {
                         long plantId = repository.addPlant(modifiedPlant);
-                        if (plantId == -1) {
-                            return;
-                        }
+                        if (plantId == -1) return;
                         modifiedPlant.id = (int) plantId;
                         plant = modifiedPlant;
                     }
                 }
 
-                // Если выбран литраж, добавляем его в доступные, если ещё нет
+                // Добавляем новый литраж в availablePotVolumes, если его ещё нет
                 if (potVolume != null) {
                     if (plant.availablePotVolumes == null || !plant.availablePotVolumes.contains(potVolume)) {
                         repository.addPlantVolume(plant.id, potVolume);
                     }
                 }
 
+                // Заполняем точку и сохраняем
                 point.plant = plant;
                 point.count = count;
                 point.potVolume = potVolume;
-
                 point.processingDate = processingDate[0];
                 point.feedingDate = feedingDate[0];
 
                 long newId = repository.addPoint(point);
                 point.id = (int) newId;
 
-                //Log.d("NEW_PLANT", "Plant ID: " + plant.id + ", Name: " + plant.name);
-                //Log.d("NEW_POINT", "Point plant_id: " + point.plant.id);
-
-                // callback для добавления точки и перерисовки
                 if (onSaved != null) onSaved.run();
-
                 dialog.dismiss();
             });
         });
 
         SoftInputUtil.setupSoftInput(dialog);
-
         dialog.show();
     }
 
-    // работа с СУЩЕСТВУЮЩЕЙ ТОЧКОЙ + изменение растения
+    /**
+     * Диалог редактирования существующей точки.
+     * Позволяет изменить количество, даты обработки/подкормки, удалить точку или сменить растение.
+     *
+     * @param context    контекст
+     * @param point      редактируемая точка (уже привязана к растению)
+     * @param repository репозиторий
+     * @param onDeleted  колбэк при удалении точки
+     * @param onUpdated  колбэк после обновления
+     */
     public static void showEditPointDialog(
             Context context,
             PlantPoint point,
@@ -210,7 +209,6 @@ public class PlantDialogs {
 
         if (point.plant == null) return;
 
-        // Inflate layout
         View view = LayoutInflater.from(context).inflate(R.layout.edit_point_dialog, null);
 
         EditText countInput = view.findViewById(R.id.countInput);
@@ -220,7 +218,7 @@ public class PlantDialogs {
         EditText feedingDateInput = view.findViewById(R.id.feedingDateInput);
         Button changePlantBtn = view.findViewById(R.id.changePlantBtn);
 
-        // Инициализация данных
+        // Связываем даты с чекбоксами
         DateCheckBoxUtil processHelper = new DateCheckBoxUtil(
                 processedCheckBox, dateInput,
                 date -> point.processingDate = date
@@ -236,7 +234,6 @@ public class PlantDialogs {
         countInput.setText(String.valueOf(point.count));
         countInput.setSelection(countInput.getText().length());
 
-        // Оборачиваем view в ScrollView для корректного отображения кнопок
         ScrollView scrollView = LayoutUtils.wrapInScrollView(context, view);
 
         AlertDialog dialog = new AlertDialog.Builder(context)
@@ -268,27 +265,30 @@ public class PlantDialogs {
             });
         });
 
-        // кнопка смены растения
+        // Кнопка смены растения (открывает отдельный диалог)
         changePlantBtn.setOnClickListener(v -> {
             dialog.dismiss();
-            showChangePlantDialog(context, point, repository, () -> {
-                if (onUpdated != null) onUpdated.run();
-            });
+            showChangePlantDialog(context, point, repository, onUpdated);
         });
 
         dialog.show();
     }
 
+    /**
+     * Диалог замены растения в точке.
+     * Предоставляет ту же форму, что и создание точки, но без поля количества и дат.
+     * После сохранения обновляет растение и объём в точке.
+     */
     public static void showChangePlantDialog(
             Context context,
             PlantPoint point,
             PlantRepository repository,
             Runnable onChanged) {
+
         PlantUniversalForm form = new PlantUniversalForm(context, repository);
         form.setMode(PlantUniversalForm.MODE_POINT);
         form.fillFromPlant(point.plant);
 
-        // отображаем текущий литраж точки
         if (point.potVolume != null) {
             form.potVolumeInput.setText(String.valueOf(point.potVolume));
         }
@@ -298,7 +298,6 @@ public class PlantDialogs {
             form.setVolumeSuggestions(new ArrayList<>());
         }
 
-        // диалог
         AlertDialog changeDialog = new AlertDialog.Builder(context)
                 .setTitle("Изменить растение")
                 .setView(form.getView())
@@ -306,7 +305,6 @@ public class PlantDialogs {
                 .setNegativeButton("Отмена", null)
                 .create();
 
-        // логика сохранения, но без создания точки
         changeDialog.setOnShowListener(d -> {
             ImeActionUtil.focusAndShowKeyboard(form.nameInput);
 
@@ -319,7 +317,6 @@ public class PlantDialogs {
                     return;
                 }
 
-                // обработка валидатором по условиям
                 Integer potVolume = InputValidators.validatePositiveOptionalInt(form.potVolumeInput);
                 if (potVolume == null && !form.potVolumeInput.getText().toString().trim().isEmpty()) {
                     return;
@@ -330,19 +327,15 @@ public class PlantDialogs {
                 Plant plant;
 
                 if (originalPlant != null) {
-                    boolean nameChanged = !originalPlant.name.equals(tempPlant.name);
-                    boolean typeChanged = !originalPlant.type.equals(tempPlant.type);
-                    boolean nameOrTypeChanged = nameChanged || typeChanged;
+                    boolean nameOrTypeChanged = !originalPlant.name.equals(tempPlant.name)
+                            || !originalPlant.type.equals(tempPlant.type);
                     if (nameOrTypeChanged) {
-                        // имя или тип изменились — ищем/создаём новое
                         Plant existing = repository.findPlantByAllFields(tempPlant);
                         if (existing != null) {
                             plant = existing;
                         } else {
                             long plantId = repository.addPlant(tempPlant);
-                            if (plantId == -1) {
-                                return; // ошибка, диалог не закрываем
-                            }
+                            if (plantId == -1) return;
                             tempPlant.id = (int) plantId;
                             plant = tempPlant;
                         }
@@ -353,41 +346,33 @@ public class PlantDialogs {
                         plant = originalPlant;
                     }
                 } else {
-                    // растение не выбрано (ввод вручную)
                     Plant existing = repository.findPlantByAllFields(tempPlant);
                     if (existing != null) {
                         plant = existing;
                     } else {
                         long plantId = repository.addPlant(tempPlant);
-                        if (plantId == -1) {
-                            return;
-                        }
+                        if (plantId == -1) return;
                         tempPlant.id = (int) plantId;
                         plant = tempPlant;
                     }
                 }
 
-                // добавляем новый литраж, если его нет
                 if (potVolume != null) {
                     if (plant.availablePotVolumes == null || !plant.availablePotVolumes.contains(potVolume)) {
                         repository.addPlantVolume(plant.id, potVolume);
                     }
                 }
 
-                // смена растения в точке непосредственная
                 point.plant = plant;
                 point.potVolume = potVolume;
                 repository.updatePoint(point.id, point);
 
-                // callback обновления
                 if (onChanged != null) onChanged.run();
-
                 changeDialog.dismiss();
             });
         });
 
         SoftInputUtil.setupSoftInput(changeDialog);
-
         changeDialog.show();
     }
 }

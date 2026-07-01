@@ -13,13 +13,25 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Доступ к данным таблицы points (точки на плане).
+ * Каждая точка связана с растением (JOIN plants) и дополнительно
+ * хранит pot_volume непосредственно в своей записи.
+ * Все методы получения данных подтягивают информацию о растении и его виде (variety).
+ */
 public class PointDataAccess {
     private final DatabaseHelper dbHelper;
 
     public PointDataAccess(DatabaseHelper dbHelper) {
         this.dbHelper = dbHelper;
     }
-    // Добавление точки
+
+    /**
+     * Добавляет новую точку в БД.
+     *
+     * @param point объект PlantPoint с заполненными координатами, растением и датами
+     * @return сгенерированный идентификатор записи (id)
+     */
     public long addPoint(PlantPoint point) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         ContentValues cv = new ContentValues();
@@ -42,19 +54,23 @@ public class PointDataAccess {
 
         cv.put("plant_id", point.plant.id);
 
-        // сохраняем выбранный объём горшка для точки
+        // Сохраняем выбранный объём горшка для точки
         if (point.potVolume == null) {
             cv.putNull("pot_volume");
         } else {
             cv.put("pot_volume", point.potVolume);
         }
 
-        // insert возвращает id новой записи
         long id = db.insert("points", null, cv);
         return id;
     }
 
-    // Обновление точки
+    /**
+     * Обновляет существующую точку по её id.
+     *
+     * @param id    идентификатор точки
+     * @param point новые данные точки
+     */
     public void updatePoint(int id, PlantPoint point) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         ContentValues cv = new ContentValues();
@@ -86,15 +102,19 @@ public class PointDataAccess {
         db.update("points", cv, "id=?", new String[]{String.valueOf(id)});
     }
 
-    // Удаление точки
+    /**
+     * Удаляет точку по идентификатору.
+     */
     public void deletePoint(int id) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         db.delete("points", "id=?", new String[]{String.valueOf(id)});
     }
 
-    // универсальное преобразование курсора в PlantPoint
+    /**
+     * Преобразует текущую строку курсора в объект PlantPoint.
+     * Ожидает, что курсор содержит столбцы из запросов с JOIN (растение, variety).
+     */
     private PlantPoint mapFromCursor(Cursor c) {
-        // данные точки
         float x = c.getFloat(c.getColumnIndexOrThrow("x"));
         float y = c.getFloat(c.getColumnIndexOrThrow("y"));
         PlantPoint point = new PlantPoint(x, y);
@@ -110,11 +130,11 @@ public class PointDataAccess {
         int fdIndex = c.getColumnIndexOrThrow("feeding_date");
         point.feedingDate = c.isNull(fdIndex) ? null : c.getLong(fdIndex);
 
-        // pot_volume – теперь из таблицы points
+        // pot_volume — теперь из таблицы points
         int pvIndex = c.getColumnIndexOrThrow("pot_volume");
         point.potVolume = c.isNull(pvIndex) ? null : c.getInt(pvIndex);
 
-        // данные растения
+        // Данные растения
         Plant plant = new Plant();
         plant.id = c.getInt(c.getColumnIndexOrThrow("plant_id"));
         plant.name = c.getString(c.getColumnIndexOrThrow("name"));
@@ -129,14 +149,16 @@ public class PointDataAccess {
         int keyIndex = c.getColumnIndexOrThrow("public_key");
         plant.imagePublicKey = c.isNull(keyIndex) ? null : c.getString(keyIndex);
 
-        // availablePotVolumes пока оставляем пустым (будет заполняться отдельно при необходимости)
+        // availablePotVolumes пока оставляем пустым (заполняется отдельно при необходимости)
         plant.availablePotVolumes = null;
 
         point.plant = plant;
         return point;
     }
 
-    // Получение всех точек с ПОДТЯГИВАНИЕМ РАСТЕНИЯ
+    /**
+     * Возвращает все точки на плане с информацией о растениях и их виде.
+     */
     public List<PlantPoint> getAllPoints() {
         List<PlantPoint> points = new ArrayList<>();
         SQLiteDatabase db = dbHelper.getReadableDatabase();
@@ -153,35 +175,36 @@ public class PointDataAccess {
                         "LEFT JOIN variety v ON pl.variety_id = v.id";
 
         Cursor c = db.rawQuery(sql, null);
-
         while (c.moveToNext()) {
             points.add(mapFromCursor(c));
         }
-
         c.close();
         return points;
     }
 
-    // сумма всех растений в наличии
+    /**
+     * Возвращает общее количество растений (сумма count всех точек).
+     */
     public int getTotalPlantCount() {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
-
-        Cursor cursor = db.rawQuery(
-                "SELECT SUM(count) FROM points",
-                null
-        );
-
+        Cursor cursor = db.rawQuery("SELECT SUM(count) FROM points", null);
         int total = 0;
-
         if (cursor.moveToFirst()) {
             total = cursor.getInt(0);
         }
-
         cursor.close();
-
         return total;
     }
 
+    /**
+     * Возвращает суммарное количество растений, удовлетворяющих фильтрам.
+     *
+     * @param name      фильтр по названию растения (LIKE %name%)
+     * @param type      фильтр по типу растения (LIKE %type%)
+     * @param group     фильтр по группе (точное совпадение)
+     * @param color     фильтр по ID цвета
+     * @param potVolume фильтр по объёму горшка
+     */
     public int getFilteredPlantCount(String name, String type, String group, Integer color, Integer potVolume) {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
@@ -214,18 +237,17 @@ public class PointDataAccess {
         }
 
         Cursor cursor = db.rawQuery(sql.toString(), args.toArray(new String[0]));
-
         int total = 0;
         if (cursor.moveToFirst()) {
             total = cursor.getInt(0);
         }
-
         cursor.close();
-
         return total;
     }
 
-    // никогда не обрабатывались
+    /**
+     * Точки, для которых ни разу не задана дата обработки (processing_date IS NULL).
+     */
     public List<PlantPoint> getNeverProcessedPoints() {
         List<PlantPoint> points = new ArrayList<>();
         SQLiteDatabase db = dbHelper.getReadableDatabase();
@@ -243,20 +265,22 @@ public class PointDataAccess {
                         "WHERE p.processing_date IS NULL";
 
         Cursor c = db.rawQuery(sql, null);
-
         while (c.moveToNext()) {
             points.add(mapFromCursor(c));
         }
-
         c.close();
         return points;
     }
 
+    /**
+     * Точки, которые не обрабатывались дольше указанного количества дней.
+     * Включает те, у которых processing_date IS NULL.
+     *
+     * @param days количество дней
+     */
     public List<PlantPoint> getNotProcessedMoreThanDays(int days) {
-
         LocalDate today = LocalDate.now();
         LocalDate thresholdDate = today.minusDays(days);
-
         long threshold = thresholdDate
                 .atStartOfDay(ZoneId.systemDefault())
                 .toInstant()
@@ -277,21 +301,18 @@ public class PointDataAccess {
                         "LEFT JOIN variety v ON pl.variety_id = v.id " +
                         "WHERE processing_date IS NULL OR processing_date < ?";
 
-        Cursor cursor = db.rawQuery(query,
-                new String[]{ String.valueOf(threshold) });
-
+        Cursor cursor = db.rawQuery(query, new String[]{ String.valueOf(threshold) });
         List<PlantPoint> result = new ArrayList<>();
-
         while (cursor.moveToNext()) {
-            PlantPoint point = mapFromCursor(cursor);
-            result.add(point);
+            result.add(mapFromCursor(cursor));
         }
-
         cursor.close();
         return result;
     }
 
-    // никогда не подкармливались
+    /**
+     * Точки, для которых ни разу не задана дата подкормки (feeding_date IS NULL).
+     */
     public List<PlantPoint> getNeverFeedingPoints() {
         List<PlantPoint> points = new ArrayList<>();
         SQLiteDatabase db = dbHelper.getReadableDatabase();
@@ -310,20 +331,22 @@ public class PointDataAccess {
                         "WHERE p.feeding_date IS NULL";
 
         Cursor c = db.rawQuery(sql, null);
-
         while (c.moveToNext()) {
             points.add(mapFromCursor(c));
         }
-
         c.close();
         return points;
     }
 
+    /**
+     * Точки, которые не подкармливались дольше указанного количества дней.
+     * Включает те, у которых feeding_date IS NULL.
+     *
+     * @param days количество дней
+     */
     public List<PlantPoint> getNotFeedingMoreThanDays(int days) {
-
         LocalDate today = LocalDate.now();
         LocalDate thresholdDate = today.minusDays(days);
-
         long threshold = thresholdDate
                 .atStartOfDay(ZoneId.systemDefault())
                 .toInstant()
@@ -344,16 +367,11 @@ public class PointDataAccess {
                         "LEFT JOIN variety v ON pl.variety_id = v.id " +
                         "WHERE feeding_date IS NULL OR feeding_date < ?";
 
-        Cursor cursor = db.rawQuery(query,
-                new String[]{ String.valueOf(threshold) });
-
+        Cursor cursor = db.rawQuery(query, new String[]{ String.valueOf(threshold) });
         List<PlantPoint> result = new ArrayList<>();
-
         while (cursor.moveToNext()) {
-            PlantPoint point = mapFromCursor(cursor);
-            result.add(point);
+            result.add(mapFromCursor(cursor));
         }
-
         cursor.close();
         return result;
     }

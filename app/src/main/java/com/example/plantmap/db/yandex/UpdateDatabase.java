@@ -22,9 +22,22 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
+/**
+ * Импорт списка растений из JSON-файла, размещённого на Яндекс.Диске.
+ *
+ * Алгоритм:
+ * 1. Получает прямую ссылку на файл через YandexDiskHelper.
+ * 2. Скачивает JSON.
+ * 3. Парсит JSON-массив в список ContentValues.
+ * 4. Заменяет содержимое таблицы plants, синхронизируя существующие записи:
+ *    записи с совпадающим id обновляются, новые — добавляются.
+ *    Каскадное удаление временно отключается, чтобы не потерять связанные точки.
+ *
+ * Выполняется в фоновом потоке. Результат выводится через Toast в главном потоке.
+ */
 public class UpdateDatabase {
     private final Context context;
-    // Публичная ссылка на plants.json на Яндекс.Диске
+    /** Публичная ссылка на plants.json на Яндекс.Диске. */
     private static final String PLANTS_JSON_PUBLIC_KEY = "https://disk.yandex.ru/d/9jzHNPTh30boeQ";
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -34,6 +47,9 @@ public class UpdateDatabase {
         this.context = context.getApplicationContext();
     }
 
+    /**
+     * Запускает импорт в фоновом потоке.
+     */
     public void importDatabase() {
         executor.execute(() -> {
             try {
@@ -51,7 +67,7 @@ public class UpdateDatabase {
                     return;
                 }
 
-                // 3. Распарсить сразу в ContentValues
+                // 3. Распарсить в ContentValues
                 List<ContentValues> valuesList = parsePlants(jsonString);
                 if (valuesList == null || valuesList.isEmpty()) {
                     showToast("Файл пуст или повреждён");
@@ -70,6 +86,9 @@ public class UpdateDatabase {
         });
     }
 
+    /**
+     * Скачивает содержимое по прямой ссылке как строку.
+     */
     private String downloadJson(String url) {
         Request request = new Request.Builder().url(url).build();
         try (Response response = httpClient.newCall(request).execute()) {
@@ -82,7 +101,11 @@ public class UpdateDatabase {
         return null;
     }
 
-    // Парсинг JSON-массива в список ContentValues для прямой вставки в таблицу plants
+    /**
+     * Парсит JSON-массив в список ContentValues для прямой вставки в таблицу plants.
+     * Ожидает объекты с полями: id, name, variety_id, flower_color, additional_info,
+     * is_builtin, public_key, name_rosebook.
+     */
     private List<ContentValues> parsePlants(String json) {
         List<ContentValues> list = new ArrayList<>();
         try {
@@ -91,12 +114,9 @@ public class UpdateDatabase {
                 JSONObject obj = arr.getJSONObject(i);
                 ContentValues cv = new ContentValues();
 
-                // для обнаружения конфликтов
                 cv.put("id", obj.getInt("id"));
-
                 cv.put("name", obj.optString("name"));
                 cv.put("variety_id", obj.optInt("variety_id"));
-
                 cv.put("flower_color", obj.optInt("flower_color", 9));
 
                 String additionalInfo = obj.isNull("additional_info")
@@ -125,11 +145,18 @@ public class UpdateDatabase {
         return list;
     }
 
+    /**
+     * Синхронизирует таблицу plants с загруженными данными.
+     * Для каждой записи из JSON: если id существует — обновляет, иначе — добавляет.
+     * Внешние ключи временно отключаются, чтобы избежать каскадного удаления точек
+     * при потенциальном удалении старых растений (хотя удаление здесь не производится).
+     */
     private void replaceAllPlants(List<ContentValues> plantsData) {
         DatabaseHelper dbHelper = new DatabaseHelper(context);
         SQLiteDatabase db = dbHelper.getWritableDatabase();
 
-        // Собираем множество id из JSON
+        // Собираем множество id из JSON (в текущей реализации не используется для удаления,
+        // но может пригодиться при будущем расширении логики синхронизации)
         Set<Integer> jsonIds = new HashSet<>();
         for (ContentValues cv : plantsData) {
             jsonIds.add(cv.getAsInteger("id"));
@@ -137,36 +164,32 @@ public class UpdateDatabase {
 
         db.beginTransaction();
         try {
-            // Временно отключаем внешние ключи, чтобы избежать каскадного удаления
             db.execSQL("PRAGMA foreign_keys = OFF");
 
             for (ContentValues cv : plantsData) {
                 int id = cv.getAsInteger("id");
-                // Проверяем, существует ли запись с таким id
                 Cursor c = db.rawQuery("SELECT id FROM plants WHERE id=?",
                         new String[]{String.valueOf(id)});
                 boolean exists = c.moveToFirst();
                 c.close();
 
                 if (exists) {
-                    // Обновляем существующую запись
                     db.update("plants", cv, "id=?", new String[]{String.valueOf(id)});
                 } else {
-                    // Вставляем новую запись
-                    cv.put("id", id); // убедимся, что id установлен
                     db.insert("plants", null, cv);
                 }
             }
 
-            // Включаем внешние ключи обратно
             db.execSQL("PRAGMA foreign_keys = ON");
-
             db.setTransactionSuccessful();
         } finally {
             db.endTransaction();
         }
     }
 
+    /**
+     * Показывает Toast в главном потоке.
+     */
     private void showToast(String message) {
         context.getMainExecutor().execute(() ->
                 Toast.makeText(context, message, Toast.LENGTH_SHORT).show()

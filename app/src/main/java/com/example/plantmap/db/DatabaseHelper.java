@@ -1,3 +1,6 @@
+/*  TODO
+     Миграции и Room
+*/
 package com.example.plantmap.db;
 
 import android.content.Context;
@@ -8,6 +11,18 @@ import android.util.Log;
 
 import java.io.*;
 
+/**
+ * Управление локальной базой данных SQLite.
+ *
+ * При первом запуске или при обновлении копирует готовую БД из assets,
+ * проверяя версию через PRAGMA user_version. Если файл отсутствует или версия
+ * устарела, он заменяется актуальной версией из пакета.
+ *
+ * Миграции выполняются в onUpgrade(). Текущая актуальная версия: 32.
+ *
+ * На будущее: для упрощения поддержки стоит рассмотреть миграцию на Room,
+ * который предоставляет compile-time проверку SQL и более чистый API.
+ */
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DB_NAME = "PlantMap_DB.db";
@@ -26,6 +41,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
+    /**
+     * Копирует файл БД из assets в рабочую директорию приложения,
+     * если он отсутствует или его версия ниже 32.
+     * Старый файл удаляется вместе с WAL-журналом.
+     */
     private void copyDatabaseIfNeeded() throws IOException {
         File dbFile = new File(dbPath);
 
@@ -97,11 +117,23 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
+    /**
+     * Миграция к версии 25: добавляет индекс для поля variety_id.
+     */
     private void migrateTo25(SQLiteDatabase db) {
         db.execSQL("CREATE INDEX IF NOT EXISTS idx_plants_variety_id ON plants(variety_id)");
     }
 
-    //Нормализация по pot_volume
+    /**
+     * Миграция к версии 31: нормализация по pot_volume и удаление дубликатов растений.
+     *
+     * Процесс включает:
+     * - перенос поля pot_volume из plants в отдельную таблицу plant_pot_volumes
+     * - сохранение pot_volume для каждой точки в points
+     * - выявление дубликатов растений по (variety_id, name, flower_color) и их удаление
+     * - обновление ссылок в points на оставшиеся растения
+     * - пересоздание таблиц с внешними ключами
+     */
     private void migrateTo31(SQLiteDatabase db) {
         db.beginTransaction();
         try {
@@ -124,7 +156,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     "SELECT p.pot_volume FROM plants p WHERE p.id = points.plant_id" +
                     ")");
 
-            // 4. Временная таблица дубликатов
+            // 4. Временная таблица дубликатов растений
             db.execSQL("CREATE TEMP TABLE IF NOT EXISTS temp_plant_dedup AS " +
                     "SELECT p.id AS old_id, g.min_id AS new_id " +
                     "FROM plants p " +
@@ -146,7 +178,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     " AND p.flower_color = g.flower_color " +
                     "WHERE p.pot_volume IS NOT NULL");
 
-            // ПРОВЕРКА 1
+            // ПРОВЕРКА 1 (отладка миграции) — можно раскомментировать при проблемах
 //            Cursor c = db.rawQuery("SELECT COUNT(*) FROM plant_pot_volumes", null);
 //            if (c.moveToFirst()) Log.d("MIGRATE1-pot", "plant_pot_volumes count: " + c.getInt(0));
 //            c.close();
@@ -165,7 +197,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             // 8. Удаляем временную таблицу
             db.execSQL("DROP TABLE IF EXISTS temp_plant_dedup");
 
-            // 9. Пересоздаём points БЕЗ внешнего ключа (чтобы отвязаться от старой plants)
+            // 9. Пересоздаём points БЕЗ внешнего ключа
             db.execSQL("ALTER TABLE points RENAME TO points_old");
             db.execSQL("CREATE TABLE points (" +
                     "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -236,7 +268,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             db.execSQL("CREATE INDEX IF NOT EXISTS idx_points_plant_id ON points(plant_id)");
             db.execSQL("CREATE INDEX IF NOT EXISTS idx_plants_variety_id ON plants(variety_id)");
 
-            // ПРОВЕРКА 2
+            // ПРОВЕРКА 2 (отладка) — раскомментировать при необходимости
 //            c = db.rawQuery("SELECT COUNT(*) FROM plant_pot_volumes", null);
 //            if (c.moveToFirst()) Log.d("MIGRATE2-pot", "plant_pot_volumes count: " + c.getInt(0));
 //            c.close();
@@ -251,6 +283,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
+    /**
+     * Создаёт схему БД с нуля, если база данных не была скопирована из assets.
+     * Используется при onCreate, который срабатывает, если файл БД создаётся
+     * самим SQLiteOpenHelper (а не копируется).
+     */
     private void createSchemaIfNeeded(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE IF NOT EXISTS variety (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -295,6 +332,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL("CREATE INDEX IF NOT EXISTS idx_plants_variety_id ON plants(variety_id)");
     }
 
+    /**
+     * Проверяет существование столбца в таблице.
+     * Используется в миграциях, чтобы безопасно добавлять столбцы.
+     */
     private boolean columnExists(SQLiteDatabase db, String tableName, String columnName) {
         try (Cursor cursor = db.rawQuery("PRAGMA table_info(" + tableName + ")", null)) {
             int nameIndex = cursor.getColumnIndex("name");

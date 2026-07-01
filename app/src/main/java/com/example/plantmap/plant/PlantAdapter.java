@@ -8,6 +8,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -18,8 +19,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Адаптер для отображения списка растений в RecyclerView.
+ * Каждый элемент показывает название, тип, цветок (с цветовой индикацией)
+ * и кнопку редактирования.
+ *
+ * Для отображения цвета используется карта цветов (id -> hex),
+ * задаваемая через {@link #setColorMaps(Map, Map)}.
+ * Особые случаи:
+ * - flowerColorId = 9 — прозрачный (нет цвета)
+ * - flowerColorId = 8 — радужный градиент
+ */
 public class PlantAdapter extends RecyclerView.Adapter<PlantAdapter.PlantViewHolder> {
 
+    /** Слушатель нажатия на кнопку редактирования. */
     public interface OnEditClickListener {
         void onEditClick(Plant plant);
     }
@@ -28,18 +41,20 @@ public class PlantAdapter extends RecyclerView.Adapter<PlantAdapter.PlantViewHol
     private List<Plant> plants;
     private OnEditClickListener listener;
 
-    // Карты для преобразования ID цвета в название и hex-код
+    /** Карта id цвета -> название (для отображения в заголовке). */
     private Map<Integer, String> colorIdToName;
+    /** Карта id цвета -> hex-код (для окрашивания индикатора). */
     private Map<Integer, String> colorIdToHex;
 
-    public PlantAdapter(Context context,
-                        List<Plant> plants,
-                        OnEditClickListener listener){
+    public PlantAdapter(Context context, List<Plant> plants, OnEditClickListener listener) {
         this.context = context;
         this.plants = plants;
         this.listener = listener;
     }
 
+    /**
+     * Устанавливает карты цветов. Должен вызываться перед отображением списка.
+     */
     public void setColorMaps(Map<Integer, String> idToName, Map<Integer, String> idToHex) {
         this.colorIdToName = idToName;
         this.colorIdToHex = idToHex;
@@ -56,27 +71,27 @@ public class PlantAdapter extends RecyclerView.Adapter<PlantAdapter.PlantViewHol
     public void onBindViewHolder(@NonNull PlantViewHolder holder, int position) {
         Plant plant = plants.get(position);
 
-        // подпись карточки
-        // название сорта + цвет цветка и литраж горшка
+        // Заголовок карточки: название + цвет + литраж
         holder.name.setText(formatPlantTitle(plant));
-        // тип + группа
+        // Подзаголовок: тип (группа)
         if (plant.group != null && !plant.group.isEmpty()) {
             holder.type.setText(plant.type + " (" + plant.group + ")");
         } else {
             holder.type.setText(plant.type);
         }
 
-        // цвет цветка
+        // Цветовой индикатор
         applyColor(holder.colorView, plant.flowerColorId);
 
-        // кнопка редактирования
         holder.editBtn.setOnClickListener(v -> {
             if (listener != null) listener.onEditClick(plant);
         });
     }
 
+    /**
+     * Формирует заголовок карточки: "Название (Цвет, 5л, 10л)".
+     */
     private String formatPlantTitle(Plant plant) {
-        //Подпись карточки - заголовок
         StringBuilder sb = new StringBuilder(plant.name);
         List<String> extras = new ArrayList<>();
 
@@ -91,8 +106,9 @@ public class PlantAdapter extends RecyclerView.Adapter<PlantAdapter.PlantViewHol
             }
             extras.add(String.join(", ", volStrings));
         }
-        if (!extras.isEmpty())
+        if (!extras.isEmpty()) {
             sb.append(" (").append(String.join(", ", extras)).append(")");
+        }
         return sb.toString();
     }
 
@@ -101,10 +117,13 @@ public class PlantAdapter extends RecyclerView.Adapter<PlantAdapter.PlantViewHol
         return plants.size();
     }
 
+    /**
+     * ViewHolder для элемента списка растений.
+     */
     public static class PlantViewHolder extends RecyclerView.ViewHolder {
         TextView name, type;
         ImageButton editBtn;
-        View colorView;
+        View colorView; // индикатор цвета цветка
 
         public PlantViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -115,13 +134,15 @@ public class PlantAdapter extends RecyclerView.Adapter<PlantAdapter.PlantViewHol
         }
     }
 
-    // красим
+    /**
+     * Устанавливает цвет фона для индикатора цветка.
+     * id = 9 — прозрачный, id = 8 — радужный градиент, остальные — сплошной цвет из hex.
+     */
     private void applyColor(View view, int flowerColorId) {
         if (flowerColorId == 9) {
             view.setBackgroundColor(Color.TRANSPARENT);
             return;
         }
-
         if (flowerColorId == 8) {
             int[] rainbowColors = {
                     Color.RED, Color.rgb(255, 165, 0), Color.YELLOW,
@@ -138,13 +159,10 @@ public class PlantAdapter extends RecyclerView.Adapter<PlantAdapter.PlantViewHol
             view.setBackgroundColor(Color.TRANSPARENT);
             return;
         }
-
         try {
-            int color = Color.parseColor(hex);
-            view.setBackgroundColor(color);
+            view.setBackgroundColor(Color.parseColor(hex));
         } catch (IllegalArgumentException e) {
             view.setBackgroundColor(Color.TRANSPARENT);
         }
     }
-
 }

@@ -15,12 +15,21 @@ import com.example.plantmap.MainActivity;
 import com.example.plantmap.R;
 import com.example.plantmap.db.DbView;
 
+/**
+ * Фрагмент базы данных растений.
+ * Отображает список растений с возможностью поиска, сброса поиска
+ * и просмотра детальной информации. Использует кастомный DbView.
+ */
 public class DbFragment extends BaseFragment {
+
+    /** Текст справки для этого фрагмента. */
     @Override
     protected int getHelpTextResId() {
         return R.string.help_db;
     }
+
     private DbView dbView;
+    /** Флаг активности поиска (влияет на видимость кнопки сброса). */
     private boolean dbSearchActive = false;
 
     @Nullable
@@ -34,11 +43,12 @@ public class DbFragment extends BaseFragment {
                 ((MainActivity) requireActivity()).getRepository()
         );
 
+        // Слушатель событий поиска для обновления состояния меню
         dbView.setSearchStateListener(new DbView.SearchStateListener() {
             @Override
             public void onSearchApplied() {
                 dbSearchActive = true;
-                requireActivity().invalidateOptionsMenu();
+                requireActivity().invalidateOptionsMenu(); // пересоздать меню
             }
 
             @Override
@@ -53,17 +63,20 @@ public class DbFragment extends BaseFragment {
     @Override
     public void onResume() {
         super.onResume();
+        // Обновляем данные при возвращении на фрагмент
         if (dbView != null) {
             dbView.refresh();
         }
     }
 
+    /** Добавляет к общему меню специфичные пункты (поиск, сброс). */
     @Override
     protected void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
-        super.onCreateMenu(menu, inflater); // добавляет menu_common
-        inflater.inflate(R.menu.menu_db, menu); // добавляем специфичное для БД меню
+        super.onCreateMenu(menu, inflater); // menu_common
+        inflater.inflate(R.menu.menu_db, menu);
     }
 
+    /** Управляет видимостью кнопки сброса поиска в зависимости от dbSearchActive. */
     @Override
     public void onPrepareMenu(@NonNull Menu menu) {
         super.onPrepareMenu(menu);
@@ -73,6 +86,7 @@ public class DbFragment extends BaseFragment {
         }
     }
 
+    /** Обрабатывает пункты меню, специфичные для БД (поиск, сброс). */
     @Override
     protected boolean onMenuItemSelected(@NonNull MenuItem item) {
         int id = item.getItemId();
@@ -86,6 +100,6 @@ public class DbFragment extends BaseFragment {
             requireActivity().invalidateOptionsMenu();
             return true;
         }
-        return false; // справка уже обработана в BaseFragment
+        return false; // справка обработается в BaseFragment
     }
 }

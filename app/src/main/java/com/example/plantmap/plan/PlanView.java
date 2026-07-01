@@ -1,16 +1,15 @@
 package com.example.plantmap.plan;
 
 import android.app.AlertDialog;
-import android.content.Context; //объект среды
+import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
-import android.view.View; //базовый визуальный элемент
+import android.view.View;
 import android.view.ViewConfiguration;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -34,118 +33,146 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
-//extends view - значит planview частный случай view
+/**
+ * Основное View для отображения интерактивного плана территории.
+ * Поддерживает:
+ * - Просмотр информации о растениях (тап по точке)
+ * - Добавление новых точек (режим ADD_POINT) с привязкой к сетке
+ * - Редактирование точек (режим EDIT_POINT): изменение количества, перемещение, удаление
+ * - Масштабирование (pinch-to-zoom) и панорамирование (drag) плана
+ * - Подсветку результатов поиска
+ *
+ * Все координаты точек хранятся в эталонных единицах плана (plan coordinates),
+ * не зависящих от текущего масштаба и размера экрана.
+ */
 public class PlanView extends View {
-    private Paint paint; //кисточка
-    private Drawable planDrawable; // план территории
-    private float planWidth, planHeight;   // реальные размеры плана на экране
-    private float planScale;               // масштаб плана относительно его оригинального размера
-    private float planOriginalWidth, planOriginalHeight; // размеры Drawable
-    private ArrayList<PlantPoint> points; // точки на плане
+
+    // --- Визуальные константы ---
+    /** Плотность экрана целевого устройства (A16), используется для расчёта размеров. */
     private static float density = 2.8125f;
-    private static final float POINT_RADIUS = 4f / density; // константа радиуса для рисования
-    private static final float HIT_RADIUS = POINT_RADIUS * 3f; // константа для попаданию в точку, чтобы не мучаться с "пиксель в пиксель"
-    private EditMode currentMode = EditMode.VIEW; // режимы, по умолчанию ПРОСМОТР
-    private PlantPoint draggedPoint = null; // перетаскивание (в режиме рпадактирования зажал - перетащил - отпустил)
-    private PlantPoint pressedPoint = null; // просто выделенная
-    private boolean isDragging = false; // флаг перемещения
-    private float downX, downY; // коорд
-    private final float touchSlop; // чтобы не было "ложного" перетаскивания из-за помех
-    private PlantPoint selectedPoint = null; // выделение выбранной точки
-    private PlantRepository repository; // все связанное с БД вынесено из view
+    /** Радиус точки при отрисовке (в единицах плана). */
+    private static final float POINT_RADIUS = 4f / density;
+    /** Радиус попадания в точку при касании (для удобства). */
+    private static final float HIT_RADIUS = POINT_RADIUS * 3f;
+    /** Размер текста номера точки. */
+    private float textSize = 7f / density;
+    /** Толщина линии обводки точек. */
+    private float strokeWidth = 3f / density;
+    /** Отступ обводки найденных точек. */
+    private float indentStroke = 2f / density;
+
+    /** Шаг сетки по X (в единицах плана) для режимов добавления/редактирования. */
+    private static final float GRID_STEP_X = POINT_RADIUS * 2f;
+    /** Шаг сетки по Y. */
+    private static final float GRID_STEP_Y = POINT_RADIUS * 2f;
+
+    // --- Графика и кисти ---
+    private Paint paint;
+    private Drawable planDrawable;
+    private Paint gridPaint;
+    private Paint searchStrokePaint;
+
+    // --- Геометрия плана ---
+    /** Фактическая ширина плана на экране (с учётом паддингов). */
+    private float planWidth;
+    /** Фактическая высота плана (пропорционально ширине). */
+    private float planHeight;
+    /** Масштаб относительно оригинального размера изображения. */
+    private float planScale;
+    /** Оригинальная ширина изображения плана. */
+    private float planOriginalWidth;
+    /** Оригинальная высота изображения плана. */
+    private float planOriginalHeight;
+
+    // --- Данные ---
+    /** Точки, отображаемые на плане. */
+    private ArrayList<PlantPoint> points;
+    private PlantRepository repository;
+
+    // --- Режимы и состояние взаимодействия ---
+    private EditMode currentMode = EditMode.VIEW;
+    private PlantPoint draggedPoint = null;
+    private PlantPoint pressedPoint = null;
+    private PlantPoint selectedPoint = null;
+    private boolean isDragging = false;
+    private boolean isDraggingPlan = false;
+    private float downX, downY;
+    private final float touchSlop;
+
+    // --- Масштабирование и прокрутка ---
     private ScaleGestureDetector scaleDetector;
-    private float scaleFactor = 1.0f;  // текущий масштаб
-    private final float MIN_SCALE = 1.0f;  // минимальный масштаб
-    private final float MAX_SCALE = 10.0f;  // максимальный масштаб
-    private float offsetX = 0f; // смещение плана по X
-    private float offsetY = 0f; // смещение плана по Y
-    private boolean isDraggingPlan = false; // флаг движения плана
-    private float focusX;
-    private float focusY;
-    private boolean gestureConsumed = false; // подтверждение действия для разграничения режмных и масштабирования
-    // поиск (не режим, а состояние отображения)
+    private float scaleFactor = 1.0f;
+    private final float MIN_SCALE = 1.0f;
+    private final float MAX_SCALE = 10.0f;
+    private float offsetX = 0f;
+    private float offsetY = 0f;
+    private float focusX, focusY;
+    /** Флаг, что текущий жест уже обработан (масштабирование или перетаскивание). */
+    private boolean gestureConsumed = false;
+
+    // --- Поиск ---
     private boolean searchActive = false;
     private final Set<PlantPoint> searchResultsSet = new HashSet<>();
-    private Paint searchStrokePaint; // ободка для точек, чтобы не конфликтовать с режимными окрасами
-    private Context contextColors;
-    private float textSize = 7f / density; //размер шрифта
-    private float strokeWidth = 3f / density; // толщина линии
-    private float indentStroke = 2f / density; // отступ обводки
 
-    private static final float GRID_STEP_X = POINT_RADIUS*2f;   // шаг сетки по X (в единицах плана)
-    private static final float GRID_STEP_Y = POINT_RADIUS*2f;   // шаг сетки по Y
-    private Paint gridPaint;                        // кисть для линий сетки
-
-    // а был ли поиск вообще
+    // --- Слушатели ---
+    /** Слушатель событий начала/окончания поиска. */
     public interface SearchStateListener {
         void onSearchApplied();
-
         void onSearchCleared();
     }
-
     private SearchStateListener searchStateListener;
     private PlantSearchEngine searchEngine = new PlantSearchEngine();
-    // ИНФОРМАТИВНОЕ
-    // отступы устройства
-    private int pl;
-    private int pr;
-    private int pt;
 
-    //                                  КОНСТРУКТОР, вызывается в момент создания view
+    // Отступы (padding), устанавливаемые извне
+    private int pl, pr, pt;
+
+    /**
+     * Конструктор. Инициализирует кисти, детектор жестов, загружает точки из БД.
+     */
     public PlanView(Context context, PlantRepository repository) {
-        // контекст - дступ к ресурсам, экрану, системе, БД ("где я живу")
         super(context);
-        contextColors = context;
         this.repository = repository;
 
         scaleDetector = new ScaleGestureDetector(getContext(), new ScaleListener());
+        touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
 
-        touchSlop = ViewConfiguration
-                .get(context)
-                .getScaledTouchSlop();
-
-        // кисти
-        // точки
+        // Кисть для точек
         paint = new Paint();
         paint.setColor(ContextCompat.getColor(context, R.color.default_color));
-        paint.setStrokeWidth(strokeWidth);        // толщина линии 5 пикселей
-        // обводка поиска
+        paint.setStrokeWidth(strokeWidth);
+
+        // Кисть для обводки найденных точек
         searchStrokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         searchStrokePaint.setStyle(Paint.Style.STROKE);
         searchStrokePaint.setStrokeWidth(strokeWidth);
         searchStrokePaint.setColor(ContextCompat.getColor(context, R.color.search_highlight));
 
-        // план территории
+        // Изображение плана
         planDrawable = ContextCompat.getDrawable(context, R.drawable.terr_plan);
-        // получаем оригинальные размеры
-//        planOriginalWidth = planDrawable.getIntrinsicWidth();
-//        planOriginalHeight = planDrawable.getIntrinsicHeight();
+        // Размеры плана в эталонных единицах (совпадают с координатами точек)
         planOriginalWidth = 453f;
         planOriginalHeight = 687f;
 
-        // СЕТКА
+        // Кисть для сетки
         gridPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         gridPaint.setStyle(Paint.Style.STROKE);
         gridPaint.setStrokeWidth(1f);
         gridPaint.setColor(ContextCompat.getColor(context, R.color.grid_color));
 
-        // точки
-        points = new ArrayList<>(); // инициализируем
-        points.clear();
+        // Загружаем точки из репозитория
+        points = new ArrayList<>();
         points.addAll(repository.getAllPoints());
 
         updatePlanGeometry();
     }
 
-
-    //                                  МЕТОДЫ КЛАССА
-    // РЕЖИМЫ
+    // --- Режимы ---
     public void setEditMode(EditMode mode) {
         this.currentMode = mode;
         invalidate();
     }
 
-    // считаем размеры один раз
+    // --- Геометрия ---
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
@@ -160,59 +187,55 @@ public class PlanView extends View {
         }
     }
 
+    /**
+     * Пересчитывает размеры и масштаб плана на основе текущих размеров View и отступов.
+     */
     private void updatePlanGeometry() {
         pl = getPaddingLeft();
         pr = getPaddingRight();
         pt = getPaddingTop();
-        // ПЛАН
-        // ширина под экран
         planWidth = Math.max(0f, getWidth() - pl - pr);
         if (planOriginalWidth > 0f) {
-            // сохраняем пропорции
             planScale = planWidth / planOriginalWidth;
             planHeight = planOriginalHeight * planScale;
         }
     }
 
-    // переводим экранные координаты в плановые
+    /**
+     * Преобразует экранные координаты в координаты плана (с учётом смещения и масштаба).
+     */
     private float[] screenToPlan(float x, float y) {
         float planX = (x - offsetX - pl) / (planScale * scaleFactor);
         float planY = (y - offsetY - pt) / (planScale * scaleFactor);
         return new float[]{planX, planY};
     }
 
-    // проверяем границы
+    /**
+     * Проверяет, что точка (в координатах плана) находится внутри границ плана.
+     */
     private boolean isInsidePlan(float planX, float planY) {
-        //float r = pointRadius;
         float r = POINT_RADIUS;
-
         return planX >= r &&
                 planY >= r &&
                 planX <= planOriginalWidth - r &&
                 planY <= planOriginalHeight - r;
     }
 
-
-    // рисовашки
+    // --- Отрисовка ---
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-
-        // Сохраняем состояние канвы
         canvas.save();
-
-        // Сначала смещаем план (offset), потом масштабируем
         canvas.translate(offsetX, offsetY);
         canvas.scale(scaleFactor, scaleFactor);
 
-        // ПЛАН
-        // отрисовка плана территории из SVG
+        // План
         if (planDrawable != null) {
             planDrawable.setBounds(pl, (int) pt, pl + (int) planWidth, (int) (pt + planHeight));
             planDrawable.draw(canvas);
         }
 
-        // СЕТКА
+        // Сетка (только в режимах добавления/редактирования)
         if (currentMode == EditMode.ADD_POINT || currentMode == EditMode.EDIT_POINT) {
             for (float x = 0; x <= planOriginalWidth; x += GRID_STEP_X) {
                 float screenX = pl + x * planScale;
@@ -224,119 +247,191 @@ public class PlanView extends View {
             }
         }
 
-        // ТОЧКИ
+        // Точки
+        // TODO: Вынести создание Paint за пределы onDraw для повышения производительности
         Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        textPaint.setColor(ContextCompat.getColor(contextColors, R.color.point_text_default));      // цвет текста
-        textPaint.setTextSize(textSize * planScale);           // размер шрифта, можно масштабировать
-        textPaint.setTextAlign(Paint.Align.LEFT); // центрирование далее вручную
+        textPaint.setColor(ContextCompat.getColor(getContext(), R.color.point_text_default));
+        textPaint.setTextSize(textSize * planScale);
+        textPaint.setTextAlign(Paint.Align.LEFT);
 
         for (PlantPoint p : points) {
             if (p.plant == null) continue;
-            // окраска для обычных/выбранных точек в режимах
+
+            // Выбор цвета в зависимости от выделения
             if (p == selectedPoint) {
-                paint.setColor(ContextCompat.getColor(contextColors, R.color.point_selected)); // выделение — желтый
-                textPaint.setColor(ContextCompat.getColor(contextColors, R.color.point_text_selected));
+                paint.setColor(ContextCompat.getColor(getContext(), R.color.point_selected));
+                textPaint.setColor(ContextCompat.getColor(getContext(), R.color.point_text_selected));
             } else {
-                paint.setColor(ContextCompat.getColor(contextColors, R.color.point_default)); // обычные точки
-                textPaint.setColor(ContextCompat.getColor(contextColors, R.color.point_text_default));
+                paint.setColor(ContextCompat.getColor(getContext(), R.color.point_default));
+                textPaint.setColor(ContextCompat.getColor(getContext(), R.color.point_text_default));
             }
 
             boolean isFound = searchActive && searchResultsSet.contains(p);
-
-            // обводка найденных
-            if (isFound) {
-                float screenX = pl + p.x * planScale;
-                float screenY = pt + p.y * planScale;
-                //float screenRadius = pointRadius * planScale + 4f;
-                float screenRadius = POINT_RADIUS * planScale + indentStroke;
-
-                canvas.drawCircle(
-                        screenX,
-                        screenY,
-                        screenRadius,
-                        searchStrokePaint
-                );
-            }
-
             float screenX = pl + p.x * planScale;
             float screenY = pt + p.y * planScale;
-            //float screenRadius = pointRadius * planScale;
+
+            // Обводка найденных точек
+            if (isFound) {
+                float screenRadius = POINT_RADIUS * planScale + indentStroke;
+                canvas.drawCircle(screenX, screenY, screenRadius, searchStrokePaint);
+            }
+
+            // Сама точка
             float screenRadius = POINT_RADIUS * planScale;
             canvas.drawCircle(screenX, screenY, screenRadius, paint);
 
-
-            // Отрисовка цифры по центру
+            // Текст (количество)
             String text = String.valueOf(p.count);
             Rect bounds = new Rect();
             textPaint.getTextBounds(text, 0, text.length(), bounds);
-
-            // Вычисляем смещение для центрирования
             float textX = screenX - bounds.width() / 2f;
             float textY = screenY + bounds.height() / 2f;
-
             canvas.drawText(text, textX, textY, textPaint);
         }
         canvas.restore();
     }
 
-    // Логика тапа
+    // --- Обработка касаний ---
+    // TODO разбить на несколько методов поменьше
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        if (planScale == 0f) return false;
+        scaleDetector.onTouchEvent(event);
+
+        float x = event.getX();
+        float y = event.getY();
+
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                gestureConsumed = false;
+                downX = x;
+                downY = y;
+                isDragging = false;
+                isDraggingPlan = false;
+                if (currentMode == EditMode.EDIT_POINT || currentMode == EditMode.VIEW) {
+                    float[] p = screenToPlan(x, y);
+                    pressedPoint = findPointAt(p[0], p[1]);
+                    selectedPoint = pressedPoint;
+                    invalidate();
+                }
+                return true;
+
+            case MotionEvent.ACTION_MOVE:
+                float dx = x - downX;
+                float dy = y - downY;
+                if (currentMode == EditMode.EDIT_POINT && pressedPoint != null) {
+                    if (!isDragging && (Math.abs(dx) > touchSlop || Math.abs(dy) > touchSlop)) {
+                        draggedPoint = pressedPoint;
+                        isDragging = true;
+                    }
+                    if (isDragging && draggedPoint != null) {
+                        gestureConsumed = true;
+                        float dxPlan = dx / (planScale * scaleFactor);
+                        float dyPlan = dy / (planScale * scaleFactor);
+                        float newX = draggedPoint.x + dxPlan;
+                        float newY = draggedPoint.y + dyPlan;
+                        if (isInsidePlan(newX, newY)) {
+                            draggedPoint.setX(newX);
+                            draggedPoint.setY(newY);
+                        }
+                        downX = x;
+                        downY = y;
+                        invalidate();
+                    }
+                } else if (!isDraggingPlan) {
+                    if (Math.abs(dx) > touchSlop || Math.abs(dy) > touchSlop) {
+                        isDraggingPlan = true;
+                    }
+                }
+                if (isDraggingPlan) {
+                    gestureConsumed = true;
+                    offsetX += dx;
+                    offsetY += dy;
+                    float maxOffsetX = 0;
+                    float maxOffsetY = 0;
+                    float minOffsetX = getWidth() - planWidth * scaleFactor;
+                    float minOffsetY = getHeight() - planHeight * scaleFactor;
+                    offsetX = Math.min(maxOffsetX, Math.max(offsetX, minOffsetX));
+                    offsetY = Math.min(maxOffsetY, Math.max(offsetY, minOffsetY));
+                    downX = x;
+                    downY = y;
+                    invalidate();
+                }
+                return true;
+
+            case MotionEvent.ACTION_UP:
+                if (!gestureConsumed) {
+                    float[] p = screenToPlan(x, y);
+                    if (currentMode == EditMode.VIEW) {
+                        PlantPoint tapped = findPointAt(p[0], p[1]);
+                        selectedPoint = tapped;
+                        invalidate();
+                        if (tapped != null) showPlantInfo(tapped);
+                    } else {
+                        handleTap(p[0], p[1]);
+                    }
+                } else if (draggedPoint != null) {
+                    // Привязка к сетке после перетаскивания
+                    float snappedX = Math.round(draggedPoint.x / GRID_STEP_X) * GRID_STEP_X;
+                    float snappedY = Math.round(draggedPoint.y / GRID_STEP_Y) * GRID_STEP_Y;
+                    if (isInsidePlan(snappedX, snappedY) && !isPointAt(snappedX, snappedY, draggedPoint)) {
+                        draggedPoint.setX(snappedX);
+                        draggedPoint.setY(snappedY);
+                    }
+                    if (draggedPoint.id != 0) {
+                        repository.updatePoint(draggedPoint.id, draggedPoint);
+                    }
+                }
+                draggedPoint = null;
+                pressedPoint = null;
+                isDragging = false;
+                isDraggingPlan = false;
+                return true;
+        }
+        return super.onTouchEvent(event);
+    }
+
+    /**
+     * Обработка тапа: добавление точки или вызов меню редактирования.
+     */
     private void handleTap(float x, float y) {
         if (currentMode == EditMode.ADD_POINT) {
-            // Привязка к ближайшему узлу сетки
             float snappedX = Math.round(x / GRID_STEP_X) * GRID_STEP_X;
             float snappedY = Math.round(y / GRID_STEP_Y) * GRID_STEP_Y;
-
             if (!isInsidePlan(x, y)) {
                 showOutOfPlanWarning();
                 return;
             }
-
-            // Проверяем, нет ли уже точки в этом узле (допустим небольшой радиус 0.5f)
             if (isPointAt(snappedX, snappedY)) {
                 showNodeOccupiedWarning();
                 return;
             }
-
-            // создать точку и открыть ввод данных
             PlantPoint pendingPoint = new PlantPoint(snappedX, snappedY);
-
-            PlantDialogs.showNewPlantDialog(
-                    getContext(),
-                    pendingPoint,
-                    repository, () -> {
-                        points.add(pendingPoint); // обновляем список точек
-                        invalidate();             // перерисовываем экран
-                    });
+            PlantDialogs.showNewPlantDialog(getContext(), pendingPoint, repository, () -> {
+                points.add(pendingPoint);
+                invalidate();
+            });
         } else if (currentMode == EditMode.EDIT_POINT) {
-            // выбрать точку, открыть меню редактирования
             if (pressedPoint != null && !isDragging) {
-                // фиксируем точку в локальную переменную,
-                // чтобы коллбеки не зависели от обнуления поля pressedPoint в ACTION_UP
                 PlantPoint tappedPoint = pressedPoint;
-                // contains дает true только если это тот же объект, а не просто совпадение id
                 if (!points.contains(tappedPoint)) {
                     pressedPoint = null;
                     return;
                 }
-                // изменить количество / удалить
                 PlantDialogs.showEditPointDialog(
-                        getContext(),
-                        pressedPoint,
-                        repository,
-                        () -> {
-                            showDeleteConfirmation(tappedPoint);
-                        },
-                        () -> {
-                            invalidate();// перерисовываем экран
-                        }
+                        getContext(), tappedPoint, repository,
+                        () -> showDeleteConfirmation(tappedPoint),
+                        () -> invalidate()
                 );
             }
-            // если isDragging == true — значит, это было перемещение
         }
     }
 
+    /**
+     * Проверяет, есть ли точка в указанных координатах (с допуском).
+     */
     private boolean isPointAt(float x, float y) {
-        float tolerance = 2f; // можно сделать меньше шага сетки
+        float tolerance = 2f;
         for (PlantPoint p : points) {
             if (Math.abs(p.x - x) < tolerance && Math.abs(p.y - y) < tolerance) {
                 return true;
@@ -345,10 +440,13 @@ public class PlanView extends View {
         return false;
     }
 
+    /**
+     * Проверяет занятость узла, исключая заданную точку.
+     */
     private boolean isPointAt(float x, float y, PlantPoint exclude) {
-        float tolerance = 2f; // небольшой допуск, как и в обычном isPointAt
+        float tolerance = 2f;
         for (PlantPoint p : points) {
-            if (p == exclude) continue;          // пропускаем исключаемую точку
+            if (p == exclude) continue;
             if (Math.abs(p.x - x) < tolerance && Math.abs(p.y - y) < tolerance) {
                 return true;
             }
@@ -364,29 +462,21 @@ public class PlanView extends View {
                 .show();
     }
 
-    // подтверждение удаления
     private void showDeleteConfirmation(PlantPoint point) {
         new AlertDialog.Builder(getContext())
                 .setTitle("Удаление точки")
                 .setMessage("Вы уверены, что хотите удалить эту точку?")
                 .setPositiveButton("Удалить", (dialog, which) -> {
                     points.remove(point);
-
                     if (selectedPoint == point) selectedPoint = null;
                     if (draggedPoint == point) draggedPoint = null;
-
-                    // удаляем из БД
-                    if (point.id != 0) {
-                        repository.deletePoint(point.id);
-                    }
-
+                    if (point.id != 0) repository.deletePoint(point.id);
                     invalidate();
                 })
                 .setNegativeButton("Отмена", null)
                 .show();
     }
 
-    // предупреждение о выходе за границы территории
     private void showOutOfPlanWarning() {
         new AlertDialog.Builder(getContext())
                 .setTitle("Нельзя создать точку")
@@ -395,190 +485,31 @@ public class PlanView extends View {
                 .show();
     }
 
-
-    // событие касания
-    @Override
-    public boolean onTouchEvent(MotionEvent event) {
-        // при удалении растения если жест все еще не завершен, чтобы краша не было
-        if (planScale == 0f) {
-            return false;
-        }
-
-        // Передаем событие детектору масштабирования
-        scaleDetector.onTouchEvent(event);
-
-        // координаты касания
-        float x = event.getX();
-        float y = event.getY();
-
-        // версия по жесту
-        switch (event.getAction()) {
-
-            // подготовка
-            case MotionEvent.ACTION_DOWN:
-                gestureConsumed = false;
-                downX = x;
-                downY = y;
-                isDragging = false;
-                isDraggingPlan = false;
-                if (currentMode == EditMode.EDIT_POINT || currentMode == EditMode.VIEW) {
-                    float[] p = screenToPlan(x, y);
-                    pressedPoint = findPointAt(p[0], p[1]);
-                    selectedPoint = pressedPoint;
-                    invalidate();
-                }
-                return true;
-
-            // логика перемещения
-            case MotionEvent.ACTION_MOVE:
-                float dx = x - downX;
-                float dy = y - downY;
-                if (currentMode == EditMode.EDIT_POINT && pressedPoint != null) {
-                    if (!isDragging && (Math.abs(dx) > touchSlop || Math.abs(dy) > touchSlop)) {
-                        draggedPoint = pressedPoint;
-                        isDragging = true;
-                    }
-
-                    if (isDragging && draggedPoint != null) {
-                        gestureConsumed = true;
-
-                        // dx/dy экранные пиксели. Переводим в координаты плана
-                        float dxPlan = dx / (planScale * scaleFactor);
-                        float dyPlan = dy / (planScale * scaleFactor);
-                        // делим на scaleFactor, чтобы движение пальца совпадало с масштабом
-                        float newX = draggedPoint.x + dxPlan;
-                        float newY = draggedPoint.y + dyPlan;
-
-                        if (isInsidePlan(newX, newY)) {
-                            draggedPoint.setX(newX);
-                            draggedPoint.setY(newY);
-                        }
-
-                        downX = x;
-                        downY = y;
-
-                        invalidate();
-                    }
-                } else if (!isDraggingPlan) {
-                    if (Math.abs(dx) > touchSlop || Math.abs(dy) > touchSlop) {
-                        isDraggingPlan = true;
-                    }
-                }
-                if (isDraggingPlan) {
-                    gestureConsumed = true;
-
-                    offsetX += dx;
-                    offsetY += dy;
-
-                    // Ограничение границ плана
-                    // Используем реальные размеры плана
-                    float maxOffsetX = 0;
-                    float maxOffsetY = 0;
-                    float minOffsetX = getWidth() - planWidth * scaleFactor;
-                    float minOffsetY = getHeight() - planHeight * scaleFactor;
-
-                    // Ограничиваем смещение
-                    offsetX = Math.min(maxOffsetX, Math.max(offsetX, minOffsetX));
-                    offsetY = Math.min(maxOffsetY, Math.max(offsetY, minOffsetY));
-
-                    downX = x;
-                    downY = y;
-                    invalidate();
-                }
-                return true;
-
-            // логика: редактирования кол-ва / удаления (edit) | просмотра растения (view)
-            case MotionEvent.ACTION_UP:
-                if (!gestureConsumed) {
-                    if (currentMode == EditMode.VIEW) {
-                        // координаты касания относительно плана
-                        float[] p = screenToPlan(x, y);
-                        // если мы в режиме просмотра — ищем точку под пальцем
-                        PlantPoint tapped = findPointAt(p[0], p[1]);
-                        selectedPoint = tapped;  // выделяем точку
-                        invalidate();
-                        if (tapped != null) {
-                            showPlantInfo(tapped); // показываем данные
-                        }
-                    } else {
-                        float[] p = screenToPlan(x, y);
-                        handleTap(p[0], p[1]);
-                    }
-                    /*
-                } else if (draggedPoint != null && draggedPoint.id != 0) {
-                    // координаты изменились, сохраняем в базе
-                    repository.updatePoint(draggedPoint.id, draggedPoint);
-                }*/
-                } else if (draggedPoint != null) {
-                    // Привязка к сетке после отпускания
-                    float snappedX = Math.round(draggedPoint.x / GRID_STEP_X) * GRID_STEP_X;
-                    float snappedY = Math.round(draggedPoint.y / GRID_STEP_Y) * GRID_STEP_Y;
-
-                    // Проверяем, что узел свободен (исключая текущую точку)
-                    if (isInsidePlan(snappedX, snappedY) && !isPointAt(snappedX, snappedY, draggedPoint)) {
-                        draggedPoint.setX(snappedX);
-                        draggedPoint.setY(snappedY);
-                    } else if (!isInsidePlan(snappedX, snappedY)) {
-                        // Если узел за границей, оставляем точку на месте (по желанию)
-                    } else {
-                        // Узел занят – можно показать предупреждение (опционально)
-                        // Здесь просто не применяем привязку, оставляем точку там, где отпустили
-                    }
-
-                    // Сохраняем в БД только если координаты изменились или id != 0
-                    if (draggedPoint.id != 0) {
-                        repository.updatePoint(draggedPoint.id, draggedPoint);
-                    }
-                }
-                draggedPoint = null;
-                pressedPoint = null;
-                isDragging = false;
-                isDraggingPlan = false;
-                return true;
-        }
-        return super.onTouchEvent(event); // если непонятно как обработать - пусть стандартный view развлекается
-    }
-
-    // в режиме просмотра смотрим инфу о растении в точке
+    /**
+     * Отображает диалог с информацией о растении в выбранной точке.
+     * Использует кастомный макет dialog_plant_info.
+     *
+     * TODO: Настроить кэширование загружаемых изображений в PlantPhotoLoader,
+     *       чтобы избежать повторных запросов к API Яндекс.Диска.
+     */
     private void showPlantInfo(PlantPoint point) {
         Context context = getContext();
+        if (point == null || point.plant == null) return;
 
-        if (point == null || point.plant == null) {
-            return;
-        }
-
-        // для даты (отсекаем секунды часы минуты)
         SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
-        String dateStr = (point.processingDate != null)
-                ? sdf.format(new Date(point.processingDate))
-                : ""; // пустое значение, если дата не задана
-
-        String feedingDateStr = (point.feedingDate != null)
-                ? sdf.format(new Date(point.feedingDate))
-                : "";
-
-        // для литража (убираем null)
-        String potVolumeStr = (point.potVolume != null)
-                ? point.potVolume.toString()
-                : "";
-
-        // для цвета (убираем null)
+        String dateStr = (point.processingDate != null) ? sdf.format(new Date(point.processingDate)) : "";
+        String feedingDateStr = (point.feedingDate != null) ? sdf.format(new Date(point.feedingDate)) : "";
+        String potVolumeStr = (point.potVolume != null) ? point.potVolume.toString() : "";
         String colorStr = "";
         if (point.plant.flowerColorId != null) {
             String colorName = repository.getColorIdToNameMap().get(point.plant.flowerColorId);
             colorStr = (colorName != null) ? colorName : "";
         }
+        String addInfoStr = (point.plant.additionalInfo != null) ? point.plant.additionalInfo : "";
 
-        // для доп инфы (убираем null)
-        String addInfoStr = (point.plant.additionalInfo != null)
-                ? point.plant.additionalInfo.toString()
-                : "";
-
-        // макет
         LayoutInflater inflater = LayoutInflater.from(context);
         View dialogView = inflater.inflate(R.layout.dialog_plant_info, null);
 
-        // Элементы
         TextView tvName = dialogView.findViewById(R.id.tv_name);
         TextView tvType = dialogView.findViewById(R.id.tv_type);
         TextView tvGroup = dialogView.findViewById(R.id.tv_group);
@@ -591,7 +522,6 @@ public class PlanView extends View {
         ImageView ivPhoto = dialogView.findViewById(R.id.iv_plant_photo);
         Button btnClose = dialogView.findViewById(R.id.btn_close);
 
-        // Заполняем данными
         tvName.append(point.plant.name);
         tvType.append(point.plant.type);
         tvGroup.append(point.plant.group);
@@ -604,38 +534,30 @@ public class PlanView extends View {
 
         // Загрузка фото
         if (point.plant.imagePublicKey != null && !point.plant.imagePublicKey.isEmpty()) {
-            //Log.d("PLANT_DEBUG", "Ключ: " + point.plant.imagePublicKey);
             ivPhoto.setVisibility(View.VISIBLE);
             PlantPhotoLoader.loadPlantPhoto(context, point.plant, ivPhoto, null);
-        } else {
-        //Log.d("PLANT_DEBUG", "Ключ отсутствует или пуст");
-        //Log.d("PLANT_KEY", String.valueOf(point.plant.imagePublicKey));
         }
 
-        // Создаём диалог без стандартных кнопок
         AlertDialog dialog = new AlertDialog.Builder(context)
                 .setTitle("Информация о растении")
                 .setView(dialogView)
-                .create();   // не show()
-
-        // Обработчик для нашей кнопки
+                .create();
         btnClose.setOnClickListener(v -> dialog.dismiss());
-
         dialog.show();
     }
 
-    // Понять, что попали в существующую точку
+    /**
+     * Поиск точки под указанными координатами плана.
+     * Возвращает ближайшую точку в пределах HIT_RADIUS.
+     */
     private PlantPoint findPointAt(float touchX, float touchY) {
         PlantPoint closest = null;
         float minDistanceSq = Float.MAX_VALUE;
-
         for (PlantPoint p : points) {
             if (p.plant == null) continue;
-            // смещение от центра точки
             float dx = touchX - p.x;
             float dy = touchY - p.y;
             float distanceSquared = dx * dx + dy * dy;
-            // чтобы при масштабировании не было слишишком большого радиуса попадания
             float scaledHitRad = HIT_RADIUS * HIT_RADIUS / scaleFactor;
             if (distanceSquared <= scaledHitRad) {
                 if (distanceSquared < minDistanceSq) {
@@ -647,28 +569,26 @@ public class PlanView extends View {
         return closest;
     }
 
-    // масштабирование
+    // --- Масштабирование ---
     private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener {
         @Override
         public boolean onScale(ScaleGestureDetector detector) {
             gestureConsumed = true;
-            // Ограничиваем масштаб
             float prevScale = scaleFactor;
             scaleFactor *= detector.getScaleFactor();
             scaleFactor = Math.max(MIN_SCALE, Math.min(scaleFactor, MAX_SCALE));
-
-            // Смещение для масштабирования относительно точки фокуса
             focusX = detector.getFocusX();
             focusY = detector.getFocusY();
             offsetX = (offsetX - focusX) * (scaleFactor / prevScale) + focusX;
             offsetY = (offsetY - focusY) * (scaleFactor / prevScale) + focusY;
-            // Перерисовываем view с новым масштабом
             invalidate();
             return true;
         }
     }
 
-    // перезагрузка точек (при удалении / изменении в БД)
+    // --- Публичные методы ---
+
+    /** Перезагружает все точки из БД, сбрасывает выделение. */
     public void reloadPoints() {
         points.clear();
         points.addAll(repository.getAllPoints());
@@ -678,40 +598,31 @@ public class PlanView extends View {
         invalidate();
     }
 
-    // ПОИСК
-    // работает с результатами, полученными извне
+    /** Устанавливает результаты поиска и активирует подсветку. */
     public void setSearchResults(Set<PlantPoint> results) {
         searchResultsSet.clear();
         searchResultsSet.addAll(results);
         searchActive = !searchResultsSet.isEmpty();
-
         if (searchStateListener != null) {
-            if (searchActive) {
-                searchStateListener.onSearchApplied();
-            } else {
-                searchStateListener.onSearchCleared();
-            }
+            if (searchActive) searchStateListener.onSearchApplied();
+            else searchStateListener.onSearchCleared();
         }
-
         invalidate();
     }
 
-    // очистка поиска
+    /** Снимает подсветку поиска. */
     public void clearSearch() {
         searchActive = false;
         searchResultsSet.clear();
-        if (searchStateListener != null) {
-            searchStateListener.onSearchCleared();
-        }
+        if (searchStateListener != null) searchStateListener.onSearchCleared();
         invalidate();
     }
 
-    // слушатель состояния
     public void setSearchStateListener(SearchStateListener listener) {
         this.searchStateListener = listener;
     }
 
-    // открывает диалог поиска
+    /** Открывает диалог расширенного поиска. */
     public void showSearchDialog() {
         PlantSearchDialog.showAdvancedSearchDialog(
                 getContext(),
@@ -723,7 +634,6 @@ public class PlanView extends View {
                     public void onSearchApplied(Set<PlantPoint> result) {
                         setSearchResults(result);
                     }
-
                     @Override
                     public void onSearchCleared() {
                         clearSearch();
