@@ -11,6 +11,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Центральный репозиторий для работы с растениями и точками.
+ * Служит единой точкой доступа к данным, скрывая детали реализации (SQLite).
+ * Использует PlantDataAccess и PointDataAccess для прямого обращения к БД.
+ *
+ * Activity и фрагменты зависят только от этого класса, а не от DatabaseHelper напрямую.
+ * Это позволяет в будущем заменить слой хранения (например, на Room или сетевой API)
+ * без изменения UI-слоя.
+ */
 public class PlantRepository {
     private final PlantDataAccess plantDa;
     private final PointDataAccess pointDa;
@@ -20,78 +29,116 @@ public class PlantRepository {
         pointDa = new PointDataAccess(dbHelper);
     }
 
+    // --- Точки ---
+
+    /** Все точки плана с информацией о растениях. */
     public List<PlantPoint> getAllPoints() {
         return pointDa.getAllPoints();
     }
 
+    /** Добавляет новую точку. Возвращает её id. */
     public long addPoint(PlantPoint point) {
         return pointDa.addPoint(point);
     }
 
+    /** Обновляет координаты, количество и даты точки. */
     public void updatePoint(int id, PlantPoint point) {
         pointDa.updatePoint(id, point);
     }
 
+    /** Удаляет точку по id. */
     public void deletePoint(int id) {
         pointDa.deletePoint(id);
     }
 
+    /** Общее количество растений на плане (сумма count). */
+    public int getTotalPlantCount() {
+        return pointDa.getTotalPlantCount();
+    }
+
+    /** Количество растений, соответствующих фильтрам. */
+    public int getFilteredPlantCount(String name, String type, String group, Integer color, Integer potVolume) {
+        return pointDa.getFilteredPlantCount(name, type, group, color, potVolume);
+    }
+
+    /** Точки, ни разу не обработанные. */
+    public List<PlantPoint> getNeverProcessedPoints() {
+        return pointDa.getNeverProcessedPoints();
+    }
+
+    /** Точки, не обрабатывавшиеся более указанного числа дней. */
+    public List<PlantPoint> getNotProcessedMoreThanDays(int days) {
+        return pointDa.getNotProcessedMoreThanDays(days);
+    }
+
+    /** Точки, ни разу не подкормленные. */
+    public List<PlantPoint> getNeverFeedingPoints() {
+        return pointDa.getNeverFeedingPoints();
+    }
+
+    /** Точки, не подкармливавшиеся более указанного числа дней. */
+    public List<PlantPoint> getNotFeedingMoreThanDays(int days) {
+        return pointDa.getNotFeedingMoreThanDays(days);
+    }
+
+    // --- Растения ---
+
+    /** Все растения с объёмами горшков. */
     public List<Plant> getAllPlants() {
         return plantDa.getAllPlants();
     }
 
+    /** Поиск точного совпадения растения по всем полям. */
     public Plant findPlantByAllFields(Plant plant) {
         return plantDa.findPlantByAllFields(plant);
     }
 
+    /** Добавляет новое растение. Возвращает его id. */
     public long addPlant(Plant plant) {
         return plantDa.addPlant(plant);
     }
 
+    /** Сохраняет изменения существующего растения. */
     public void updatePlant(Plant plant) {
         plantDa.updatePlant(plant);
     }
 
+    /**
+     * Обновляет растение по образцу: копирует изменяемые поля из modified в original,
+     * кроме name и type (которые не редактируются). Используется при редактировании
+     * точки, чтобы не создавать дубликат растения.
+     */
     public void updatePlant(Plant original, Plant modified) {
-        // Копируем изменяемые поля из modified в original,
-        // кроме id, name и type (по условию не менялись имя и тип растения)
         original.group = modified.group;
         original.flowerColorId = modified.flowerColorId;
         original.additionalInfo = modified.additionalInfo;
-        // original.varietyId будет пересчитан внутри updatePlant
-
-        // Вызываем существующий метод, который сохранит original в БД
+        // variety_id будет пересчитан внутри updatePlant
         updatePlant(original);
     }
 
+    /** Можно ли удалить растение (не используется ли оно в точках). */
     public boolean canDeletePlant(int id) {
         return plantDa.canDeletePlant(id);
     }
 
+    /** Удаляет растение (каскадно удалятся связанные точки через внешний ключ). */
     public void deletePlant(int id) {
         plantDa.deletePlant(id);
     }
 
+    /** Поиск растений по критериям. */
     public List<Plant> searchPlants(
-            String plName,
-            String plType,
-            String plGroup,
-            Integer potVolume,
-            Integer flowerColorInput,
-            String addInput) {
-        return plantDa.searchPlants(
-                plName,
-                plType,
-                plGroup,
-                potVolume,
-                flowerColorInput,
-                addInput);
+            String plName, String plType, String plGroup,
+            Integer potVolume, Integer flowerColorInput, String addInput) {
+        return plantDa.searchPlants(plName, plType, plGroup, potVolume, flowerColorInput, addInput);
     }
 
-    // для избегания дубликатов (был ли изменен автокомплит)
+    /**
+     * Проверяет, были ли изменены пользователем характеристики растения
+     * (по сравнению с оригиналом). Используется для предотвращения создания дубликатов.
+     */
     public boolean isPlantModified(Plant original, Plant modified) {
         if (original == null || modified == null) return true;
-
         return !original.name.equals(modified.name) ||
                 !safeEquals(original.type, modified.type) ||
                 !safeEquals(original.group, modified.group) ||
@@ -105,47 +152,34 @@ public class PlantRepository {
         return a.equals(b);
     }
 
-    public int getTotalPlantCount() {
-        return pointDa.getTotalPlantCount();
-    }
+    // --- Вспомогательные данные ---
 
-    public int getFilteredPlantCount(String name, String type, String group, Integer color, Integer potVolume) {
-        return pointDa.getFilteredPlantCount(name, type, group, color, potVolume);
-    }
-
-    public List<PlantPoint> getNeverProcessedPoints() {
-        return pointDa.getNeverProcessedPoints();
-    }
-
-    public List<PlantPoint> getNotProcessedMoreThanDays(int days) {
-        return pointDa.getNotProcessedMoreThanDays(days);
-    }
-
-    public List<PlantPoint> getNeverFeedingPoints() {
-        return pointDa.getNeverFeedingPoints();
-    }
-
-    public List<PlantPoint> getNotFeedingMoreThanDays(int days) {
-        return pointDa.getNotFeedingMoreThanDays(days);
-    }
+    /** Все уникальные типы. */
     public List<String> getAllTypes() {
         return plantDa.getAllTypes();
     }
+
+    /** Все уникальные группы. */
     public List<String> getAllGroups() {
         return plantDa.getAllGroups();
     }
+
+    /** Тип, соответствующий указанной группе. */
     public String getTypeByGroup(String group) {
         return plantDa.getTypeByGroup(group);
     }
 
+    /** Названия всех цветов. */
     public List<String> getAllColorNames() {
         return plantDa.getAllColorNames();
     }
 
+    /** Полная информация о цветах (id, name, hex). */
     public List<FlowerColor> getAllColors() {
         return plantDa.getAllColors();
     }
 
+    /** Карта id -> название цвета. */
     public Map<Integer, String> getColorIdToNameMap() {
         List<FlowerColor> colors = getAllColors();
         Map<Integer, String> map = new HashMap<>();
@@ -155,6 +189,7 @@ public class PlantRepository {
         return map;
     }
 
+    /** Карта id -> hex-код цвета. */
     public Map<Integer, String> getColorIdToHexMap() {
         List<FlowerColor> colors = getAllColors();
         Map<Integer, String> map = new HashMap<>();
@@ -164,18 +199,24 @@ public class PlantRepository {
         return map;
     }
 
+    // --- Объёмы горшков ---
+
+    /** Заменяет список объёмов горшков для растения. */
     public void replacePlantVolumes(int plantId, List<Integer> volumes) {
         plantDa.replacePlantVolumes(plantId, volumes);
     }
 
+    /** Добавляет объём горшка (игнорирует дубликат). */
     public void addPlantVolume(int plantId, int volume) {
         plantDa.addPlantVolume(plantId, volume);
     }
 
+    /** Возвращает отсортированный список объёмов для растения. */
     public List<Integer> getPotVolumesForPlant(int plantId) {
         return plantDa.getPotVolumesForPlant(plantId);
     }
 
+    /** Можно ли удалить объём (не используется ли он в точках). */
     public boolean canDeleteVolume(int plantId, int potVolume) {
         return plantDa.canDeleteVolume(plantId, potVolume);
     }

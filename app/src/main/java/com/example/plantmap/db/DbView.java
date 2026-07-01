@@ -2,12 +2,9 @@ package com.example.plantmap.db;
 
 import android.app.AlertDialog;
 import android.content.Context;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
-
-import java.util.Comparator;
 
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -20,28 +17,33 @@ import com.example.plantmap.plant.PlantAdapter;
 import com.example.plantmap.plant.PlantRepository;
 import com.example.plantmap.plant.PlantUniversalForm;
 import com.example.plantmap.util.ImeActionUtil;
-import com.example.plantmap.util.InputValidators;
-import com.example.plantmap.plan.PlanView;
 import com.example.plantmap.util.SoftInputUtil;
+import com.example.plantmap.plan.PlanView;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- Экран со списком растений в виде карточек
- planView               ссылка на карту (чтобы обновлять после изменений)
- recyclerView           список растений (прокручиваемая лента)
- searchListener         слушатель, который сообщает, что поиск начался или закончился
- repository             склад данных
- colorResolver          помощник, который определяет цвет для каждого типа растения (нужен для красивого отображения)
+ * Экран со списком растений в виде карточек.
+ * Используется во фрагменте DbFragment.
+ *
+ * Основные элементы:
+ * - recyclerView — прокручиваемый список растений
+ * - planView — ссылка на карту (для обновления после изменений)
+ * - searchListener — слушатель событий поиска (начало/конец)
+ * - repository — склад данных о растениях
  */
 public class DbView {
     private Context context;
     private PlanView planView;
     private RecyclerView recyclerView;
 
+    /**
+     * Слушатель для уведомления о начале и окончании поиска.
+     */
     public interface SearchStateListener {
         void onSearchApplied();
         void onSearchCleared();
@@ -58,23 +60,26 @@ public class DbView {
         this.repository = repository;
     }
 
+    /**
+     * Создаёт и возвращает корневое View для списка растений.
+     * Содержит кнопку "Добавить новое растение" и RecyclerView.
+     */
     public View createDbView() {
-        // корневой контейнер с вертикальной ориентацией
         LinearLayout rootLayout = new LinearLayout(context);
         rootLayout.setOrientation(LinearLayout.VERTICAL);
 
-        // кнопка добавления нового растения
+        // Кнопка добавления нового растения
         Button addButton = new Button(context);
         addButton.setText("Добавить новое растение");
         addButton.setBackground(ContextCompat.getDrawable(context, R.drawable.btn_add_plant));
         addButton.setTextColor(ContextCompat.getColorStateList(context, R.color.btn_add_plant_txt));
-        addButton.setPadding(20, 20, 20, 20);    // внутренние отступы
+        addButton.setPadding(20, 20, 20, 20);
 
-        // список растений
+        // Список растений
         recyclerView = new RecyclerView(context);
         recyclerView.setLayoutManager(new LinearLayoutManager(context));
 
-        // пусть кнопка будет внизу
+        // Растягиваем RecyclerView на всё свободное место
         LinearLayout.LayoutParams recyclerParams =
                 new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
@@ -83,20 +88,21 @@ public class DbView {
                 );
         recyclerView.setLayoutParams(recyclerParams);
 
-        // действие на кнопку
         addButton.setOnClickListener(v -> showPlantDialog(null, recyclerView));
 
-        // вкладываем
         rootLayout.addView(recyclerView);
         rootLayout.addView(addButton);
 
-        // первый раз заполняем список растений
         refreshPlantList(recyclerView);
 
         return rootLayout;
     }
 
-    // Метод для обновления списка растений
+    /**
+     * Обновляет список растений в RecyclerView.
+     * Сортирует по имени, создаёт адаптер с привязкой цветов.
+     * Сбрасывает состояние поиска, уведомляя слушатель.
+     */
     private void refreshPlantList(RecyclerView recyclerView) {
         List<Plant> plants = repository.getAllPlants();
         Collections.sort(plants, Comparator.comparing(p -> p.name));
@@ -111,14 +117,21 @@ public class DbView {
         }
     }
 
-    // для обновления извне
+    /**
+     * Обновляет список растений извне (например, при возвращении на фрагмент).
+     */
     public void refresh() {
         if (recyclerView != null) {
             refreshPlantList(recyclerView);
         }
     }
 
-    // Диалог добавления/редактирования растения. Раньше было LinearLayout listLayout
+    /**
+     * Показывает диалог добавления или редактирования растения.
+     *
+     * @param plant         существующее растение для редактирования или null для создания нового
+     * @param recyclerView  RecyclerView, который нужно обновить после сохранения
+     */
     private void showPlantDialog(Plant plant, RecyclerView recyclerView) {
         boolean isNew = (plant == null);
         if (isNew) plant = new Plant();
@@ -133,6 +146,7 @@ public class DbView {
                 .setNegativeButton("Отмена", null)
                 .setPositiveButton("Сохранить", null);
 
+        // Кнопка "Удалить" только для существующих растений
         if (!isNew) {
             final int idPlant = plant.id;
             builder.setNeutralButton("Удалить", (d, which) -> {
@@ -158,14 +172,13 @@ public class DbView {
         }
 
         AlertDialog dialog = builder.create();
-        // настройка soft input
         SoftInputUtil.setupSoftInput(dialog);
 
         dialog.setOnShowListener(d -> {
             ImeActionUtil.focusAndShowKeyboard(form.getNameInput());
             Button saveBtn = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
             saveBtn.setOnClickListener(v -> {
-                // валидация
+                // Валидация названия
                 String name = form.getNameInput().getText().toString().trim();
                 if (name.isEmpty()) {
                     form.getNameInput().setError("Название обязательно");
@@ -173,16 +186,16 @@ public class DbView {
                     return;
                 }
 
-                // получаем список введённых объёмов из формы
+                // Получаем список введённых объёмов из формы
                 List<Integer> potVolumes = form.getPotVolumes();
-                // построить Plant из формы
+                // Строим объект Plant на основе введённых данных
                 Plant updatedPlant = form.buildPlantFromInputs();
 
                 // Проверка на существование такого же растения
                 Plant existingPlant = repository.findPlantByAllFields(updatedPlant);
                 Plant plantToSave;
                 if (existingPlant != null) {
-                    // Если редактируем существующее и найденное растение — это оно само
+                    // Если редактируем существующее и найденное — это оно само, разрешаем
                     if (!isNew && existingPlant.id == originalPlant.id) {
                         plantToSave = updatedPlant;
                         plantToSave.id = originalPlant.id;
@@ -204,9 +217,8 @@ public class DbView {
 
                 long savedPlantId;
                 if (isNew) {
-                    // Если plantToSave — существующее, то addPlant не нужен, оно уже есть
+                    // Если растение уже существует, не добавляем, а используем его id
                     if (existingPlant != null) {
-                        // Ничего не добавляем, просто используем существующее
                         savedPlantId = existingPlant.id;
                     } else {
                         savedPlantId = repository.addPlant(plantToSave);
@@ -216,10 +228,8 @@ public class DbView {
                     savedPlantId = originalPlant.id;
                 }
 
-                // Получаем старые объёмы
+                // Проверяем, какие объёмы удаляются (нельзя удалить используемые в точках)
                 List<Integer> oldVolumes = repository.getPotVolumesForPlant((int) savedPlantId);
-
-                // Проверяем, какие объёмы удаляются
                 for (Integer oldVol : oldVolumes) {
                     if (!potVolumes.contains(oldVol)) {
                         if (!repository.canDeleteVolume((int) savedPlantId, oldVol)) {
@@ -233,7 +243,7 @@ public class DbView {
                     }
                 }
 
-                // Если проверки пройдены — заменяем объёмы
+                // Если проверки пройдены — заменяем объёмы и обновляем UI
                 repository.replacePlantVolumes((int) savedPlantId, potVolumes);
 
                 if (planView != null) planView.reloadPoints();
@@ -244,20 +254,18 @@ public class DbView {
         dialog.show();
     }
 
-    // диалог поиска
+    /**
+     * Показывает диалог поиска растений по различным полям.
+     * Использует форму PlantUniversalForm в режиме MODE_SEARCH.
+     */
     public void showSearchDialog() {
-        // Создаем форму поиска (используем ту же PlantUniversalForm)
         PlantUniversalForm form = new PlantUniversalForm(context, repository);
-
         form.setMode(PlantUniversalForm.MODE_SEARCH);
-
         form.fillFromPlant(new Plant());
 
         // Сбрасываем предустановленный цвет "неизвестный", чтобы поиск был по всем цветам
         form.getFlowerColorInput().setText("");
         form.setShowAllColorsOption(true);
-
-        form.setShowAllColorsOption(true); // включаем пункт "любой"
 
         AlertDialog dialog = new AlertDialog.Builder(context)
                 .setTitle("Поиск растений")
@@ -306,11 +314,6 @@ public class DbView {
                         addInfo
                 );
 
-//                Log.d("SEARCH_DB", "Поиск: name='" + name + "', найдено растений: " + result.size());
-//                for (Plant p : result) {
-//                    Log.d("SEARCH_DB", "  -> " + p.id + " " + p.name);
-//                }
-
                 if (searchListener != null) {
                     searchListener.onSearchApplied();
                 }
@@ -328,14 +331,19 @@ public class DbView {
         });
 
         SoftInputUtil.setupSoftInput(dialog);
-
         dialog.show();
     }
 
+    /**
+     * Устанавливает слушатель событий поиска.
+     */
     public void setSearchStateListener(SearchStateListener listener) {
         this.searchListener = listener;
     }
 
+    /**
+     * Сбрасывает поиск и показывает полный список растений.
+     */
     public void resetSearch() {
         refreshPlantList(recyclerView);
         if (searchListener != null) {

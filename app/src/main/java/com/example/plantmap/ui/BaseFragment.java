@@ -16,9 +16,13 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Lifecycle;
 
 import com.example.plantmap.R;
+
 /**
-Общие элементы меню (справка) и само окно справки
-*/
+ * Базовый фрагмент с общей логикой меню и справки.
+ * Каждый наследник обязан реализовать getHelpTextResId() для отображения
+ * своего текста справки. По умолчанию добавляет общее меню menu_common,
+ * которое можно расширить или переопределить.
+ */
 public abstract class BaseFragment extends Fragment {
 
     @Override
@@ -27,21 +31,27 @@ public abstract class BaseFragment extends Fragment {
         setupMenu();
     }
 
+    /**
+     * Регистрирует MenuProvider, привязанный к жизненному циклу view.
+     * Обеспечивает вызов методов onCreateMenu/onPrepareMenu/onMenuItemSelected
+     * у наследников, а также обрабатывает общий пункт "Справка".
+     */
     private void setupMenu() {
         MenuHost menuHost = requireActivity();
         menuHost.addMenuProvider(new MenuProvider() {
             @Override
             public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
-                // Даем наследнику возможность добавить пункты меню
+                // Даём наследнику возможность добавить свои пункты меню
                 BaseFragment.this.onCreateMenu(menu, inflater);
             }
 
             @Override
             public boolean onMenuItemSelected(@NonNull MenuItem item) {
-                // Сначала даем шанс наследнику, потом обрабатываем общие пункты (справка)
+                // Сначала даём шанс наследнику обработать пункт
                 if (BaseFragment.this.onMenuItemSelected(item)) {
                     return true;
                 }
+                // Общий пункт — справка
                 if (item.getItemId() == R.id.action_help) {
                     showHelp();
                     return true;
@@ -57,31 +67,41 @@ public abstract class BaseFragment extends Fragment {
     }
 
     /**
-     * Переопределите, чтобы добавить свои пункты меню.
-     * По умолчанию добавляет menu_common.
+     * Вызывается при создании меню. По умолчанию надувает menu_common.
+     * Переопределите в наследнике, чтобы добавить специфичные пункты.
      */
     protected void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
         inflater.inflate(R.menu.menu_common, menu);
     }
 
     /**
-     * Переопределите, чтобы настроить видимость/доступность пунктов меню.
+     * Вызывается перед показом меню. Можно использовать для изменения
+     * видимости или доступности пунктов меню.
      */
     protected void onPrepareMenu(@NonNull Menu menu) {
-        // Пусто
+        // По умолчанию пусто
     }
 
     /**
-     * Переопределите для обработки специфических пунктов меню.
-     * @return true если пункт обработан, иначе false.
+     * Обработчик пунктов меню, специфичных для конкретного фрагмента.
+     *
+     * @param item выбранный пункт меню
+     * @return true, если пункт обработан, иначе false (будет передано дальше)
      */
     protected boolean onMenuItemSelected(@NonNull MenuItem item) {
         return false;
     }
 
+    /**
+     * Ресурс строки с текстом справки для данного фрагмента.
+     * Обязателен к реализации в наследниках.
+     */
     @StringRes
     protected abstract int getHelpTextResId();
 
+    /**
+     * Показывает диалоговое окно со справкой.
+     */
     private void showHelp() {
         new AlertDialog.Builder(requireContext())
                 .setTitle("Справка")

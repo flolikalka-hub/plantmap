@@ -12,7 +12,13 @@ import com.example.plantmap.MainActivity;
 import com.example.plantmap.R;
 import com.example.plantmap.stats.StatisticsView;
 
+/**
+ * Фрагмент статистики по растениям.
+ * Отображает агрегированные данные и позволяет перейти к результатам на плане
+ * через вызов MainActivity.openPlanWithResults().
+ */
 public class StatsFragment extends BaseFragment {
+
     @Override
     protected int getHelpTextResId() {
         return R.string.help_stats;
@@ -20,11 +26,13 @@ public class StatsFragment extends BaseFragment {
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+    public View onCreateView(@NonNull LayoutInflater inflater,
+                             @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         StatisticsView statisticsView = new StatisticsView(
                 requireContext(),
                 ((MainActivity) requireActivity()).getRepository(),
+                // Колбэк для перехода к плану с выбранными точками
                 points -> ((MainActivity) requireActivity()).openPlanWithResults(points)
         );
         return statisticsView.createView();

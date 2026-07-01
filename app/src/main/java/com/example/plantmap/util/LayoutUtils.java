@@ -4,10 +4,15 @@ import android.content.Context;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+
 /**
- ScrollView с LinearLayout
+ * Фабрики для создания часто используемых комбинаций View.
  */
 public class LayoutUtils {
+
+    /**
+     * Контейнер, объединяющий ScrollView и внутренний LinearLayout.
+     */
     public static class ScrollableLayout {
         public final ScrollView scrollView;
         public final LinearLayout layout;
@@ -17,10 +22,11 @@ public class LayoutUtils {
             this.layout = layout;
         }
     }
+
     /**
-     создание прокручиваемого контейнера,
-     когда нужен полный контроль
-     над добавляемыми View и логикой сохранения
+     * Создаёт вертикальный прокручиваемый контейнер с LinearLayout внутри.
+     * Используется, когда нужен полный контроль над добавляемыми View,
+     * а не готовый XML-макет.
      */
     public static ScrollableLayout createVerticalScrollView(Context context) {
         LinearLayout layout = new LinearLayout(context);
@@ -30,9 +36,11 @@ public class LayoutUtils {
         scrollView.addView(layout);
         return new ScrollableLayout(scrollView, layout);
     }
+
     /**
-     берет уже готовую деталь (content)
-     и заворачивает её в прокрутку
+     * Оборачивает готовый View в ScrollView.
+     * Удобно, когда содержимое уже создано (например, из LayoutInflater),
+     * но нужна прокрутка.
      */
     public static ScrollView wrapInScrollView(Context context, View content) {
         ScrollView scrollView = new ScrollView(context);
