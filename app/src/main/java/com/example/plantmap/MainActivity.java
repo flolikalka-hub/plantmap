@@ -53,7 +53,7 @@ public class MainActivity extends AppCompatActivity {
         // --- Инициализация данных ---
         repository = App.getInstance().getRepository();
         // Однократная миграция координат из-за смены плотности экрана целевого устройства
-        migratePointsIfNeeded();
+        //migratePointsIfNeeded();
 
         // --- Настройка отображения ---
         // Отключаем автоматические отступы под системные бары, будем управлять вручную
@@ -220,6 +220,7 @@ public class MainActivity extends AppCompatActivity {
      * После выполнения миграции в SharedPreferences записывается флаг,
      * чтобы операция не повторялась.
      */
+    /*
     private void migratePointsIfNeeded() {
         SharedPreferences prefs = getSharedPreferences("migration", MODE_PRIVATE);
         if (prefs.getBoolean("density_migrated", false)) return;
@@ -236,5 +237,5 @@ public class MainActivity extends AppCompatActivity {
 
         // Отмечаем, что миграция выполнена
         prefs.edit().putBoolean("density_migrated", true).apply();
-    }
+    */
 }

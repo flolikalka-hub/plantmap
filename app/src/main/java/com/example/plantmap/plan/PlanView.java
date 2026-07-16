@@ -49,17 +49,21 @@ public class PlanView extends View {
 
     // --- Визуальные константы ---
     /** Плотность экрана целевого устройства (A16), используется для расчёта размеров. */
-    private static float density = 2.8125f;
+    //private static float density = 2.8125f;
     /** Радиус точки при отрисовке (в единицах плана). */
-    private static final float POINT_RADIUS = 4f / density;
+    //private static final float POINT_RADIUS = 4f / density;
+    private static final float POINT_RADIUS = 1.42f;
     /** Радиус попадания в точку при касании (для удобства). */
     private static final float HIT_RADIUS = POINT_RADIUS * 3f;
     /** Размер текста номера точки. */
-    private float textSize = 7f / density;
+    //private float textSize = 7f/ density;
+    private float textSize = 2.48f;
     /** Толщина линии обводки точек. */
-    private float strokeWidth = 3f / density;
+    //private float strokeWidth = 3f/ density;
+    private float strokeWidth = 1.06f;
     /** Отступ обводки найденных точек. */
-    private float indentStroke = 2f / density;
+    //private float indentStroke = 2f/ density;
+    private float indentStroke = 0.71f;
 
     /** Шаг сетки по X (в единицах плана) для режимов добавления/редактирования. */
     private static final float GRID_STEP_X = POINT_RADIUS * 2f;

@@ -51,7 +51,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
         if (dbFile.exists()) {
             int existingVersion = getDatabaseVersionFromFile(dbFile);
-            if (existingVersion >= 32) {
+            if (existingVersion >= 33) {
                 return; // файл актуален
             }
             // Удаляем устаревший файл БД и связанные журналы
