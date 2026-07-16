@@ -178,10 +178,7 @@ public class PlantDataAccess {
         return canDelete;
     }
 
-    /**
-     * Ищет растение, полностью совпадающее по всем полям (name, type, group, flower_color, additional_info).
-     * Используется для проверки существования такого же растения перед созданием дубликата.
-     */
+    /*
     public Plant findPlantByAllFields(Plant plant) {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
         Plant result = null;
@@ -201,6 +198,45 @@ public class PlantDataAccess {
         args.add(plant.group != null ? plant.group : "");
         args.add(String.valueOf(plant.flowerColorId));
         args.add(plant.additionalInfo != null ? plant.additionalInfo : "");
+
+        Cursor cursor = db.rawQuery(query.toString(), args.toArray(new String[0]));
+        if (cursor.moveToFirst()) {
+            result = new Plant();
+            result.id = cursor.getInt(cursor.getColumnIndexOrThrow("id"));
+            result.name = cursor.getString(cursor.getColumnIndexOrThrow("name"));
+            result.type = cursor.getString(cursor.getColumnIndexOrThrow("type"));
+            result.group = cursor.getString(cursor.getColumnIndexOrThrow("plant_group"));
+
+            int colorIndex = cursor.getColumnIndexOrThrow("flower_color");
+            result.flowerColorId = cursor.isNull(colorIndex) ? 9 : cursor.getInt(colorIndex);
+
+            result.additionalInfo = cursor.getString(cursor.getColumnIndexOrThrow("additional_info"));
+            result.imagePublicKey = cursor.getString(cursor.getColumnIndexOrThrow("public_key"));
+        }
+        cursor.close();
+        return result;
+    }
+    */
+
+    /**
+     * Ищет растение, полностью совпадающее по всем полям (name, type, group, flower_color, additional_info).
+     * Используется для проверки существования такого же растения перед созданием дубликата.
+     */
+    public Plant findPlantByAllFields(Plant plant) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Plant result = null;
+
+        StringBuilder query = new StringBuilder(
+                "SELECT p.*, v.type, v.plant_group FROM plants p " +
+                        "LEFT JOIN variety v ON p.variety_id = v.id WHERE " +
+                        "COALESCE(name, '')=? AND " +
+                        "COALESCE(type, '')=? AND " +
+                        "COALESCE(plant_group, '')=?"
+        );
+        List<String> args = new ArrayList<>();
+        args.add(plant.name != null ? plant.name : "");
+        args.add(plant.type != null ? plant.type : "");
+        args.add(plant.group != null ? plant.group : "");
 
         Cursor cursor = db.rawQuery(query.toString(), args.toArray(new String[0]));
         if (cursor.moveToFirst()) {
