@@ -1,4 +1,4 @@
-package com.example.plantmap.db.yandex;
+package com.example.plantmap.db.yandex_images;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;

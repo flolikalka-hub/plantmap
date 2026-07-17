@@ -2,7 +2,7 @@ package com.example.plantmap;
 
 import android.app.Application;
 import com.example.plantmap.db.DatabaseHelper;
-import com.example.plantmap.db.yandex.PlantPhotoLoader;
+import com.example.plantmap.db.yandex_images.PlantPhotoLoader;
 import com.example.plantmap.plant.PlantRepository;
 
 /**

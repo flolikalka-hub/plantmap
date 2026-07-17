@@ -1,6 +1,5 @@
 package com.example.plantmap;
 
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -16,7 +15,6 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 
 import com.example.plantmap.db.BackupDatabase;
-import com.example.plantmap.db.yandex.UpdateDatabase;
 import com.example.plantmap.model.PlantPoint;
 import com.example.plantmap.plant.PlantRepository;
 import com.example.plantmap.ui.DbFragment;
@@ -25,7 +23,6 @@ import com.example.plantmap.ui.PlanFragment;
 import com.google.android.material.navigation.NavigationView;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -101,14 +98,6 @@ public class MainActivity extends AppCompatActivity {
             if (itemId == R.id.download_db) {
                 BackupDatabase backup = new BackupDatabase(this);
                 backup.exportDatabase();
-                drawerLayout.closeDrawers();
-                return true;
-            }
-
-            // Импорт базы данных из файла на устройстве
-            if (itemId == R.id.update_db) {
-                UpdateDatabase update = new UpdateDatabase(this);
-                update.importDatabase();
                 drawerLayout.closeDrawers();
                 return true;
             }

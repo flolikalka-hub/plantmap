@@ -18,7 +18,7 @@ import android.widget.TextView;
 import androidx.core.content.ContextCompat;
 
 import com.example.plantmap.R;
-import com.example.plantmap.db.yandex.PlantPhotoLoader;
+import com.example.plantmap.db.yandex_images.PlantPhotoLoader;
 import com.example.plantmap.plant.PlantRepository;
 import com.example.plantmap.model.PlantPoint;
 import com.example.plantmap.search.PlantSearchDialog;
@@ -29,7 +29,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 

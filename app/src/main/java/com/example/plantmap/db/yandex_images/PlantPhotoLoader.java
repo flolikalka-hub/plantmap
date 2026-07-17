@@ -1,4 +1,4 @@
-package com.example.plantmap.db.yandex;
+package com.example.plantmap.db.yandex_images;
 
 import android.content.Context;
 import android.widget.ImageView;
