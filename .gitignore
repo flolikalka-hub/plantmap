@@ -7,9 +7,13 @@
 /.idea/workspace.xml
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
-.DS_Store
+.DS_StorePlantMap,
 /build
 /captures
 .externalNativeBuild
 .cxx
 local.properties
+# Исключаем папку с ключами
+app/keystore/
+# Исключаем gradle.properties с паролями
+gradle.properties

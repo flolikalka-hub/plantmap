@@ -26,7 +26,7 @@ import java.io.*;
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DB_NAME = "PlantMap_DB.db";
-    private static final int DB_VERSION = 32;
+    private static final int DB_VERSION = 33;
     private final Context context;
     private String dbPath;
 
@@ -111,6 +111,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             switch (v) {
                 case 25: migrateTo25(db); break;
                 case 31: migrateTo31(db); break;
+                case 33: migrateTo33(db); break;
                 default:
                     throw new IllegalStateException("Unknown migration from " + oldVersion + " to " + newVersion);
             }
@@ -275,6 +276,146 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 //            c = db.rawQuery("SELECT COUNT(*) FROM points", null);
 //            if (c.moveToFirst()) Log.d("MIGRATE2-point", "points count: " + c.getInt(0));
 //            c.close();
+
+            db.execSQL("PRAGMA foreign_keys = ON");
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
+    }
+
+    private void migrateTo33(SQLiteDatabase db) {
+        db.beginTransaction();
+        try {
+            db.execSQL("PRAGMA foreign_keys = OFF");
+
+            // ================================================================
+            // 1. СОЗДАЁМ ВРЕМЕННЫЕ ТАБЛИЦЫ – ТОЧНЫЕ КОПИИ С ДОПОЛНИТЕЛЬНЫМИ ПОЛЯМИ
+            // ================================================================
+
+            // -------- 1a. temp_variety --------
+            db.execSQL("CREATE TEMP TABLE temp_variety AS SELECT * FROM variety");
+            // Добавляем колонки, если их ещё нет (у temp нет ограничений ALTER)
+            db.execSQL("ALTER TABLE temp_variety ADD COLUMN sync_id TEXT");
+            db.execSQL("ALTER TABLE temp_variety ADD COLUMN last_modified INTEGER NOT NULL DEFAULT 0");
+            db.execSQL("ALTER TABLE temp_variety ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0");
+            // Генерируем UUID и заполняем служебные поля
+            db.execSQL("UPDATE temp_variety SET sync_id = lower(hex(randomblob(16))), " +
+                    "last_modified = strftime('%s','now') * 1000, is_deleted = 0");
+
+            // -------- 1b. temp_plants --------
+            db.execSQL("CREATE TEMP TABLE temp_plants AS SELECT * FROM plants");
+            db.execSQL("ALTER TABLE temp_plants ADD COLUMN sync_id TEXT");
+            db.execSQL("ALTER TABLE temp_plants ADD COLUMN last_modified INTEGER NOT NULL DEFAULT 0");
+            db.execSQL("ALTER TABLE temp_plants ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0");
+            db.execSQL("UPDATE temp_plants SET sync_id = lower(hex(randomblob(16))), " +
+                    "last_modified = strftime('%s','now') * 1000, is_deleted = 0");
+
+            // -------- 1c. temp_points --------
+            db.execSQL("CREATE TEMP TABLE temp_points AS SELECT * FROM points");
+            db.execSQL("ALTER TABLE temp_points ADD COLUMN sync_id TEXT");
+            db.execSQL("ALTER TABLE temp_points ADD COLUMN last_modified INTEGER NOT NULL DEFAULT 0");
+            db.execSQL("ALTER TABLE temp_points ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0");
+            db.execSQL("UPDATE temp_points SET sync_id = lower(hex(randomblob(16))), " +
+                    "last_modified = strftime('%s','now') * 1000, is_deleted = 0");
+
+            // -------- 1d. temp_plant_pot_volumes --------
+            db.execSQL("CREATE TEMP TABLE temp_ppv AS SELECT * FROM plant_pot_volumes");
+            db.execSQL("ALTER TABLE temp_ppv ADD COLUMN last_modified INTEGER NOT NULL DEFAULT 0");
+            db.execSQL("ALTER TABLE temp_ppv ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0");
+            db.execSQL("UPDATE temp_ppv SET last_modified = strftime('%s','now') * 1000, is_deleted = 0");
+
+            // ================================================================
+            // 2. УДАЛЯЕМ ОРИГИНАЛЬНЫЕ ТАБЛИЦЫ И СОЗДАЁМ НОВЫЕ (СХЕМА С UUID)
+            // ================================================================
+
+            // -------- 2a. variety --------
+            db.execSQL("DROP TABLE variety");
+            db.execSQL("CREATE TABLE variety (" +
+                    "id TEXT PRIMARY KEY," +
+                    "type TEXT," +
+                    "plant_group TEXT," +
+                    "last_modified INTEGER NOT NULL," +
+                    "is_deleted INTEGER NOT NULL DEFAULT 0)");
+
+            // -------- 2b. plants --------
+            db.execSQL("DROP TABLE plants");
+            db.execSQL("CREATE TABLE plants (" +
+                    "id TEXT PRIMARY KEY," +
+                    "old_id INTEGER," +
+                    "variety_id TEXT NOT NULL," +
+                    "name TEXT NOT NULL," +
+                    "flower_color INTEGER DEFAULT 9," +
+                    "additional_info TEXT," +
+                    "is_deleted INTEGER NOT NULL DEFAULT 0," +
+                    "public_key TEXT," +
+                    "name_rosebook TEXT," +
+                    "last_modified INTEGER NOT NULL," +
+                    "FOREIGN KEY(flower_color) REFERENCES colors(id)," +
+                    "FOREIGN KEY(variety_id) REFERENCES variety(id) ON DELETE CASCADE)");
+
+            // -------- 2c. points --------
+            db.execSQL("DROP TABLE points");
+            db.execSQL("CREATE TABLE points (" +
+                    "id TEXT PRIMARY KEY," +
+                    "x REAL NOT NULL," +
+                    "y REAL NOT NULL," +
+                    "count INTEGER NOT NULL," +
+                    "plant_id TEXT NOT NULL," +
+                    "processing_date INTEGER," +
+                    "feeding_date INTEGER," +
+                    "pot_volume INTEGER," +
+                    "last_modified INTEGER NOT NULL," +
+                    "is_deleted INTEGER NOT NULL DEFAULT 0," +
+                    "FOREIGN KEY(plant_id) REFERENCES plants(id) ON DELETE CASCADE)");
+
+            // -------- 2d. plant_pot_volumes --------
+            db.execSQL("DROP TABLE plant_pot_volumes");
+            db.execSQL("CREATE TABLE plant_pot_volumes (" +
+                    "plant_id TEXT NOT NULL," +
+                    "pot_volume INTEGER NOT NULL," +
+                    "last_modified INTEGER NOT NULL," +
+                    "is_deleted INTEGER NOT NULL DEFAULT 0," +
+                    "PRIMARY KEY(plant_id, pot_volume)," +
+                    "FOREIGN KEY(plant_id) REFERENCES plants(id) ON DELETE CASCADE)");
+
+            // ================================================================
+            // 3. ПЕРЕНОС ДАННЫХ ИЗ ВРЕМЕННЫХ ТАБЛИЦ В НОВЫЕ С СОХРАНЕНИЕМ СВЯЗЕЙ
+            // ================================================================
+
+            // 3a. variety (просто копируем, старый id нам уже не нужен)
+            db.execSQL("INSERT INTO variety (id, type, plant_group, last_modified, is_deleted) " +
+                    "SELECT sync_id, type, plant_group, last_modified, is_deleted FROM temp_variety");
+
+            // 3b. plants (связь variety_id -> temp_variety.sync_id)
+            db.execSQL("INSERT INTO plants (id, old_id, variety_id, name, flower_color, additional_info, is_deleted, public_key, name_rosebook, last_modified) " +
+                    "SELECT tp.sync_id, tp.id, tv.sync_id, tp.name, tp.flower_color, tp.additional_info, tp.is_deleted, tp.public_key, tp.name_rosebook, tp.last_modified " +
+                    "FROM temp_plants tp JOIN temp_variety tv ON tp.variety_id = tv.id");
+
+            // 3c. points (связь plant_id -> temp_plants.sync_id)
+            db.execSQL("INSERT INTO points (id, x, y, count, plant_id, processing_date, feeding_date, pot_volume, last_modified, is_deleted) " +
+                    "SELECT tpo.sync_id, tpo.x, tpo.y, tpo.count, tpl.sync_id, tpo.processing_date, tpo.feeding_date, tpo.pot_volume, tpo.last_modified, tpo.is_deleted " +
+                    "FROM temp_points tpo JOIN temp_plants tpl ON tpo.plant_id = tpl.id");
+
+            // 3d. plant_pot_volumes (связь plant_id -> temp_plants.sync_id)
+            db.execSQL("INSERT INTO plant_pot_volumes (plant_id, pot_volume, last_modified, is_deleted) " +
+                    "SELECT tpl.sync_id, ppv.pot_volume, ppv.last_modified, ppv.is_deleted " +
+                    "FROM temp_ppv ppv JOIN temp_plants tpl ON ppv.plant_id = tpl.id");
+
+            // ================================================================
+            // 4. ОЧИСТКА ВРЕМЕННЫХ ТАБЛИЦ
+            // ================================================================
+            db.execSQL("DROP TABLE IF EXISTS temp_variety");
+            db.execSQL("DROP TABLE IF EXISTS temp_plants");
+            db.execSQL("DROP TABLE IF EXISTS temp_points");
+            db.execSQL("DROP TABLE IF EXISTS temp_ppv");
+
+            // ================================================================
+            // 5. ИНДЕКСЫ
+            // ================================================================
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_points_plant_id ON points(plant_id)");
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_plants_variety_id ON plants(variety_id)");
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_plants_old_id ON plants(old_id)");
 
             db.execSQL("PRAGMA foreign_keys = ON");
             db.setTransactionSuccessful();

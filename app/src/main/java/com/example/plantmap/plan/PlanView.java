@@ -491,10 +491,7 @@ public class PlanView extends View {
 
     /**
      * Отображает диалог с информацией о растении в выбранной точке.
-     * Использует кастомный макет dialog_plant_info.
-     *
-     * TODO: Настроить кэширование загружаемых изображений в PlantPhotoLoader,
-     *       чтобы избежать повторных запросов к API Яндекс.Диска.
+     * Использует кастомный макет dialog_plant_info
      */
     private void showPlantInfo(PlantPoint point) {
         Context context = getContext();
