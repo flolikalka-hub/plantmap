@@ -27,10 +27,10 @@ android {
         targetSdk = 36
 
         // Версия для внутреннего учёта (код версии)
-        versionCode = 56
+        versionCode = 57
 
         // Публичная версия для пользователей
-        versionName = "Release-3.3.3"
+        versionName = "Release-3.4"
 
         // Стандартный раннер для инструментальных тестов
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

@@ -2,6 +2,7 @@ package com.example.plantmap;
 
 import android.app.Application;
 import com.example.plantmap.db.DatabaseHelper;
+import com.example.plantmap.db.yandex.PlantPhotoLoader;
 import com.example.plantmap.plant.PlantRepository;
 
 /**
@@ -35,6 +36,8 @@ public class App extends Application {
         // Инициализация слоя данных
         dbHelper = new DatabaseHelper(this);
         repository = new PlantRepository(dbHelper);
+        // Инициализация кэша изображений
+        PlantPhotoLoader.init(getApplicationContext());
     }
 
     /**
