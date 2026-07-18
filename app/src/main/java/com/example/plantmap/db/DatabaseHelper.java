@@ -26,7 +26,7 @@ import java.io.*;
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DB_NAME = "PlantMap_DB.db";
-    private static final int DB_VERSION = 34;
+    private static final int DB_VERSION = 35;
     private final Context context;
     private String dbPath;
 
@@ -113,6 +113,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 case 31: migrateTo31(db); break;
                 case 33: migrateTo33(db); break;
                 case 34: migrateTo34(db); break;
+                case 35: migrateTo35(db); break;
                 default:
                     throw new IllegalStateException("Unknown migration from " + oldVersion + " to " + newVersion);
             }
@@ -454,6 +455,123 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             db.setTransactionSuccessful();
         } finally {
             db.endTransaction();
+        }
+    }
+
+    private void migrateTo35(SQLiteDatabase db) {
+        db.execSQL("PRAGMA foreign_keys = OFF");
+        db.beginTransaction();
+        try {
+            // ------------------------------------------------------------
+            // 1. Таблица deletions
+            // ------------------------------------------------------------
+            db.execSQL("CREATE TABLE IF NOT EXISTS deletions (" +
+                    "table_name TEXT NOT NULL," +
+                    "record_id TEXT NOT NULL," +
+                    "deleted_at INTEGER NOT NULL)");
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_deletions_record ON deletions(table_name, record_id)");
+
+            // ------------------------------------------------------------
+            // 2. Фиксируем мягко удалённые записи в deletions
+            // ------------------------------------------------------------
+            long now = System.currentTimeMillis();
+            db.execSQL("INSERT INTO deletions (table_name, record_id, deleted_at) " +
+                            "SELECT 'variety', id, ? FROM variety WHERE is_deleted = 1",
+                    new String[]{String.valueOf(now)});
+            db.execSQL("INSERT INTO deletions (table_name, record_id, deleted_at) " +
+                            "SELECT 'plants', id, ? FROM plants WHERE is_deleted = 1",
+                    new String[]{String.valueOf(now)});
+            db.execSQL("INSERT INTO deletions (table_name, record_id, deleted_at) " +
+                            "SELECT 'points', id, ? FROM points WHERE is_deleted = 1",
+                    new String[]{String.valueOf(now)});
+            db.execSQL("INSERT INTO deletions (table_name, record_id, deleted_at) " +
+                            "SELECT 'plant_pot_volumes', id, ? FROM plant_pot_volumes WHERE is_deleted = 1",
+                    new String[]{String.valueOf(now)});
+
+            // ------------------------------------------------------------
+            // 3. Создаём новые таблицы без is_deleted
+            // ------------------------------------------------------------
+            // new_variety
+            db.execSQL("CREATE TABLE new_variety (" +
+                    "id TEXT PRIMARY KEY," +
+                    "type TEXT," +
+                    "plant_group TEXT," +
+                    "last_modified INTEGER NOT NULL)");
+
+            // new_plants
+            db.execSQL("CREATE TABLE new_plants (" +
+                    "id TEXT PRIMARY KEY," +
+                    "old_id INTEGER," +
+                    "variety_id TEXT NOT NULL," +
+                    "name TEXT NOT NULL," +
+                    "flower_color INTEGER DEFAULT 9," +
+                    "additional_info TEXT," +
+                    "public_key TEXT," +
+                    "name_rosebook TEXT," +
+                    "last_modified INTEGER NOT NULL," +
+                    "FOREIGN KEY(flower_color) REFERENCES colors(id)," +
+                    "FOREIGN KEY(variety_id) REFERENCES new_variety(id) ON DELETE CASCADE)");
+
+            // new_points
+            db.execSQL("CREATE TABLE new_points (" +
+                    "id TEXT PRIMARY KEY," +
+                    "x REAL NOT NULL," +
+                    "y REAL NOT NULL," +
+                    "count INTEGER NOT NULL," +
+                    "plant_id TEXT NOT NULL," +
+                    "processing_date INTEGER," +
+                    "feeding_date INTEGER," +
+                    "pot_volume INTEGER," +
+                    "last_modified INTEGER NOT NULL," +
+                    "FOREIGN KEY(plant_id) REFERENCES new_plants(id) ON DELETE CASCADE)");
+
+            // new_plant_pot_volumes
+            db.execSQL("CREATE TABLE new_plant_pot_volumes (" +
+                    "id TEXT PRIMARY KEY," +
+                    "plant_id TEXT NOT NULL," +
+                    "pot_volume INTEGER NOT NULL," +
+                    "last_modified INTEGER NOT NULL," +
+                    "FOREIGN KEY(plant_id) REFERENCES new_plants(id) ON DELETE CASCADE," +
+                    "UNIQUE(plant_id, pot_volume))");
+
+            // ------------------------------------------------------------
+            // 4. Копируем только активные записи (is_deleted = 0)
+            // ------------------------------------------------------------
+            db.execSQL("INSERT INTO new_variety (id, type, plant_group, last_modified) " +
+                    "SELECT id, type, plant_group, last_modified FROM variety WHERE is_deleted = 0");
+            db.execSQL("INSERT INTO new_plants (id, old_id, variety_id, name, flower_color, additional_info, public_key, name_rosebook, last_modified) " +
+                    "SELECT id, old_id, variety_id, name, flower_color, additional_info, public_key, name_rosebook, last_modified " +
+                    "FROM plants WHERE is_deleted = 0");
+            db.execSQL("INSERT INTO new_points (id, x, y, count, plant_id, processing_date, feeding_date, pot_volume, last_modified) " +
+                    "SELECT id, x, y, count, plant_id, processing_date, feeding_date, pot_volume, last_modified " +
+                    "FROM points WHERE is_deleted = 0");
+            db.execSQL("INSERT INTO new_plant_pot_volumes (id, plant_id, pot_volume, last_modified) " +
+                    "SELECT id, plant_id, pot_volume, last_modified FROM plant_pot_volumes WHERE is_deleted = 0");
+
+            // ------------------------------------------------------------
+            // 5. Удаляем старые таблицы и переименовываем новые
+            // ------------------------------------------------------------
+            db.execSQL("DROP TABLE IF EXISTS variety");
+            db.execSQL("DROP TABLE IF EXISTS plants");
+            db.execSQL("DROP TABLE IF EXISTS points");
+            db.execSQL("DROP TABLE IF EXISTS plant_pot_volumes");
+
+            db.execSQL("ALTER TABLE new_variety RENAME TO variety");
+            db.execSQL("ALTER TABLE new_plants RENAME TO plants");
+            db.execSQL("ALTER TABLE new_points RENAME TO points");
+            db.execSQL("ALTER TABLE new_plant_pot_volumes RENAME TO plant_pot_volumes");
+
+            // ------------------------------------------------------------
+            // 6. Индексы
+            // ------------------------------------------------------------
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_points_plant_id ON points(plant_id)");
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_plants_variety_id ON plants(variety_id)");
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_plants_old_id ON plants(old_id)");
+
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+            db.execSQL("PRAGMA foreign_keys = ON");
         }
     }
 

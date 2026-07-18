@@ -11,8 +11,8 @@
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 58,
-      "versionName": "Release-3.4.2",
+      "versionCode": 60,
+      "versionName": "Release-3.5[синхронизация].2",
       "outputFile": "app-release.apk"
     }
   ],

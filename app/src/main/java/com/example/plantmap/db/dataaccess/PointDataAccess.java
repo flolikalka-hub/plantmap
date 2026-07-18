@@ -66,7 +66,6 @@ public class PointDataAccess {
         }
 
         cv.put("last_modified", System.currentTimeMillis());
-        cv.put("is_deleted", 0);
 
         db.insert("points", null, cv);
         return uuid;
@@ -116,10 +115,15 @@ public class PointDataAccess {
      */
     public void deletePoint(String id) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
-        ContentValues cv = new ContentValues();
-        cv.put("is_deleted", 1);
-        cv.put("last_modified", System.currentTimeMillis());
-        db.update("points", cv, "id=?", new String[]{id});
+        db.beginTransaction();
+        try {
+            db.delete("points", "id=?", new String[]{id});
+            db.execSQL("INSERT INTO deletions (table_name, record_id, deleted_at) VALUES ('points', ?, ?)",
+                    new String[]{id, String.valueOf(System.currentTimeMillis())});
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
     }
 
     /**
@@ -199,7 +203,7 @@ public class PointDataAccess {
      */
     public int getTotalPlantCount() {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT SUM(count) FROM points WHERE is_deleted = 0", null);
+        Cursor cursor = db.rawQuery("SELECT SUM(count) FROM points", null);
         int total = 0;
         if (cursor.moveToFirst()) {
             total = cursor.getInt(0);
@@ -224,7 +228,7 @@ public class PointDataAccess {
                 "SELECT SUM(count) FROM points p " +
                         "JOIN plants pl ON p.plant_id = pl.id " +
                         "LEFT JOIN variety v ON pl.variety_id = v.id " +
-                        "WHERE 1=1 AND p.is_deleted = 0 AND pl.is_deleted = 0"
+                        "WHERE 1=1"
         );
         List<String> args = new ArrayList<>();
 
@@ -275,8 +279,7 @@ public class PointDataAccess {
                         "pl.public_key " +
                         "FROM points p JOIN plants pl ON p.plant_id = pl.id " +
                         "LEFT JOIN variety v ON pl.variety_id = v.id " +
-                        "WHERE p.processing_date IS NULL " +
-                        "AND p.is_deleted = 0 AND pl.is_deleted = 0";
+                        "WHERE p.processing_date IS NULL";
 
         Cursor c = db.rawQuery(sql, null);
         while (c.moveToNext()) {
@@ -313,8 +316,7 @@ public class PointDataAccess {
                         "FROM points p " +
                         "JOIN plants pl ON p.plant_id = pl.id " +
                         "LEFT JOIN variety v ON pl.variety_id = v.id " +
-                        "WHERE processing_date IS NULL OR processing_date < ? " +
-                        "AND p.is_deleted = 0 AND pl.is_deleted = 0";
+                        "WHERE processing_date IS NULL OR processing_date < ?";
 
         Cursor cursor = db.rawQuery(query, new String[]{ String.valueOf(threshold) });
         List<PlantPoint> result = new ArrayList<>();
@@ -343,8 +345,7 @@ public class PointDataAccess {
                         "FROM points p " +
                         "JOIN plants pl ON p.plant_id = pl.id " +
                         "LEFT JOIN variety v ON pl.variety_id = v.id " +
-                        "WHERE p.feeding_date IS NULL " +
-                        "AND p.is_deleted = 0 AND pl.is_deleted = 0";
+                        "WHERE p.feeding_date IS NULL";
 
         Cursor c = db.rawQuery(sql, null);
         while (c.moveToNext()) {
@@ -381,8 +382,7 @@ public class PointDataAccess {
                         "FROM points p " +
                         "JOIN plants pl ON p.plant_id = pl.id " +
                         "LEFT JOIN variety v ON pl.variety_id = v.id " +
-                        "WHERE feeding_date IS NULL OR feeding_date < ? " +
-                        "AND p.is_deleted = 0 AND pl.is_deleted = 0";
+                        "WHERE feeding_date IS NULL OR feeding_date < ?";
 
         Cursor cursor = db.rawQuery(query, new String[]{ String.valueOf(threshold) });
         List<PlantPoint> result = new ArrayList<>();

@@ -28,9 +28,9 @@ android {
         // Целевая версия SDK, на которой тестировалось приложение
         targetSdk = 36
         // Версия для внутреннего учёта (код версии)
-        versionCode = 59
+        versionCode = 60
         // Публичная версия для пользователей
-        versionName = "Release-3.5[синхронизация]"
+        versionName = "Release-3.5[синхронизация].2"
         // Стандартный раннер для инструментальных тестов
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
