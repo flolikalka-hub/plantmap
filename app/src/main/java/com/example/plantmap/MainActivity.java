@@ -15,6 +15,7 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 
 import com.example.plantmap.db.BackupDatabase;
+import com.example.plantmap.db.yandex_tables.SyncManager;
 import com.example.plantmap.model.PlantPoint;
 import com.example.plantmap.plant.PlantRepository;
 import com.example.plantmap.ui.DbFragment;
@@ -107,6 +108,14 @@ public class MainActivity extends AppCompatActivity {
             drawerLayout.closeDrawers();
             return true;
         });
+
+        // Запуск синхронизации при старте (удалить после добавления в нормальный workflow)
+        new Thread(() -> {
+            SyncManager syncManager = new SyncManager(MainActivity.this);
+            syncManager.syncAll();
+        }).start();
+
+
     }
 
     /**
@@ -197,34 +206,4 @@ public class MainActivity extends AppCompatActivity {
                 .replace(R.id.main_container, fragment, tag)
                 .commit();
     }
-
-    /**
-     * Однократно запускает миграцию координат всех растений.
-     *
-     * Необходимость возникла из-за смены целевого устройства: старые координаты
-     * были рассчитаны для экрана с плотностью 2.8125 (A16),
-     * новые должны быть в эталонных пикселях (density 1.0).
-     * Применяется масштабирующий коэффициент 1 / 2.8125.
-     *
-     * После выполнения миграции в SharedPreferences записывается флаг,
-     * чтобы операция не повторялась.
-     */
-    /*
-    private void migratePointsIfNeeded() {
-        SharedPreferences prefs = getSharedPreferences("migration", MODE_PRIVATE);
-        if (prefs.getBoolean("density_migrated", false)) return;
-
-        float oldDensity = 2.8125f;   // плотность экрана старого устройства
-        float scale = 1f / oldDensity; // коэффициент для приведения к эталону
-
-        List<PlantPoint> allPoints = repository.getAllPoints();
-        for (PlantPoint p : allPoints) {
-            p.setX(p.x * scale);
-            p.setY(p.y * scale);
-            repository.updatePoint(p.id, p);
-        }
-
-        // Отмечаем, что миграция выполнена
-        prefs.edit().putBoolean("density_migrated", true).apply();
-    */
 }

@@ -1,8 +1,11 @@
 package com.example.plantmap.plant;
 
+import android.content.Context;
+
 import com.example.plantmap.db.DatabaseHelper;
 import com.example.plantmap.db.dataaccess.PlantDataAccess;
 import com.example.plantmap.db.dataaccess.PointDataAccess;
+import com.example.plantmap.db.yandex_tables.SyncManager;
 import com.example.plantmap.model.FlowerColor;
 import com.example.plantmap.model.Plant;
 import com.example.plantmap.model.PlantPoint;
@@ -23,10 +26,17 @@ import java.util.Map;
 public class PlantRepository {
     private final PlantDataAccess plantDa;
     private final PointDataAccess pointDa;
+    private final SyncManager syncManager;
 
-    public PlantRepository(DatabaseHelper dbHelper) {
+    public PlantRepository(DatabaseHelper dbHelper, Context context) {
         plantDa = new PlantDataAccess(dbHelper);
         pointDa = new PointDataAccess(dbHelper);
+        this.syncManager = new SyncManager(context);
+    }
+
+    /** Запускает синхронизацию всех таблиц с Яндекс.Диском в фоновом потоке. */
+    private void triggerSync() {
+        new Thread(() -> syncManager.syncAll()).start();
     }
 
     // --- Точки ---
@@ -37,18 +47,22 @@ public class PlantRepository {
     }
 
     /** Добавляет новую точку. Возвращает её id. */
-    public long addPoint(PlantPoint point) {
-        return pointDa.addPoint(point);
+    public String addPoint(PlantPoint point) {
+        String id = pointDa.addPoint(point);
+        triggerSync();
+        return id;
     }
 
     /** Обновляет координаты, количество и даты точки. */
-    public void updatePoint(int id, PlantPoint point) {
+    public void updatePoint(String id, PlantPoint point) {
         pointDa.updatePoint(id, point);
+        triggerSync();
     }
 
     /** Удаляет точку по id. */
-    public void deletePoint(int id) {
+    public void deletePoint(String id) {
         pointDa.deletePoint(id);
+        triggerSync();
     }
 
     /** Общее количество растений на плане (сумма count). */
@@ -94,13 +108,16 @@ public class PlantRepository {
     }
 
     /** Добавляет новое растение. Возвращает его id. */
-    public long addPlant(Plant plant) {
-        return plantDa.addPlant(plant);
+    public String addPlant(Plant plant) {
+        String id = plantDa.addPlant(plant);
+        triggerSync();
+        return id;
     }
 
     /** Сохраняет изменения существующего растения. */
     public void updatePlant(Plant plant) {
         plantDa.updatePlant(plant);
+        triggerSync();
     }
 
     /**
@@ -117,13 +134,14 @@ public class PlantRepository {
     }
 
     /** Можно ли удалить растение (не используется ли оно в точках). */
-    public boolean canDeletePlant(int id) {
+    public boolean canDeletePlant(String id) {
         return plantDa.canDeletePlant(id);
     }
 
     /** Удаляет растение (каскадно удалятся связанные точки через внешний ключ). */
-    public void deletePlant(int id) {
+    public void deletePlant(String id) {
         plantDa.deletePlant(id);
+        triggerSync();
     }
 
     /** Поиск растений по критериям. */
@@ -202,22 +220,24 @@ public class PlantRepository {
     // --- Объёмы горшков ---
 
     /** Заменяет список объёмов горшков для растения. */
-    public void replacePlantVolumes(int plantId, List<Integer> volumes) {
+    public void replacePlantVolumes(String plantId, List<Integer> volumes) {
         plantDa.replacePlantVolumes(plantId, volumes);
+        triggerSync();
     }
 
     /** Добавляет объём горшка (игнорирует дубликат). */
-    public void addPlantVolume(int plantId, int volume) {
+    public void addPlantVolume(String plantId, int volume) {
         plantDa.addPlantVolume(plantId, volume);
+        triggerSync();
     }
 
     /** Возвращает отсортированный список объёмов для растения. */
-    public List<Integer> getPotVolumesForPlant(int plantId) {
+    public List<Integer> getPotVolumesForPlant(String plantId) {
         return plantDa.getPotVolumesForPlant(plantId);
     }
 
     /** Можно ли удалить объём (не используется ли он в точках). */
-    public boolean canDeleteVolume(int plantId, int potVolume) {
+    public boolean canDeleteVolume(String plantId, int potVolume) {
         return plantDa.canDeleteVolume(plantId, potVolume);
     }
 }

@@ -12,6 +12,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Доступ к данным таблицы points (точки на плане).
@@ -32,9 +33,12 @@ public class PointDataAccess {
      * @param point объект PlantPoint с заполненными координатами, растением и датами
      * @return сгенерированный идентификатор записи (id)
      */
-    public long addPoint(PlantPoint point) {
+    public String addPoint(PlantPoint point) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         ContentValues cv = new ContentValues();
+
+        String uuid = UUID.randomUUID().toString();
+        cv.put("id", uuid);
 
         cv.put("x", point.x);
         cv.put("y", point.y);
@@ -61,8 +65,11 @@ public class PointDataAccess {
             cv.put("pot_volume", point.potVolume);
         }
 
-        long id = db.insert("points", null, cv);
-        return id;
+        cv.put("last_modified", System.currentTimeMillis());
+        cv.put("is_deleted", 0);
+
+        db.insert("points", null, cv);
+        return uuid;
     }
 
     /**
@@ -71,7 +78,7 @@ public class PointDataAccess {
      * @param id    идентификатор точки
      * @param point новые данные точки
      */
-    public void updatePoint(int id, PlantPoint point) {
+    public void updatePoint(String id, PlantPoint point) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         ContentValues cv = new ContentValues();
 
@@ -99,15 +106,20 @@ public class PointDataAccess {
             cv.put("pot_volume", point.potVolume);
         }
 
-        db.update("points", cv, "id=?", new String[]{String.valueOf(id)});
+        cv.put("last_modified", System.currentTimeMillis());
+
+        db.update("points", cv, "id=?", new String[]{id});
     }
 
     /**
      * Удаляет точку по идентификатору.
      */
-    public void deletePoint(int id) {
+    public void deletePoint(String id) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
-        db.delete("points", "id=?", new String[]{String.valueOf(id)});
+        ContentValues cv = new ContentValues();
+        cv.put("is_deleted", 1);
+        cv.put("last_modified", System.currentTimeMillis());
+        db.update("points", cv, "id=?", new String[]{id});
     }
 
     /**
@@ -119,7 +131,7 @@ public class PointDataAccess {
         float y = c.getFloat(c.getColumnIndexOrThrow("y"));
         PlantPoint point = new PlantPoint(x, y);
 
-        point.id = c.getInt(c.getColumnIndexOrThrow("id"));
+        point.id = c.getString(c.getColumnIndexOrThrow("id"));
         point.count = c.getInt(c.getColumnIndexOrThrow("count"));
 
         // processing_date
@@ -136,7 +148,7 @@ public class PointDataAccess {
 
         // Данные растения
         Plant plant = new Plant();
-        plant.id = c.getInt(c.getColumnIndexOrThrow("plant_id"));
+        plant.id = c.getString(c.getColumnIndexOrThrow("plant_id"));
         plant.name = c.getString(c.getColumnIndexOrThrow("name"));
         plant.type = c.getString(c.getColumnIndexOrThrow("type"));
         plant.group = c.getString(c.getColumnIndexOrThrow("plant_group"));
@@ -187,7 +199,7 @@ public class PointDataAccess {
      */
     public int getTotalPlantCount() {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT SUM(count) FROM points", null);
+        Cursor cursor = db.rawQuery("SELECT SUM(count) FROM points WHERE is_deleted = 0", null);
         int total = 0;
         if (cursor.moveToFirst()) {
             total = cursor.getInt(0);
@@ -211,7 +223,8 @@ public class PointDataAccess {
         StringBuilder sql = new StringBuilder(
                 "SELECT SUM(count) FROM points p " +
                         "JOIN plants pl ON p.plant_id = pl.id " +
-                        "LEFT JOIN variety v ON pl.variety_id = v.id WHERE 1=1"
+                        "LEFT JOIN variety v ON pl.variety_id = v.id " +
+                        "WHERE 1=1 AND p.is_deleted = 0 AND pl.is_deleted = 0"
         );
         List<String> args = new ArrayList<>();
 
@@ -262,7 +275,8 @@ public class PointDataAccess {
                         "pl.public_key " +
                         "FROM points p JOIN plants pl ON p.plant_id = pl.id " +
                         "LEFT JOIN variety v ON pl.variety_id = v.id " +
-                        "WHERE p.processing_date IS NULL";
+                        "WHERE p.processing_date IS NULL " +
+                        "AND p.is_deleted = 0 AND pl.is_deleted = 0";
 
         Cursor c = db.rawQuery(sql, null);
         while (c.moveToNext()) {
@@ -299,7 +313,8 @@ public class PointDataAccess {
                         "FROM points p " +
                         "JOIN plants pl ON p.plant_id = pl.id " +
                         "LEFT JOIN variety v ON pl.variety_id = v.id " +
-                        "WHERE processing_date IS NULL OR processing_date < ?";
+                        "WHERE processing_date IS NULL OR processing_date < ? " +
+                        "AND p.is_deleted = 0 AND pl.is_deleted = 0";
 
         Cursor cursor = db.rawQuery(query, new String[]{ String.valueOf(threshold) });
         List<PlantPoint> result = new ArrayList<>();
@@ -328,7 +343,8 @@ public class PointDataAccess {
                         "FROM points p " +
                         "JOIN plants pl ON p.plant_id = pl.id " +
                         "LEFT JOIN variety v ON pl.variety_id = v.id " +
-                        "WHERE p.feeding_date IS NULL";
+                        "WHERE p.feeding_date IS NULL " +
+                        "AND p.is_deleted = 0 AND pl.is_deleted = 0";
 
         Cursor c = db.rawQuery(sql, null);
         while (c.moveToNext()) {
@@ -365,7 +381,8 @@ public class PointDataAccess {
                         "FROM points p " +
                         "JOIN plants pl ON p.plant_id = pl.id " +
                         "LEFT JOIN variety v ON pl.variety_id = v.id " +
-                        "WHERE feeding_date IS NULL OR feeding_date < ?";
+                        "WHERE feeding_date IS NULL OR feeding_date < ? " +
+                        "AND p.is_deleted = 0 AND pl.is_deleted = 0";
 
         Cursor cursor = db.rawQuery(query, new String[]{ String.valueOf(threshold) });
         List<PlantPoint> result = new ArrayList<>();

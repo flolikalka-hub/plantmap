@@ -13,7 +13,3 @@
 .externalNativeBuild
 .cxx
 local.properties
-# Исключаем папку с ключами
-app/keystore/
-# Исключаем gradle.properties с паролями
-gradle.properties

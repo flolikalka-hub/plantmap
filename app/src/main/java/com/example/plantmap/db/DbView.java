@@ -148,7 +148,7 @@ public class DbView {
 
         // Кнопка "Удалить" только для существующих растений
         if (!isNew) {
-            final int idPlant = plant.id;
+            final String idPlant = plant.id;
             builder.setNeutralButton("Удалить", (d, which) -> {
                 if (!repository.canDeletePlant(idPlant)) {
                     new AlertDialog.Builder(context)
@@ -196,7 +196,7 @@ public class DbView {
                 Plant plantToSave;
                 if (existingPlant != null) {
                     // Если редактируем существующее и найденное — это оно само, разрешаем
-                    if (!isNew && existingPlant.id == originalPlant.id) {
+                    if (!isNew && existingPlant.id.equals(originalPlant.id)) {
                         plantToSave = updatedPlant;
                         plantToSave.id = originalPlant.id;
                     } else {
@@ -215,7 +215,7 @@ public class DbView {
                     }
                 }
 
-                long savedPlantId;
+                String savedPlantId;
                 if (isNew) {
                     // Если растение уже существует, не добавляем, а используем его id
                     if (existingPlant != null) {
@@ -229,10 +229,10 @@ public class DbView {
                 }
 
                 // Проверяем, какие объёмы удаляются (нельзя удалить используемые в точках)
-                List<Integer> oldVolumes = repository.getPotVolumesForPlant((int) savedPlantId);
+                List<Integer> oldVolumes = repository.getPotVolumesForPlant(savedPlantId);
                 for (Integer oldVol : oldVolumes) {
                     if (!potVolumes.contains(oldVol)) {
-                        if (!repository.canDeleteVolume((int) savedPlantId, oldVol)) {
+                        if (!repository.canDeleteVolume(savedPlantId, oldVol)) {
                             new AlertDialog.Builder(context)
                                     .setTitle("Нельзя удалить объём")
                                     .setMessage("Объём " + oldVol + "л используется в точках на плане. Сначала удалите эти точки.")
@@ -244,7 +244,7 @@ public class DbView {
                 }
 
                 // Если проверки пройдены — заменяем объёмы и обновляем UI
-                repository.replacePlantVolumes((int) savedPlantId, potVolumes);
+                repository.replacePlantVolumes(savedPlantId, potVolumes);
 
                 if (planView != null) planView.reloadPoints();
                 refreshPlantList(recyclerView);

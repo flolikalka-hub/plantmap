@@ -26,7 +26,7 @@ import java.io.*;
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DB_NAME = "PlantMap_DB.db";
-    private static final int DB_VERSION = 33;
+    private static final int DB_VERSION = 34;
     private final Context context;
     private String dbPath;
 
@@ -112,6 +112,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 case 25: migrateTo25(db); break;
                 case 31: migrateTo31(db); break;
                 case 33: migrateTo33(db); break;
+                case 34: migrateTo34(db); break;
                 default:
                     throw new IllegalStateException("Unknown migration from " + oldVersion + " to " + newVersion);
             }
@@ -416,6 +417,38 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             db.execSQL("CREATE INDEX IF NOT EXISTS idx_points_plant_id ON points(plant_id)");
             db.execSQL("CREATE INDEX IF NOT EXISTS idx_plants_variety_id ON plants(variety_id)");
             db.execSQL("CREATE INDEX IF NOT EXISTS idx_plants_old_id ON plants(old_id)");
+
+            db.execSQL("PRAGMA foreign_keys = ON");
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
+    }
+
+    private void migrateTo34(SQLiteDatabase db) {
+        db.beginTransaction();
+        try {
+            db.execSQL("PRAGMA foreign_keys = OFF");
+
+            // Создаём временную таблицу с копией данных
+            db.execSQL("ALTER TABLE plant_pot_volumes RENAME TO ppv_old");
+            db.execSQL("CREATE TABLE plant_pot_volumes (" +
+                    "id TEXT PRIMARY KEY," +
+                    "plant_id TEXT NOT NULL," +
+                    "pot_volume INTEGER NOT NULL," +
+                    "last_modified INTEGER NOT NULL," +
+                    "is_deleted INTEGER NOT NULL DEFAULT 0," +
+                    "FOREIGN KEY(plant_id) REFERENCES plants(id) ON DELETE CASCADE," +
+                    "UNIQUE(plant_id, pot_volume)" +
+                    ")");
+
+            // Генерируем UUID и копируем данные
+            db.execSQL("INSERT INTO plant_pot_volumes (id, plant_id, pot_volume, last_modified, is_deleted) " +
+                    "SELECT lower(hex(randomblob(16))), plant_id, pot_volume, last_modified, is_deleted " +
+                    "FROM ppv_old");
+
+            db.execSQL("DROP TABLE ppv_old");
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_ppv_plant_id ON plant_pot_volumes(plant_id)");
 
             db.execSQL("PRAGMA foreign_keys = ON");
             db.setTransactionSuccessful();

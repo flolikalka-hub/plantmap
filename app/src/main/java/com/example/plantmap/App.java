@@ -35,7 +35,7 @@ public class App extends Application {
 
         // Инициализация слоя данных
         dbHelper = new DatabaseHelper(this);
-        repository = new PlantRepository(dbHelper);
+        repository = new PlantRepository(dbHelper, this);
         // Инициализация кэша изображений
         PlantPhotoLoader.init(getApplicationContext());
     }

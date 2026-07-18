@@ -139,9 +139,9 @@ public class PlantDialogs {
                         if (existing != null) {
                             plant = existing;
                         } else {
-                            long plantId = repository.addPlant(modifiedPlant);
-                            if (plantId == -1) return;
-                            modifiedPlant.id = (int) plantId;
+                            String plantId = repository.addPlant(modifiedPlant);
+                            if (plantId == null) return;
+                            modifiedPlant.id = plantId;
                             plant = modifiedPlant;
                         }
                     } else {
@@ -157,9 +157,9 @@ public class PlantDialogs {
                     if (existing != null) {
                         plant = existing;
                     } else {
-                        long plantId = repository.addPlant(modifiedPlant);
-                        if (plantId == -1) return;
-                        modifiedPlant.id = (int) plantId;
+                        String plantId = repository.addPlant(modifiedPlant);
+                        if (plantId == null) return;
+                        modifiedPlant.id = plantId;
                         plant = modifiedPlant;
                     }
                 }
@@ -178,8 +178,8 @@ public class PlantDialogs {
                 point.processingDate = processingDate[0];
                 point.feedingDate = feedingDate[0];
 
-                long newId = repository.addPoint(point);
-                point.id = (int) newId;
+                String newId = repository.addPoint(point);
+                point.id = newId;
 
                 if (onSaved != null) onSaved.run();
                 dialog.dismiss();
@@ -334,9 +334,9 @@ public class PlantDialogs {
                         if (existing != null) {
                             plant = existing;
                         } else {
-                            long plantId = repository.addPlant(tempPlant);
-                            if (plantId == -1) return;
-                            tempPlant.id = (int) plantId;
+                            String plantId = repository.addPlant(tempPlant);
+                            if (plantId == null) return;
+                            tempPlant.id = plantId;
                             plant = tempPlant;
                         }
                     } else {
@@ -350,9 +350,9 @@ public class PlantDialogs {
                     if (existing != null) {
                         plant = existing;
                     } else {
-                        long plantId = repository.addPlant(tempPlant);
-                        if (plantId == -1) return;
-                        tempPlant.id = (int) plantId;
+                        String plantId = repository.addPlant(tempPlant);
+                        if (plantId == null) return;
+                        tempPlant.id = plantId;
                         plant = tempPlant;
                     }
                 }

@@ -90,6 +90,7 @@ public class PlanView extends View {
     // --- Данные ---
     /** Точки, отображаемые на плане. */
     private ArrayList<PlantPoint> points;
+    /** Репозиторий для работы с точками и растениями (БД + синхронизация). */
     private PlantRepository repository;
 
     // --- Режимы и состояние взаимодействия ---
@@ -381,7 +382,7 @@ public class PlanView extends View {
                         draggedPoint.setX(snappedX);
                         draggedPoint.setY(snappedY);
                     }
-                    if (draggedPoint.id != 0) {
+                    if (draggedPoint.id != null && !draggedPoint.id.isEmpty()) {
                         repository.updatePoint(draggedPoint.id, draggedPoint);
                     }
                 }
@@ -465,6 +466,10 @@ public class PlanView extends View {
                 .show();
     }
 
+    /**
+     * Запрашивает подтверждение мягкого удаления точки (помечается is_deleted=1).
+     * Удалённая точка исключается из списка отображения и будет синхронизирована.
+     */
     private void showDeleteConfirmation(PlantPoint point) {
         new AlertDialog.Builder(getContext())
                 .setTitle("Удаление точки")
@@ -473,7 +478,9 @@ public class PlanView extends View {
                     points.remove(point);
                     if (selectedPoint == point) selectedPoint = null;
                     if (draggedPoint == point) draggedPoint = null;
-                    if (point.id != 0) repository.deletePoint(point.id);
+                    if (point.id != null && !point.id.isEmpty()) {
+                        repository.deletePoint(point.id);
+                    }
                     invalidate();
                 })
                 .setNegativeButton("Отмена", null)

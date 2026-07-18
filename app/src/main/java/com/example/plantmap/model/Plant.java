@@ -10,7 +10,7 @@ import java.util.List;
  */
 public class Plant {
     /** Идентификатор в БД (0 — ещё не сохранено). */
-    public int id = 0;
+    public String id = null;
 
     /** Название растения (например, "Роза чайно-гибридная"). */
     public String name;
