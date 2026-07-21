@@ -516,7 +516,7 @@ public class PlantDataAccess {
             // Вставляем новые объёмы
             for (Integer vol : volumes) {
                 if (vol != null) {
-                    addPlantVolume(plantId, vol);  // addPlantVolume теперь генерирует UUID и last_modified
+                    addPlantVolume(plantId, vol);
                 }
             }
             db.setTransactionSuccessful();

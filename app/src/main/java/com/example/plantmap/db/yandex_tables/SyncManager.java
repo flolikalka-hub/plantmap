@@ -16,8 +16,10 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class SyncManager {
     private static final String TAG = "SyncManager";
@@ -89,6 +91,21 @@ public class SyncManager {
             }
             cursor.close();
 
+            // Получаем список удалённых ID для этой таблицы
+            Set<String> deletedIds = new HashSet<>();
+            Cursor delCursor = db.query("deletions", new String[]{"record_id"},
+                    "table_name=?", new String[]{tableName}, null, null, null);
+            while (delCursor.moveToNext()) {
+                deletedIds.add(delCursor.getString(0));
+            }
+            delCursor.close();
+
+            Map<String, JSONObject> serverMap = new HashMap<>();
+            for (int i = 0; i < serverArray.length(); i++) {
+                JSONObject obj = serverArray.getJSONObject(i);
+                serverMap.put(obj.getString("id"), obj);
+            }
+
             // 5. Слить данные
             db = dbHelper.getWritableDatabase();
             db.beginTransaction();
@@ -97,18 +114,32 @@ public class SyncManager {
                     JSONObject serverObj = serverArray.getJSONObject(i);
                     String id = serverObj.getString("id");
                     long serverLastMod = serverObj.optLong("last_modified", 0);
-                    int isDeleted = serverObj.optInt("is_deleted", 0);
 
-                    if (isDeleted == 1) {
-                        // Удалить локально, если есть
-                        db.delete(tableName, "id=?", new String[]{id});
-                        Log.d(TAG, tableName + ": удалена запись " + id);
-                        continue;
+                    // Проверка существования родительской записи (чтобы не нарушить внешний ключ)
+                    if (tableName.equals("plants") && serverObj.has("variety_id")) {
+                        String varId = serverObj.getString("variety_id");
+                        Cursor varCur = db.rawQuery("SELECT id FROM variety WHERE id=?", new String[]{varId});
+                        boolean exists = varCur.moveToFirst();
+                        varCur.close();
+                        if (!exists) {
+                            Log.w(TAG, "Пропущено растение " + id + " – сорт " + varId + " не найден локально");
+                            continue;
+                        }
+                    } else if (tableName.equals("points") && serverObj.has("plant_id")) {
+                        String pId = serverObj.getString("plant_id");
+                        Cursor pCur = db.rawQuery("SELECT id FROM plants WHERE id=?", new String[]{pId});
+                        boolean exists = pCur.moveToFirst();
+                        pCur.close();
+                        if (!exists) {
+                            Log.w(TAG, "Пропущена точка " + id + " – растение " + pId + " не найдено локально");
+                            continue;
+                        }
                     }
 
+                    // Игнорируем удалённые записи (их больше нет в JSON, если мы их удалили)
+                    // Если запись есть на сервере, но её нет локально – добавляем
                     Long localLastMod = localVersions.get(id);
                     if (localLastMod == null || serverLastMod > localLastMod) {
-                        // Серверная запись новее или отсутствует локально → вставить/обновить
                         ContentValues cv = jsonToContentValues(serverObj);
                         db.insertWithOnConflict(tableName, null, cv, SQLiteDatabase.CONFLICT_REPLACE);
                         Log.d(TAG, tableName + ": обновлена запись " + id);
@@ -116,6 +147,17 @@ public class SyncManager {
                         Log.d(TAG, tableName + ": пропущена запись " + id + " (локальная версия новее)");
                     }
                 }
+
+                // Удаляем локальные записи, которые отсутствуют на сервере и не помечены как удалённые
+                for (String localId : localVersions.keySet()) {
+                    if (!serverMap.containsKey(localId) && !deletedIds.contains(localId)) {
+                        db.delete(tableName, "id=?", new String[]{localId});
+                        db.execSQL("INSERT INTO deletions (table_name, record_id, deleted_at) VALUES (?, ?, ?)",
+                                new String[]{tableName, localId, String.valueOf(System.currentTimeMillis())});
+                        Log.d(TAG, tableName + ": удалена локальная запись " + localId + " (отсутствует на сервере)");
+                    }
+                }
+
                 db.setTransactionSuccessful();
             } finally {
                 db.endTransaction();
@@ -176,10 +218,20 @@ public class SyncManager {
         try {
             long lastSync = getLastSyncTime(tableName);
             SQLiteDatabase db = dbHelper.getReadableDatabase();
-            // Собираем локальные изменения (все, включая is_deleted=1)
             Cursor c = db.query(tableName, null, "last_modified > ?",
                     new String[]{String.valueOf(lastSync)}, null, null, null);
             List<ContentValues> localChanges = new ArrayList<>();
+
+            // Получаем список удалённых id для этой таблицы
+            Set<String> deletedIds = new HashSet<>();
+            Cursor delCursor = db.rawQuery("SELECT record_id FROM deletions WHERE table_name=?",
+                    new String[]{tableName});
+            while (delCursor.moveToNext()) {
+                deletedIds.add(delCursor.getString(0));
+            }
+            delCursor.close();
+            Log.d(TAG, "Удалённые ID для " + tableName + ": " + deletedIds.size());
+
             while (c.moveToNext()) {
                 ContentValues cv = new ContentValues();
                 for (int i = 0; i < c.getColumnCount(); i++) {
@@ -215,30 +267,34 @@ public class SyncManager {
                 serverMap.put(obj.getString("id"), obj);
             }
 
+            // Удаляем из serverMap записи, которые были локально удалены
+            for (String deletedId : deletedIds) {
+                serverMap.remove(deletedId);
+            }
+
             // Слияние
             for (ContentValues cv : localChanges) {
+
+                if (deletedIds.contains(cv.getAsString("id"))) {
+                    continue; // пропускаем удалённые записи, они не должны попасть на сервер
+                }
+
                 String id = cv.getAsString("id");
-                int isDeleted = cv.getAsInteger("is_deleted");
                 long localMod = cv.getAsLong("last_modified");
 
                 JSONObject serverObj = serverMap.get(id);
                 if (serverObj != null) {
                     long serverMod = serverObj.optLong("last_modified", 0);
                     if (localMod >= serverMod) {
-                        if (isDeleted == 1) {
-                            serverMap.remove(id);
-                        } else {
-                            updateJsonFromContentValues(serverObj, cv);
-                        }
+                        updateJsonFromContentValues(serverObj, cv);
                     }
                 } else {
-                    if (isDeleted == 0) {
-                        JSONObject newObj = new JSONObject();
-                        for (String key : cv.keySet()) {
-                            newObj.put(key, cv.get(key));
-                        }
-                        serverMap.put(id, newObj);
+                    // Запись новая — добавляем
+                    JSONObject newObj = new JSONObject();
+                    for (String key : cv.keySet()) {
+                        newObj.put(key, cv.get(key));
                     }
+                    serverMap.put(id, newObj);
                 }
             }
 

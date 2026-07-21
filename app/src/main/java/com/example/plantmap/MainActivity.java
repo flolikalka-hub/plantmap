@@ -103,6 +103,20 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
 
+            // Принудительное обновление + перерисовка
+            if (itemId == R.id.update_db) {
+                // Запускаем синхронизацию и после перерисовываем план
+                repository.triggerSync(() -> {
+                    // Находим текущий PlanFragment
+                    Fragment frag = getSupportFragmentManager().findFragmentByTag("plan_fragment");
+                    if (frag instanceof PlanFragment) {
+                        ((PlanFragment) frag).refreshData();
+                    }
+                });
+                drawerLayout.closeDrawers();
+                return true;
+            }
+
             // Обычные экраны приложения
             showScreen(itemId);
             drawerLayout.closeDrawers();

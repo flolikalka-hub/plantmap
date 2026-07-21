@@ -1,6 +1,12 @@
 package com.example.plantmap.plant;
 
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.Log;
+import android.widget.Toast;
+
+import androidx.annotation.Nullable;
 
 import com.example.plantmap.db.DatabaseHelper;
 import com.example.plantmap.db.dataaccess.PlantDataAccess;
@@ -27,16 +33,37 @@ public class PlantRepository {
     private final PlantDataAccess plantDa;
     private final PointDataAccess pointDa;
     private final SyncManager syncManager;
+    private final Context appContext;
 
     public PlantRepository(DatabaseHelper dbHelper, Context context) {
         plantDa = new PlantDataAccess(dbHelper);
         pointDa = new PointDataAccess(dbHelper);
         this.syncManager = new SyncManager(context);
+        this.appContext = context.getApplicationContext();
+
     }
 
-    /** Запускает синхронизацию всех таблиц с Яндекс.Диском в фоновом потоке. */
-    private void triggerSync() {
-        new Thread(() -> syncManager.syncAll()).start();
+    /**
+     * Запускает синхронизацию в фоновом потоке
+     */
+    public void triggerSync(@Nullable Runnable onComplete) {
+        // Toast "начало" – мы на UI‑потоке
+        Toast.makeText(appContext, "Синхронизация началась…", Toast.LENGTH_SHORT).show();
+        Log.d("SYNC_REPO", "triggerSync вызван");
+
+        new Thread(() -> {
+            try {
+                syncManager.syncAll();
+            } finally {
+                // По окончании – UI‑действия
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    Toast.makeText(appContext, "Синхронизация завершена", Toast.LENGTH_SHORT).show();
+                    if (onComplete != null) {
+                        onComplete.run();
+                    }
+                });
+            }
+        }).start();
     }
 
     // --- Точки ---
@@ -49,20 +76,20 @@ public class PlantRepository {
     /** Добавляет новую точку. Возвращает её id. */
     public String addPoint(PlantPoint point) {
         String id = pointDa.addPoint(point);
-        triggerSync();
+        triggerSync(null);
         return id;
     }
 
     /** Обновляет координаты, количество и даты точки. */
     public void updatePoint(String id, PlantPoint point) {
         pointDa.updatePoint(id, point);
-        triggerSync();
+        triggerSync(null);
     }
 
     /** Удаляет точку по id. */
     public void deletePoint(String id) {
         pointDa.deletePoint(id);
-        triggerSync();
+        triggerSync(null);
     }
 
     /** Общее количество растений на плане (сумма count). */
@@ -110,14 +137,14 @@ public class PlantRepository {
     /** Добавляет новое растение. Возвращает его id. */
     public String addPlant(Plant plant) {
         String id = plantDa.addPlant(plant);
-        triggerSync();
+        triggerSync(null);
         return id;
     }
 
     /** Сохраняет изменения существующего растения. */
     public void updatePlant(Plant plant) {
         plantDa.updatePlant(plant);
-        triggerSync();
+        triggerSync(null);
     }
 
     /**
@@ -141,7 +168,7 @@ public class PlantRepository {
     /** Удаляет растение (каскадно удалятся связанные точки через внешний ключ). */
     public void deletePlant(String id) {
         plantDa.deletePlant(id);
-        triggerSync();
+        triggerSync(null);
     }
 
     /** Поиск растений по критериям. */
@@ -222,13 +249,13 @@ public class PlantRepository {
     /** Заменяет список объёмов горшков для растения. */
     public void replacePlantVolumes(String plantId, List<Integer> volumes) {
         plantDa.replacePlantVolumes(plantId, volumes);
-        triggerSync();
+        triggerSync(null);
     }
 
     /** Добавляет объём горшка (игнорирует дубликат). */
     public void addPlantVolume(String plantId, int volume) {
         plantDa.addPlantVolume(plantId, volume);
-        triggerSync();
+        triggerSync(null);
     }
 
     /** Возвращает отсортированный список объёмов для растения. */
