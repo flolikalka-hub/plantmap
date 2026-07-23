@@ -32,6 +32,7 @@ public class Plant {
 
     /** Список доступных объёмов горшков в литрах. Инициализируется пустым списком. */
     public List<Integer> availablePotVolumes = new ArrayList<>();
+    public long lastModified;
 
     public Plant() {}
 

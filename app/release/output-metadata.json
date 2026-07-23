@@ -11,8 +11,8 @@
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 62,
-      "versionName": "Release-3.5[синхронизация].4",
+      "versionCode": 68,
+      "versionName": "Release-3.6[кэш фото]",
       "outputFile": "app-release.apk"
     }
   ],

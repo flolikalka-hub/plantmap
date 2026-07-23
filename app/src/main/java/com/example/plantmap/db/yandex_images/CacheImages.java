@@ -25,10 +25,14 @@ public class CacheImages {
      * @param publicKey публичный ключ Яндекс.Диска
      * @return файл с изображением или null при ошибке
      */
-    public File getCachedImage(String publicKey) throws Exception {
+    public File getCachedImage(String publicKey, long plantLastModified) throws Exception {
         // MD5-хэш от publicKey
         String fileName = md5(publicKey) + ".jpg";
         File imageFile = new File(cacheDir, fileName);
+
+        if (imageFile.exists() && imageFile.lastModified() < plantLastModified) {
+            imageFile.delete();
+        }
 
         // если уже есть в кэше возвращаем
         if (imageFile.exists()) {

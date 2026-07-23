@@ -4,6 +4,7 @@ import android.content.Context;
 import android.widget.ImageView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.signature.ObjectKey;
 import com.example.plantmap.R;
 import com.example.plantmap.model.Plant;
 
@@ -55,12 +56,13 @@ public class PlantPhotoLoader {
         executor.execute(() -> {
             try {
                 //String directUrl = YandexDiskHelper.getDirectUrl(plant.getImagePublicKey());
-                File imageFile = imageCache.getCachedImage(plant.getImagePublicKey());
+                File imageFile = imageCache.getCachedImage(plant.getImagePublicKey(), plant.lastModified);
                 imageView.post(() -> {
                     if (imageFile != null && imageFile.exists()) {
                         // Файл есть (из кэша или только что скачанный)
                         Glide.with(context)
                                 .load(imageFile)
+                                .signature(new ObjectKey(plant.lastModified))
                                 .placeholder(R.drawable.loading)
                                 .error(R.drawable.loading_error)
                                 .into(imageView);

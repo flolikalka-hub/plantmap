@@ -165,6 +165,8 @@ public class PointDataAccess {
         int keyIndex = c.getColumnIndexOrThrow("public_key");
         plant.imagePublicKey = c.isNull(keyIndex) ? null : c.getString(keyIndex);
 
+        plant.lastModified = c.getLong(c.getColumnIndexOrThrow("last_modified"));
+
         // availablePotVolumes пока оставляем пустым (заполняется отдельно при необходимости)
         plant.availablePotVolumes = null;
 
