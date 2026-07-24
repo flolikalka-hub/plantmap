@@ -13,17 +13,17 @@
         <!-- Поля с данными -->
         <TextView
             android:id="@+id/tv_name"
-            style="@style/PlantInfoLine"
-            android:text="Название сорта: "/>
+            style="@style/PlantInfoLine.Name"
+            android:text="Сорт: "/>
 
         <TextView
             android:id="@+id/tv_type"
-            style="@style/PlantInfoLine"
-            android:text="Тип растения: "/>
+            style="@style/PlantInfoLine.TypeGroup"
+            android:text="Тип: "/>
 
         <TextView
             android:id="@+id/tv_group"
-            style="@style/PlantInfoLine"
+            style="@style/PlantInfoLine.TypeGroup"
             android:text="Группа: "/>
 
         <TextView
@@ -34,12 +34,12 @@
         <TextView
             android:id="@+id/tv_color"
             style="@style/PlantInfoLine"
-            android:text="Цвет цветка: "/>
+            android:text="Цвет: "/>
 
         <TextView
             android:id="@+id/tv_additional"
             style="@style/PlantInfoLine"
-            android:text="Дополнительно: "/>
+            android:text="Дополнительная информация: "/>
 
         <TextView
             android:id="@+id/tv_count"
