@@ -13,13 +13,9 @@
             android:title="Растения"/>
         <item
             android:id="@+id/nav_stats"
-            android:title="Статистика"/>
+            android:title="Статистика"
+            />
     </group>
-
-    <item
-        android:id="@+id/divider"
-        android:enabled="false"
-        android:title=""/>
 
     <group
         android:id="@+id/group_actions"
@@ -30,7 +26,7 @@
             android:checkable="false"/>
         <item
             android:id="@+id/update_db"
-            android:title="Обновить растения"
+            android:title="Загрузить с сервера"
             android:checkable="false"/>
     </group>
 </menu>

@@ -1,7 +1,7 @@
 // =============================================================================
 // Главный сборочный скрипт приложения PlantMap
-// Версия 3.3 (Release)
 // =============================================================================
+import java.util.Properties
 
 plugins {
     // Современный способ подключения плагинов через Version Catalog
@@ -16,24 +16,34 @@ android {
     // Обеспечивает доступ к новейшим API и оптимизациям компилятора
     compileSdk = 36
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     defaultConfig {
         // Уникальный идентификатор приложения
         applicationId = "com.example.plantmap"
-
         // Минимальная поддерживаемая версия — Android 10 (API 29)
         minSdk = 29
-
         // Целевая версия SDK, на которой тестировалось приложение
         targetSdk = 36
-
         // Версия для внутреннего учёта (код версии)
-        versionCode = 54
-
+        versionCode = 69
         // Публичная версия для пользователей
-        versionName = "Release-3.3"
-
+        versionName = "Release-3.6[кэш фото].2"
         // Стандартный раннер для инструментальных тестов
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+
+        // Читаем токен из local.properties
+        val localProperties = Properties()
+        val localFile = rootProject.file("local.properties")
+        if (localFile.exists()) {
+            localProperties.load(localFile.inputStream())
+        }
+        val yandexToken = localProperties.getProperty("YANDEX_DISK_TOKEN") ?: ""
+
+        buildConfigField("String", "YANDEX_DISK_TOKEN", "\"$yandexToken\"")
     }
 
     buildTypes {

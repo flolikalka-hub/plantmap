@@ -12,6 +12,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Доступ к данным таблицы points (точки на плане).
@@ -32,9 +33,12 @@ public class PointDataAccess {
      * @param point объект PlantPoint с заполненными координатами, растением и датами
      * @return сгенерированный идентификатор записи (id)
      */
-    public long addPoint(PlantPoint point) {
+    public String addPoint(PlantPoint point) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         ContentValues cv = new ContentValues();
+
+        String uuid = UUID.randomUUID().toString();
+        cv.put("id", uuid);
 
         cv.put("x", point.x);
         cv.put("y", point.y);
@@ -61,8 +65,10 @@ public class PointDataAccess {
             cv.put("pot_volume", point.potVolume);
         }
 
-        long id = db.insert("points", null, cv);
-        return id;
+        cv.put("last_modified", System.currentTimeMillis());
+
+        db.insert("points", null, cv);
+        return uuid;
     }
 
     /**
@@ -71,7 +77,7 @@ public class PointDataAccess {
      * @param id    идентификатор точки
      * @param point новые данные точки
      */
-    public void updatePoint(int id, PlantPoint point) {
+    public void updatePoint(String id, PlantPoint point) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         ContentValues cv = new ContentValues();
 
@@ -99,15 +105,25 @@ public class PointDataAccess {
             cv.put("pot_volume", point.potVolume);
         }
 
-        db.update("points", cv, "id=?", new String[]{String.valueOf(id)});
+        cv.put("last_modified", System.currentTimeMillis());
+
+        db.update("points", cv, "id=?", new String[]{id});
     }
 
     /**
      * Удаляет точку по идентификатору.
      */
-    public void deletePoint(int id) {
+    public void deletePoint(String id) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
-        db.delete("points", "id=?", new String[]{String.valueOf(id)});
+        db.beginTransaction();
+        try {
+            db.delete("points", "id=?", new String[]{id});
+            db.execSQL("INSERT INTO deletions (table_name, record_id, deleted_at) VALUES ('points', ?, ?)",
+                    new String[]{id, String.valueOf(System.currentTimeMillis())});
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
     }
 
     /**
@@ -119,7 +135,7 @@ public class PointDataAccess {
         float y = c.getFloat(c.getColumnIndexOrThrow("y"));
         PlantPoint point = new PlantPoint(x, y);
 
-        point.id = c.getInt(c.getColumnIndexOrThrow("id"));
+        point.id = c.getString(c.getColumnIndexOrThrow("id"));
         point.count = c.getInt(c.getColumnIndexOrThrow("count"));
 
         // processing_date
@@ -136,7 +152,7 @@ public class PointDataAccess {
 
         // Данные растения
         Plant plant = new Plant();
-        plant.id = c.getInt(c.getColumnIndexOrThrow("plant_id"));
+        plant.id = c.getString(c.getColumnIndexOrThrow("plant_id"));
         plant.name = c.getString(c.getColumnIndexOrThrow("name"));
         plant.type = c.getString(c.getColumnIndexOrThrow("type"));
         plant.group = c.getString(c.getColumnIndexOrThrow("plant_group"));
@@ -148,6 +164,8 @@ public class PointDataAccess {
 
         int keyIndex = c.getColumnIndexOrThrow("public_key");
         plant.imagePublicKey = c.isNull(keyIndex) ? null : c.getString(keyIndex);
+
+        plant.lastModified = c.getLong(c.getColumnIndexOrThrow("last_modified"));
 
         // availablePotVolumes пока оставляем пустым (заполняется отдельно при необходимости)
         plant.availablePotVolumes = null;
@@ -211,7 +229,8 @@ public class PointDataAccess {
         StringBuilder sql = new StringBuilder(
                 "SELECT SUM(count) FROM points p " +
                         "JOIN plants pl ON p.plant_id = pl.id " +
-                        "LEFT JOIN variety v ON pl.variety_id = v.id WHERE 1=1"
+                        "LEFT JOIN variety v ON pl.variety_id = v.id " +
+                        "WHERE 1=1"
         );
         List<String> args = new ArrayList<>();
 

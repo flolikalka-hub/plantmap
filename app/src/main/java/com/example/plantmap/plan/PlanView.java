@@ -18,7 +18,7 @@ import android.widget.TextView;
 import androidx.core.content.ContextCompat;
 
 import com.example.plantmap.R;
-import com.example.plantmap.db.yandex.PlantPhotoLoader;
+import com.example.plantmap.db.yandex_images.PlantPhotoLoader;
 import com.example.plantmap.plant.PlantRepository;
 import com.example.plantmap.model.PlantPoint;
 import com.example.plantmap.search.PlantSearchDialog;
@@ -29,7 +29,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
@@ -49,17 +48,21 @@ public class PlanView extends View {
 
     // --- Визуальные константы ---
     /** Плотность экрана целевого устройства (A16), используется для расчёта размеров. */
-    private static float density = 2.8125f;
+    //private static float density = 2.8125f;
     /** Радиус точки при отрисовке (в единицах плана). */
-    private static final float POINT_RADIUS = 4f / density;
+    //private static final float POINT_RADIUS = 4f / density;
+    private static final float POINT_RADIUS = 1.42f;
     /** Радиус попадания в точку при касании (для удобства). */
     private static final float HIT_RADIUS = POINT_RADIUS * 3f;
     /** Размер текста номера точки. */
-    private float textSize = 7f / density;
+    //private float textSize = 7f/ density;
+    private float textSize = 2.48f;
     /** Толщина линии обводки точек. */
-    private float strokeWidth = 3f / density;
+    //private float strokeWidth = 3f/ density;
+    private float strokeWidth = 1.06f;
     /** Отступ обводки найденных точек. */
-    private float indentStroke = 2f / density;
+    //private float indentStroke = 2f/ density;
+    private float indentStroke = 0.71f;
 
     /** Шаг сетки по X (в единицах плана) для режимов добавления/редактирования. */
     private static final float GRID_STEP_X = POINT_RADIUS * 2f;
@@ -87,6 +90,7 @@ public class PlanView extends View {
     // --- Данные ---
     /** Точки, отображаемые на плане. */
     private ArrayList<PlantPoint> points;
+    /** Репозиторий для работы с точками и растениями (БД + синхронизация). */
     private PlantRepository repository;
 
     // --- Режимы и состояние взаимодействия ---
@@ -378,7 +382,7 @@ public class PlanView extends View {
                         draggedPoint.setX(snappedX);
                         draggedPoint.setY(snappedY);
                     }
-                    if (draggedPoint.id != 0) {
+                    if (draggedPoint.id != null && !draggedPoint.id.isEmpty()) {
                         repository.updatePoint(draggedPoint.id, draggedPoint);
                     }
                 }
@@ -462,6 +466,10 @@ public class PlanView extends View {
                 .show();
     }
 
+    /**
+     * Запрашивает подтверждение мягкого удаления точки (помечается is_deleted=1).
+     * Удалённая точка исключается из списка отображения и будет синхронизирована.
+     */
     private void showDeleteConfirmation(PlantPoint point) {
         new AlertDialog.Builder(getContext())
                 .setTitle("Удаление точки")
@@ -470,7 +478,9 @@ public class PlanView extends View {
                     points.remove(point);
                     if (selectedPoint == point) selectedPoint = null;
                     if (draggedPoint == point) draggedPoint = null;
-                    if (point.id != 0) repository.deletePoint(point.id);
+                    if (point.id != null && !point.id.isEmpty()) {
+                        repository.deletePoint(point.id);
+                    }
                     invalidate();
                 })
                 .setNegativeButton("Отмена", null)
@@ -487,10 +497,7 @@ public class PlanView extends View {
 
     /**
      * Отображает диалог с информацией о растении в выбранной точке.
-     * Использует кастомный макет dialog_plant_info.
-     *
-     * TODO: Настроить кэширование загружаемых изображений в PlantPhotoLoader,
-     *       чтобы избежать повторных запросов к API Яндекс.Диска.
+     * Использует кастомный макет dialog_plant_info
      */
     private void showPlantInfo(PlantPoint point) {
         Context context = getContext();
@@ -522,15 +529,60 @@ public class PlanView extends View {
         ImageView ivPhoto = dialogView.findViewById(R.id.iv_plant_photo);
         Button btnClose = dialogView.findViewById(R.id.btn_close);
 
+//        if (point.plant.name != null) tvName.append(point.plant.name);
+//        if (point.plant.type != null) tvType.append(point.plant.type);
+//        if (point.plant.group != null) tvGroup.append(point.plant.group);
+//        tvPotVolume.append(potVolumeStr);
+//        tvColor.append(colorStr);
+//        tvAdditional.append(addInfoStr);
+//        tvCount.append(String.valueOf(point.count));
+//        tvProcessingDate.append(dateStr);
+//        tvFeedingDate.append(feedingDateStr);
         tvName.append(point.plant.name);
-        tvType.append(point.plant.type);
-        tvGroup.append(point.plant.group);
-        tvPotVolume.append(potVolumeStr);
-        tvColor.append(colorStr);
-        tvAdditional.append(addInfoStr);
+
+        if (point.plant.type != null && !point.plant.type.isEmpty()) {
+            tvType.append(point.plant.type);
+        } else {
+            tvType.setVisibility(View.GONE);
+        }
+
+        if (point.plant.group != null && !point.plant.group.isEmpty()) {
+            tvGroup.append(point.plant.group);
+        } else {
+            tvGroup.setVisibility(View.GONE);
+        }
+
+        if (!potVolumeStr.isEmpty()) {
+            tvPotVolume.append(potVolumeStr);
+        } else {
+            tvPotVolume.setVisibility(View.GONE);
+        }
+
+        if (!colorStr.isEmpty()) {
+            tvColor.append(colorStr);
+        } else {
+            tvColor.setVisibility(View.GONE);
+        }
+
+        if (!addInfoStr.isEmpty()) {
+            tvAdditional.append(addInfoStr);
+        } else {
+            tvAdditional.setVisibility(View.GONE);
+        }
+
         tvCount.append(String.valueOf(point.count));
-        tvProcessingDate.append(dateStr);
-        tvFeedingDate.append(feedingDateStr);
+
+        if (!dateStr.isEmpty()) {
+            tvProcessingDate.append(dateStr);
+        } else {
+            tvProcessingDate.setVisibility(View.GONE);
+        }
+
+        if (!feedingDateStr.isEmpty()) {
+            tvFeedingDate.append(feedingDateStr);
+        } else {
+            tvFeedingDate.setVisibility(View.GONE);
+        }
 
         // Загрузка фото
         if (point.plant.imagePublicKey != null && !point.plant.imagePublicKey.isEmpty()) {

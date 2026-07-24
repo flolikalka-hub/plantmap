@@ -1,6 +1,5 @@
 package com.example.plantmap;
 
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -16,7 +15,7 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 
 import com.example.plantmap.db.BackupDatabase;
-import com.example.plantmap.db.yandex.UpdateDatabase;
+import com.example.plantmap.db.yandex_tables.SyncManager;
 import com.example.plantmap.model.PlantPoint;
 import com.example.plantmap.plant.PlantRepository;
 import com.example.plantmap.ui.DbFragment;
@@ -25,7 +24,6 @@ import com.example.plantmap.ui.PlanFragment;
 import com.google.android.material.navigation.NavigationView;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -53,7 +51,7 @@ public class MainActivity extends AppCompatActivity {
         // --- Инициализация данных ---
         repository = App.getInstance().getRepository();
         // Однократная миграция координат из-за смены плотности экрана целевого устройства
-        migratePointsIfNeeded();
+        //migratePointsIfNeeded();
 
         // --- Настройка отображения ---
         // Отключаем автоматические отступы под системные бары, будем управлять вручную
@@ -105,10 +103,16 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
 
-            // Импорт базы данных из файла на устройстве
+            // Принудительное обновление + перерисовка
             if (itemId == R.id.update_db) {
-                UpdateDatabase update = new UpdateDatabase(this);
-                update.importDatabase();
+                // Запускаем синхронизацию и после перерисовываем план
+                repository.triggerSync(() -> {
+                    // Находим текущий PlanFragment
+                    Fragment frag = getSupportFragmentManager().findFragmentByTag("plan_fragment");
+                    if (frag instanceof PlanFragment) {
+                        ((PlanFragment) frag).refreshData();
+                    }
+                });
                 drawerLayout.closeDrawers();
                 return true;
             }
@@ -118,6 +122,14 @@ public class MainActivity extends AppCompatActivity {
             drawerLayout.closeDrawers();
             return true;
         });
+
+        // Запуск синхронизации при старте (удалить после добавления в нормальный workflow)
+        new Thread(() -> {
+            SyncManager syncManager = new SyncManager(MainActivity.this);
+            syncManager.syncAll();
+        }).start();
+
+
     }
 
     /**
@@ -207,34 +219,5 @@ public class MainActivity extends AppCompatActivity {
                 .beginTransaction()
                 .replace(R.id.main_container, fragment, tag)
                 .commit();
-    }
-
-    /**
-     * Однократно запускает миграцию координат всех растений.
-     *
-     * Необходимость возникла из-за смены целевого устройства: старые координаты
-     * были рассчитаны для экрана с плотностью 2.8125 (A16),
-     * новые должны быть в эталонных пикселях (density 1.0).
-     * Применяется масштабирующий коэффициент 1 / 2.8125.
-     *
-     * После выполнения миграции в SharedPreferences записывается флаг,
-     * чтобы операция не повторялась.
-     */
-    private void migratePointsIfNeeded() {
-        SharedPreferences prefs = getSharedPreferences("migration", MODE_PRIVATE);
-        if (prefs.getBoolean("density_migrated", false)) return;
-
-        float oldDensity = 2.8125f;   // плотность экрана старого устройства
-        float scale = 1f / oldDensity; // коэффициент для приведения к эталону
-
-        List<PlantPoint> allPoints = repository.getAllPoints();
-        for (PlantPoint p : allPoints) {
-            p.setX(p.x * scale);
-            p.setY(p.y * scale);
-            repository.updatePoint(p.id, p);
-        }
-
-        // Отмечаем, что миграция выполнена
-        prefs.edit().putBoolean("density_migrated", true).apply();
     }
 }

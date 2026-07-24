@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Доступ к данным таблицы plants и связанным таблицам (variety, colors, plant_pot_volumes).
@@ -31,20 +32,22 @@ public class PlantDataAccess {
      *
      * @return сгенерированный идентификатор растения
      */
-    public long addPlant(Plant plant) {
+    public String addPlant(Plant plant) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
-        long varietyId = getOrCreateVarietyId(db, plant.type, plant.group);
+        String varietyId = getOrCreateVarietyId(db, plant.type, plant.group);
 
+        String uuid = UUID.randomUUID().toString();
         ContentValues cv = new ContentValues();
+        cv.put("id", uuid);
         cv.put("name", plant.name);
         cv.put("variety_id", varietyId);
         cv.put("flower_color", plant.flowerColorId);
         cv.put("additional_info", plant.additionalInfo);
         cv.put("public_key", plant.imagePublicKey);
+        cv.put("last_modified", System.currentTimeMillis());
 
-        long result = db.insert("plants", null, cv);
-        //Log.d("ADD_PLANT", "Insert result: " + result + ", name: " + plant.name);
-        return result;
+        db.insert("plants", null, cv);
+        return uuid;
     }
 
     /**
@@ -52,7 +55,7 @@ public class PlantDataAccess {
      */
     public void updatePlant(Plant plant) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
-        long varietyId = getOrCreateVarietyId(db, plant.type, plant.group);
+        String varietyId = getOrCreateVarietyId(db, plant.type, plant.group);
 
         ContentValues cv = new ContentValues();
         cv.put("name", plant.name);
@@ -60,38 +63,59 @@ public class PlantDataAccess {
         cv.put("flower_color", plant.flowerColorId);
         cv.put("additional_info", plant.additionalInfo);
         cv.put("public_key", plant.imagePublicKey);
+        cv.put("last_modified", System.currentTimeMillis());
 
-        db.update("plants", cv, "id=?", new String[]{String.valueOf(plant.id)});
+        db.update("plants", cv, "id=?", new String[]{plant.id});
     }
 
     /**
      * Добавляет объём горшка для растения (игнорируется, если уже существует).
      */
-    public void addPlantVolume(int plantId, int potVolume) {
+    public void addPlantVolume(String plantId, int potVolume) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
+        String uuid = UUID.randomUUID().toString();
         ContentValues cv = new ContentValues();
+        cv.put("id", uuid);
         cv.put("plant_id", plantId);
         cv.put("pot_volume", potVolume);
+        cv.put("last_modified", System.currentTimeMillis());
         db.insertWithOnConflict("plant_pot_volumes", null, cv, SQLiteDatabase.CONFLICT_IGNORE);
     }
 
     /**
      * Удаляет указанный объём горшка для растения.
      */
-    public void removePlantVolume(int plantId, int potVolume) {
+    public void removePlantVolume(String plantId, int potVolume) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
-        db.delete("plant_pot_volumes", "plant_id=? AND pot_volume=?",
-                new String[]{String.valueOf(plantId), String.valueOf(potVolume)});
+        // Находим id удаляемой записи (UUID)
+        Cursor c = db.rawQuery("SELECT id FROM plant_pot_volumes WHERE plant_id=? AND pot_volume=?",
+                new String[]{plantId, String.valueOf(potVolume)});
+        String recordId = null;
+        if (c.moveToFirst()) recordId = c.getString(0);
+        c.close();
+
+        db.beginTransaction();
+        try {
+            db.delete("plant_pot_volumes", "plant_id=? AND pot_volume=?",
+                    new String[]{plantId, String.valueOf(potVolume)});
+            if (recordId != null) {
+                db.execSQL("INSERT INTO deletions (table_name, record_id, deleted_at) VALUES ('plant_pot_volumes', ?, ?)",
+                        new String[]{recordId, String.valueOf(System.currentTimeMillis())});
+            }
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
     }
 
     /**
      * Возвращает список доступных объёмов горшков для растения (отсортировано по возрастанию).
      */
-    public List<Integer> getPotVolumesForPlant(int plantId) {
+    public List<Integer> getPotVolumesForPlant(String plantId) {
         List<Integer> volumes = new ArrayList<>();
         SQLiteDatabase db = dbHelper.getReadableDatabase();
         Cursor c = db.rawQuery("SELECT pot_volume FROM plant_pot_volumes WHERE plant_id=? ORDER BY pot_volume",
-                new String[]{String.valueOf(plantId)});
+                new String[]{plantId});
         while (c.moveToNext()) {
             volumes.add(c.getInt(0));
         }
@@ -117,7 +141,8 @@ public class PlantDataAccess {
         );
         while (c.moveToNext()) {
             Plant p = new Plant();
-            p.id = c.getInt(c.getColumnIndexOrThrow("id"));
+            p.id = c.getString(c.getColumnIndexOrThrow("id"));
+            p.lastModified = c.getLong(c.getColumnIndexOrThrow("last_modified"));
             p.name = c.getString(c.getColumnIndexOrThrow("name"));
             p.type = c.getString(c.getColumnIndexOrThrow("type"));
             p.group = c.getString(c.getColumnIndexOrThrow("plant_group"));
@@ -136,12 +161,12 @@ public class PlantDataAccess {
         Cursor volCursor = db.rawQuery(
                 "SELECT plant_id, pot_volume FROM plant_pot_volumes ORDER BY plant_id, pot_volume",
                 null);
-        Map<Integer, Plant> plantMap = new HashMap<>();
+        Map<String, Plant> plantMap = new HashMap<>();
         for (Plant p : plants) {
             plantMap.put(p.id, p);
         }
         while (volCursor.moveToNext()) {
-            int plantId = volCursor.getInt(0);
+            String plantId = volCursor.getString(0);
             int volume = volCursor.getInt(1);
             Plant p = plantMap.get(plantId);
             if (p != null) {
@@ -156,15 +181,23 @@ public class PlantDataAccess {
     /**
      * Удаляет растение по id (каскадное удаление связанных точек происходит через внешний ключ).
      */
-    public void deletePlant(int plantId) {
+    public void deletePlant(String plantId) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
-        db.delete("plants", "id=?", new String[]{String.valueOf(plantId)});
+        db.beginTransaction();
+        try {
+            db.delete("plants", "id=?", new String[]{plantId});
+            db.execSQL("INSERT INTO deletions (table_name, record_id, deleted_at) VALUES ('plants', ?, ?)",
+                    new String[]{plantId, String.valueOf(System.currentTimeMillis())});
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
     }
 
     /**
      * Проверяет, можно ли удалить растение: нет ли точек на плане, ссылающихся на него.
      */
-    public boolean canDeletePlant(int plantId) {
+    public boolean canDeletePlant(String plantId) {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
         Cursor c = db.rawQuery(
                 "SELECT COUNT(*) FROM points WHERE plant_id = ?",
@@ -191,21 +224,17 @@ public class PlantDataAccess {
                         "LEFT JOIN variety v ON p.variety_id = v.id WHERE " +
                         "COALESCE(name, '')=? AND " +
                         "COALESCE(type, '')=? AND " +
-                        "COALESCE(plant_group, '')=? AND " +
-                        "flower_color=? AND " +
-                        "COALESCE(additional_info, '')=?"
+                        "COALESCE(plant_group, '')=?"
         );
         List<String> args = new ArrayList<>();
         args.add(plant.name != null ? plant.name : "");
         args.add(plant.type != null ? plant.type : "");
         args.add(plant.group != null ? plant.group : "");
-        args.add(String.valueOf(plant.flowerColorId));
-        args.add(plant.additionalInfo != null ? plant.additionalInfo : "");
 
         Cursor cursor = db.rawQuery(query.toString(), args.toArray(new String[0]));
         if (cursor.moveToFirst()) {
             result = new Plant();
-            result.id = cursor.getInt(cursor.getColumnIndexOrThrow("id"));
+            result.id = cursor.getString(cursor.getColumnIndexOrThrow("id"));
             result.name = cursor.getString(cursor.getColumnIndexOrThrow("name"));
             result.type = cursor.getString(cursor.getColumnIndexOrThrow("type"));
             result.group = cursor.getString(cursor.getColumnIndexOrThrow("plant_group"));
@@ -215,6 +244,8 @@ public class PlantDataAccess {
 
             result.additionalInfo = cursor.getString(cursor.getColumnIndexOrThrow("additional_info"));
             result.imagePublicKey = cursor.getString(cursor.getColumnIndexOrThrow("public_key"));
+
+            result.lastModified = cursor.getLong(cursor.getColumnIndexOrThrow("last_modified"));
         }
         cursor.close();
         return result;
@@ -276,7 +307,7 @@ public class PlantDataAccess {
         Cursor c = db.rawQuery(query, args.toArray(new String[0]));
         while (c.moveToNext()) {
             Plant p = new Plant();
-            p.id = c.getInt(c.getColumnIndexOrThrow("id"));
+            p.id = c.getString(c.getColumnIndexOrThrow("id"));
             p.name = c.getString(c.getColumnIndexOrThrow("name"));
             p.type = c.getString(c.getColumnIndexOrThrow("type"));
             p.group = c.getString(c.getColumnIndexOrThrow("plant_group"));
@@ -287,6 +318,8 @@ public class PlantDataAccess {
             p.additionalInfo = c.getString(c.getColumnIndexOrThrow("additional_info"));
             p.imagePublicKey = c.getString(c.getColumnIndexOrThrow("public_key"));
 
+            p.lastModified = c.getLong(c.getColumnIndexOrThrow("last_modified"));
+
             plants.add(p);
         }
         c.close();
@@ -296,16 +329,16 @@ public class PlantDataAccess {
             StringBuilder idList = new StringBuilder();
             for (int i = 0; i < plants.size(); i++) {
                 if (i > 0) idList.append(",");
-                idList.append(plants.get(i).id);
+                idList.append("'").append(plants.get(i).id).append("'");
             }
             Cursor volCursor = db.rawQuery(
                     "SELECT plant_id, pot_volume FROM plant_pot_volumes " +
                             "WHERE plant_id IN (" + idList + ") ORDER BY plant_id, pot_volume",
                     null);
-            Map<Integer, Plant> plantMap = new HashMap<>();
+            Map<String, Plant> plantMap = new HashMap<>();
             for (Plant p : plants) plantMap.put(p.id, p);
             while (volCursor.moveToNext()) {
-                int plantId = volCursor.getInt(0);
+                String plantId = volCursor.getString(0);
                 int volume = volCursor.getInt(1);
                 Plant p = plantMap.get(plantId);
                 if (p != null && p.availablePotVolumes != null) {
@@ -321,7 +354,7 @@ public class PlantDataAccess {
     /**
      * Возвращает id записи в variety по типу и группе, создавая её при необходимости.
      */
-    private long getOrCreateVarietyId(SQLiteDatabase db, String type, String group) {
+    private String getOrCreateVarietyId(SQLiteDatabase db, String type, String group) {
         Cursor c = db.rawQuery(
                 "SELECT id FROM variety WHERE COALESCE(type,'')=? AND COALESCE(plant_group,'')=?",
                 new String[]{
@@ -330,16 +363,20 @@ public class PlantDataAccess {
                 }
         );
         if (c.moveToFirst()) {
-            long id = c.getLong(0);
+            String id = c.getString(0);
             c.close();
             return id;
         }
         c.close();
 
+        String uuid = UUID.randomUUID().toString();
         ContentValues cv = new ContentValues();
+        cv.put("id", uuid);
         cv.put("type", type);
         cv.put("plant_group", group);
-        return db.insert("variety", null, cv);
+        cv.put("last_modified", System.currentTimeMillis());
+        db.insert("variety", null, cv);
+        return uuid;
     }
 
     /**
@@ -420,11 +457,28 @@ public class PlantDataAccess {
     /**
      * Заменяет список объёмов горшков для растения (удаляет старые и вставляет новые).
      */
-    public void replacePlantVolumes(int plantId, List<Integer> volumes) {
+    public void replacePlantVolumes(String plantId, List<Integer> volumes) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         db.beginTransaction();
         try {
-            db.delete("plant_pot_volumes", "plant_id=?", new String[]{String.valueOf(plantId)});
+            // Собираем id всех текущих объёмов для удаления
+            Cursor c = db.rawQuery("SELECT id FROM plant_pot_volumes WHERE plant_id=?",
+                    new String[]{plantId});
+            List<String> idsToDelete = new ArrayList<>();
+            while (c.moveToNext()) idsToDelete.add(c.getString(0));
+            c.close();
+
+            // Удаляем старые объёмы
+            db.delete("plant_pot_volumes", "plant_id=?", new String[]{plantId});
+
+            // Записываем удалённые id в deletions
+            long now = System.currentTimeMillis();
+            for (String id : idsToDelete) {
+                db.execSQL("INSERT INTO deletions (table_name, record_id, deleted_at) VALUES ('plant_pot_volumes', ?, ?)",
+                        new String[]{id, String.valueOf(now)});
+            }
+
+            // Вставляем новые объёмы
             for (Integer vol : volumes) {
                 if (vol != null) {
                     addPlantVolume(plantId, vol);
@@ -440,11 +494,11 @@ public class PlantDataAccess {
      * Проверяет, можно ли удалить указанный объём горшка для растения
      * (нет ли точек на плане, использующих этот объём).
      */
-    public boolean canDeleteVolume(int plantId, int potVolume) {
+    public boolean canDeleteVolume(String plantId, int potVolume) {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
         Cursor c = db.rawQuery(
                 "SELECT COUNT(*) FROM points WHERE plant_id=? AND pot_volume=?",
-                new String[]{String.valueOf(plantId), String.valueOf(potVolume)});
+                new String[]{plantId, String.valueOf(potVolume)});
         int count = 0;
         if (c.moveToFirst()) count = c.getInt(0);
         c.close();

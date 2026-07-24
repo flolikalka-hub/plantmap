@@ -10,7 +10,7 @@ import java.util.List;
  */
 public class Plant {
     /** Идентификатор в БД (0 — ещё не сохранено). */
-    public int id = 0;
+    public String id = null;
 
     /** Название растения (например, "Роза чайно-гибридная"). */
     public String name;
@@ -32,6 +32,7 @@ public class Plant {
 
     /** Список доступных объёмов горшков в литрах. Инициализируется пустым списком. */
     public List<Integer> availablePotVolumes = new ArrayList<>();
+    public long lastModified;
 
     public Plant() {}
 

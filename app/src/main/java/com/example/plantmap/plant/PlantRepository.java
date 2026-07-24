@@ -1,8 +1,17 @@
 package com.example.plantmap.plant;
 
+import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.Log;
+import android.widget.Toast;
+
+import androidx.annotation.Nullable;
+
 import com.example.plantmap.db.DatabaseHelper;
 import com.example.plantmap.db.dataaccess.PlantDataAccess;
 import com.example.plantmap.db.dataaccess.PointDataAccess;
+import com.example.plantmap.db.yandex_tables.SyncManager;
 import com.example.plantmap.model.FlowerColor;
 import com.example.plantmap.model.Plant;
 import com.example.plantmap.model.PlantPoint;
@@ -23,10 +32,38 @@ import java.util.Map;
 public class PlantRepository {
     private final PlantDataAccess plantDa;
     private final PointDataAccess pointDa;
+    private final SyncManager syncManager;
+    private final Context appContext;
 
-    public PlantRepository(DatabaseHelper dbHelper) {
+    public PlantRepository(DatabaseHelper dbHelper, Context context) {
         plantDa = new PlantDataAccess(dbHelper);
         pointDa = new PointDataAccess(dbHelper);
+        this.syncManager = new SyncManager(context);
+        this.appContext = context.getApplicationContext();
+
+    }
+
+    /**
+     * Запускает синхронизацию в фоновом потоке
+     */
+    public void triggerSync(@Nullable Runnable onComplete) {
+        // Toast "начало" – мы на UI‑потоке
+        Toast.makeText(appContext, "Синхронизация началась…", Toast.LENGTH_SHORT).show();
+        Log.d("SYNC_REPO", "triggerSync вызван");
+
+        new Thread(() -> {
+            try {
+                syncManager.syncAll();
+            } finally {
+                // По окончании – UI‑действия
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    Toast.makeText(appContext, "Синхронизация завершена", Toast.LENGTH_SHORT).show();
+                    if (onComplete != null) {
+                        onComplete.run();
+                    }
+                });
+            }
+        }).start();
     }
 
     // --- Точки ---
@@ -37,18 +74,22 @@ public class PlantRepository {
     }
 
     /** Добавляет новую точку. Возвращает её id. */
-    public long addPoint(PlantPoint point) {
-        return pointDa.addPoint(point);
+    public String addPoint(PlantPoint point) {
+        String id = pointDa.addPoint(point);
+        triggerSync(null);
+        return id;
     }
 
     /** Обновляет координаты, количество и даты точки. */
-    public void updatePoint(int id, PlantPoint point) {
+    public void updatePoint(String id, PlantPoint point) {
         pointDa.updatePoint(id, point);
+        triggerSync(null);
     }
 
     /** Удаляет точку по id. */
-    public void deletePoint(int id) {
+    public void deletePoint(String id) {
         pointDa.deletePoint(id);
+        triggerSync(null);
     }
 
     /** Общее количество растений на плане (сумма count). */
@@ -94,13 +135,16 @@ public class PlantRepository {
     }
 
     /** Добавляет новое растение. Возвращает его id. */
-    public long addPlant(Plant plant) {
-        return plantDa.addPlant(plant);
+    public String addPlant(Plant plant) {
+        String id = plantDa.addPlant(plant);
+        triggerSync(null);
+        return id;
     }
 
     /** Сохраняет изменения существующего растения. */
     public void updatePlant(Plant plant) {
         plantDa.updatePlant(plant);
+        triggerSync(null);
     }
 
     /**
@@ -117,13 +161,14 @@ public class PlantRepository {
     }
 
     /** Можно ли удалить растение (не используется ли оно в точках). */
-    public boolean canDeletePlant(int id) {
+    public boolean canDeletePlant(String id) {
         return plantDa.canDeletePlant(id);
     }
 
     /** Удаляет растение (каскадно удалятся связанные точки через внешний ключ). */
-    public void deletePlant(int id) {
+    public void deletePlant(String id) {
         plantDa.deletePlant(id);
+        triggerSync(null);
     }
 
     /** Поиск растений по критериям. */
@@ -202,22 +247,24 @@ public class PlantRepository {
     // --- Объёмы горшков ---
 
     /** Заменяет список объёмов горшков для растения. */
-    public void replacePlantVolumes(int plantId, List<Integer> volumes) {
+    public void replacePlantVolumes(String plantId, List<Integer> volumes) {
         plantDa.replacePlantVolumes(plantId, volumes);
+        triggerSync(null);
     }
 
     /** Добавляет объём горшка (игнорирует дубликат). */
-    public void addPlantVolume(int plantId, int volume) {
+    public void addPlantVolume(String plantId, int volume) {
         plantDa.addPlantVolume(plantId, volume);
+        triggerSync(null);
     }
 
     /** Возвращает отсортированный список объёмов для растения. */
-    public List<Integer> getPotVolumesForPlant(int plantId) {
+    public List<Integer> getPotVolumesForPlant(String plantId) {
         return plantDa.getPotVolumesForPlant(plantId);
     }
 
     /** Можно ли удалить объём (не используется ли он в точках). */
-    public boolean canDeleteVolume(int plantId, int potVolume) {
+    public boolean canDeleteVolume(String plantId, int potVolume) {
         return plantDa.canDeleteVolume(plantId, potVolume);
     }
 }

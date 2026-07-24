@@ -200,4 +200,14 @@ public class PlanFragment extends BaseFragment {
             pendingSearchResults = points;
         }
     }
+
+    /**
+     * Обновляет данные плана и перерисовывает его
+     */
+    public void refreshData() {
+        if (planView != null) {
+            planView.clearSearch(); // сбросить поиск, если он был
+            planView.reloadPoints();
+        }
+    }
 }

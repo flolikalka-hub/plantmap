@@ -10,7 +10,7 @@ package com.example.plantmap.model;
  */
 public class PlantPoint {
     /** Идентификатор в БД (0 — точка ещё не сохранена). */
-    public int id = 0;
+    public String id = null;
 
     /** Координата X на плане (в эталонных пикселях, не зависит от плотности экрана). */
     public float x;
@@ -64,11 +64,11 @@ public class PlantPoint {
         if (this == o) return true;
         if (!(o instanceof PlantPoint)) return false;
         PlantPoint that = (PlantPoint) o;
-        return this.id == that.id;
+        return this.id != null && this.id.equals(that.id);
     }
 
     @Override
     public int hashCode() {
-        return Integer.hashCode(id);
+        return id != null ? id.hashCode() : 0;
     }
 }
