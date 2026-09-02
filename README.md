@@ -41,6 +41,10 @@
 <img width="324" height="702" alt="Screenshot_20260902_110523_PlantMap" src="https://github.com/user-attachments/assets/490d45b2-f1e3-453d-ba00-7e2727b7e9c8" />
 <img width="324" height="702" alt="Screenshot_20260701_184012_PlantMap" src="https://github.com/user-attachments/assets/79e59d2a-a0ee-4a57-ae47-8d355073d80d" />
 
+<img width="324" height="702" alt="image" src="https://github.com/user-attachments/assets/a733384d-1b69-4aa5-9f61-3db34025e7c7" />
+<img width="324" height="702" alt="image" src="https://github.com/user-attachments/assets/1bea6c41-9ac5-46ea-8001-41bf741bb149" />
+
+
 ---
 
 ## Технологии
