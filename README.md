@@ -34,10 +34,11 @@
 
 ## Скриншоты
 <img width="324" height="702" alt="Screenshot_20260701_183905_PlantMap" src="https://github.com/user-attachments/assets/3b047e42-c73c-442c-ad08-25da611d633b" />
-<img width="324" height="702" alt="Screenshot_20260701_183908_PlantMap" src="https://github.com/user-attachments/assets/7c34423d-fc49-43a6-aeb5-733c775e8346" />
+<img width="324" height="702" alt="Screenshot_20260902_110502_PlantMap" src="https://github.com/user-attachments/assets/0dcdd4d0-505c-4d91-854d-c0ee7b9bc12a" />
 <img width="324" height="702" alt="Screenshot_20260701_183927_PlantMap" src="https://github.com/user-attachments/assets/43e30c00-4184-4f54-8d89-65ff0d7f70cc" />
+
 <img width="324" height="702" alt="Screenshot_20260701_184001_PlantMap" src="https://github.com/user-attachments/assets/fb2cb18d-f84f-41e1-b7a5-23b3ccec689a" />
-<img width="324" height="702" alt="Screenshot_20260701_184006_PlantMap" src="https://github.com/user-attachments/assets/e1341510-88a1-4dea-a7e0-200c8ac93b79" />
+<img width="324" height="702" alt="Screenshot_20260902_110523_PlantMap" src="https://github.com/user-attachments/assets/490d45b2-f1e3-453d-ba00-7e2727b7e9c8" />
 <img width="324" height="702" alt="Screenshot_20260701_184012_PlantMap" src="https://github.com/user-attachments/assets/79e59d2a-a0ee-4a57-ae47-8d355073d80d" />
 
 ---
