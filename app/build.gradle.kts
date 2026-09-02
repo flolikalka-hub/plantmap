@@ -30,7 +30,7 @@ android {
         // Версия для внутреннего учёта (код версии)
         versionCode = 69
         // Публичная версия для пользователей
-        versionName = "Release-3.6[кэш фото].2"
+        versionName = "3.7"
         // Стандартный раннер для инструментальных тестов
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
