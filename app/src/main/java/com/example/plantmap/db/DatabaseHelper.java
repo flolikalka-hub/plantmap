@@ -582,9 +582,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
      */
     private void createSchemaIfNeeded(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE IF NOT EXISTS variety (" +
-                "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                "id TEXT PRIMARY KEY, " +
                 "type TEXT, " +
-                "plant_group TEXT" +
+                "plant_group TEXT, " +
+                "last_modified INTEGER NOT NULL" +
                 ")");
         db.execSQL("CREATE TABLE IF NOT EXISTS colors (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -592,33 +593,42 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 "hex TEXT" +
                 ")");
         db.execSQL("CREATE TABLE IF NOT EXISTS plants (" +
-                "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                "variety_id INTEGER NOT NULL, " +
+                "id TEXT PRIMARY KEY, " +
+                "old_id INTEGER, " +
+                "variety_id TEXT NOT NULL, " +
                 "name TEXT NOT NULL, " +
                 "flower_color INTEGER DEFAULT 9, " +
                 "additional_info TEXT, " +
-                "is_builtin INTEGER NOT NULL DEFAULT 0, " +
                 "public_key TEXT, " +
                 "name_rosebook TEXT, " +
+                "last_modified INTEGER NOT NULL, " +
                 "FOREIGN KEY(flower_color) REFERENCES colors(id), " +
                 "FOREIGN KEY(variety_id) REFERENCES variety(id) ON DELETE CASCADE" +
                 ")");
         db.execSQL("CREATE TABLE IF NOT EXISTS plant_pot_volumes (" +
-                "plant_id INTEGER NOT NULL, " +
+                "id TEXT PRIMARY KEY, " +
+                "plant_id TEXT NOT NULL, " +
                 "pot_volume INTEGER NOT NULL, " +
-                "PRIMARY KEY(plant_id, pot_volume), " +
+                "last_modified INTEGER NOT NULL, " +
+                "UNIQUE(plant_id, pot_volume), " +
                 "FOREIGN KEY(plant_id) REFERENCES plants(id) ON DELETE CASCADE" +
                 ")");
         db.execSQL("CREATE TABLE IF NOT EXISTS points (" +
-                "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                "id TEXT PRIMARY KEY, " +
                 "x REAL NOT NULL, " +
                 "y REAL NOT NULL, " +
                 "count INTEGER NOT NULL, " +
-                "plant_id INTEGER NOT NULL, " +
+                "plant_id TEXT NOT NULL, " +
                 "processing_date INTEGER, " +
                 "feeding_date INTEGER, " +
                 "pot_volume INTEGER, " +
+                "last_modified INTEGER NOT NULL, " +
                 "FOREIGN KEY(plant_id) REFERENCES plants(id) ON DELETE CASCADE" +
+                ")");
+        db.execSQL("CREATE TABLE IF NOT EXISTS deletions (" +
+                "table_name TEXT NOT NULL, " +
+                "record_id TEXT NOT NULL, " +
+                "deleted_at INTEGER NOT NULL" +
                 ")");
         db.execSQL("CREATE INDEX IF NOT EXISTS idx_points_plant_id ON points(plant_id)");
         db.execSQL("CREATE INDEX IF NOT EXISTS idx_plants_variety_id ON plants(variety_id)");

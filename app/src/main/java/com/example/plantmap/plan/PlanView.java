@@ -529,15 +529,60 @@ public class PlanView extends View {
         ImageView ivPhoto = dialogView.findViewById(R.id.iv_plant_photo);
         Button btnClose = dialogView.findViewById(R.id.btn_close);
 
+//        if (point.plant.name != null) tvName.append(point.plant.name);
+//        if (point.plant.type != null) tvType.append(point.plant.type);
+//        if (point.plant.group != null) tvGroup.append(point.plant.group);
+//        tvPotVolume.append(potVolumeStr);
+//        tvColor.append(colorStr);
+//        tvAdditional.append(addInfoStr);
+//        tvCount.append(String.valueOf(point.count));
+//        tvProcessingDate.append(dateStr);
+//        tvFeedingDate.append(feedingDateStr);
         tvName.append(point.plant.name);
-        tvType.append(point.plant.type);
-        tvGroup.append(point.plant.group);
-        tvPotVolume.append(potVolumeStr);
-        tvColor.append(colorStr);
-        tvAdditional.append(addInfoStr);
+
+        if (point.plant.type != null && !point.plant.type.isEmpty()) {
+            tvType.append(point.plant.type);
+        } else {
+            tvType.setVisibility(View.GONE);
+        }
+
+        if (point.plant.group != null && !point.plant.group.isEmpty()) {
+            tvGroup.append(point.plant.group);
+        } else {
+            tvGroup.setVisibility(View.GONE);
+        }
+
+        if (!potVolumeStr.isEmpty()) {
+            tvPotVolume.append(potVolumeStr);
+        } else {
+            tvPotVolume.setVisibility(View.GONE);
+        }
+
+        if (!colorStr.isEmpty()) {
+            tvColor.append(colorStr);
+        } else {
+            tvColor.setVisibility(View.GONE);
+        }
+
+        if (!addInfoStr.isEmpty()) {
+            tvAdditional.append(addInfoStr);
+        } else {
+            tvAdditional.setVisibility(View.GONE);
+        }
+
         tvCount.append(String.valueOf(point.count));
-        tvProcessingDate.append(dateStr);
-        tvFeedingDate.append(feedingDateStr);
+
+        if (!dateStr.isEmpty()) {
+            tvProcessingDate.append(dateStr);
+        } else {
+            tvProcessingDate.setVisibility(View.GONE);
+        }
+
+        if (!feedingDateStr.isEmpty()) {
+            tvFeedingDate.append(feedingDateStr);
+        } else {
+            tvFeedingDate.setVisibility(View.GONE);
+        }
 
         // Загрузка фото
         if (point.plant.imagePublicKey != null && !point.plant.imagePublicKey.isEmpty()) {
